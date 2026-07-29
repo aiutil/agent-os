@@ -1,0 +1,276 @@
+/*
+ * Agent OS v2 设计系统 token（SPEC-001）。
+ * 暖浅 Claude 桌面风 · 锁定于 2026-06-10。
+ * 来源：agentOsV2产品设计.md §10。所有颜色/字体/圆角/动效集中变量化，
+ * 严禁组件内硬编码色值。
+ */
+
+:root {
+  color-scheme: light;
+  /*
+   * 背景层级（codex 中性灰风，2026-06 全局去黄）。
+   * 主画布纯白，侧栏统一一种极浅中性灰 —— 只分「白画布 / 浅灰侧栏」两个区。
+   * hover/选中一律中性灰，不带任何暖黄或橙色调。
+   */
+  --bg-shell: #ffffff; /* 窗口外壳 */
+  --bg-base: #ffffff; /* 页面基础底色 */
+  --bg-panel: #f3f3f5; /* 单侧栏（浅灰，白底上略深，阴影浮起） */
+  --bg-surface: #ffffff; /* 独立内容画布 */
+  --bg-card: #ffffff; /* 卡片/输入框 */
+  --bg-hover: #f0f0f2; /* 中性灰 hover */
+  --bg-active: #e9e9ec; /* 中性灰 选中 */
+  --bg-input: #ffffff;
+  /* QR 码需保持白色底色以确保深色主题下仍可扫描。 */
+  --qr-surface: #ffffff;
+
+  /* 文字层级（中性近黑） */
+  --text-primary: #1d1d1f;
+  --text-secondary: #6b6b70;
+  --text-muted: #9a9aa0;
+  --text-placeholder: #b6b6bc;
+
+  /*
+   * 强调色（codex 近黑）。纪律：主按钮 / focus 描边 / 极少数强调时刻。
+   * 导航/标签/卡片激活态一律用中性 --bg-active，不用色块填充。
+   * --accent-fg = 叠在 accent 上的文字色（深浅主题各自反相）。
+   */
+  --accent: #1a1a1a;
+  --accent-hover: #000000;
+  --accent-fg: #ffffff;
+  --accent-soft: #ececef; /* 中性浅灰，用于轻选中底 */
+
+  /* 状态色（浅底适配） */
+  --status-working: #4f7a4f;
+  --status-ok: #4f7a4f;
+  --status-waiting: #c08a2e;
+  --status-resumable: #4a72b0;
+  --status-disconnect: #97938b;
+  --status-update: #c08a2e;
+  --status-danger: #c0392b;
+  --danger: #c0392b;
+  --danger-fg: #ffffff;
+  --accent-gold: #c08a2e;
+  --overlay-bg: rgba(24, 24, 27, 0.4);
+  --tool-claude: #c96442;
+  --tool-codex: #4a72b0;
+  --tool-gemini: #4f7a4f;
+  --tool-hermes: #8a6a3f;
+  --tool-openclaw: #4f7f8f;
+  --tool-opencode: #8065a3;
+  --tool-pi: #5b5bd6;
+  --tool-generic: #77736c;
+  --search-highlight: #f4df91;
+
+  /* 边框 / 阴影（近乎隐形的中性灰，避免线条嘈杂） */
+  --border-subtle: #ededee;
+  --border-medium: #e2e2e5;
+  --border-strong: #1a1a1a;
+  --border-width: 1px;
+  --focus-inset: -1px;
+  --shadow-card: 0 1px 2px rgba(24, 24, 27, 0.04);
+  --shadow-hover-lift: 0 2px 8px rgba(24, 24, 27, 0.08);
+  --shadow-input-focus: none;
+  --shadow-pop: 0 8px 28px rgba(24, 24, 27, 0.12);
+  --shadow-modal: 0 28px 80px rgba(24, 24, 27, 0.22);
+
+  /* 终端浅色主题 */
+  --term-bg: #ffffff;
+  --term-fg: #2b2a27;
+  --term-selection: #efe2d8;
+
+  /* 代码语法高亮（浅色） */
+  --syntax-keyword: #b5573a;
+  --syntax-string: #4f7a4f;
+  --syntax-number: #4a72b0;
+  --syntax-comment: #9b978f;
+  --syntax-function: #8065a3;
+  --syntax-punct: #6f6c66;
+  /* diff 行着色（浅色） */
+  --diff-add-fg: #2a6e2a;
+  --diff-add-bg: rgba(74, 164, 74, 0.09);
+  --diff-del-fg: #bb2222;
+  --diff-del-bg: rgba(204, 50, 50, 0.08);
+  --diff-meta-fg: #4a72b0;
+
+  /* 字体 */
+  --font-sans:
+    -apple-system, 'SF Pro Text', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+  --font-serif: 'Tiempos Text', 'Songti SC', Georgia, serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+
+  /* 字号 */
+  --text-2xl: 24px;
+  --text-xl: 18px;
+  --text-lg: 15px;
+  --text-base: 14px;
+  --text-sm: 12px;
+  --text-xs: 11px;
+  --text-2xs: 10px;
+
+  /* 圆角 */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-window: 14px;
+  --radius-full: 999px;
+
+  /* 间距（4px 网格） */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+
+  /* 动效时长 */
+  --dur-instant: 80ms;
+  --dur-normal: 200ms;
+  --dur-switch: 180ms;
+  --dur-slow: 400ms;
+  --dur-modal-in: 200ms;
+  --dur-modal-out: 150ms;
+
+  /* 布局尺寸 */
+  --sidebar-width: 244px;
+  --sidebar-collapsed-width: 56px;
+  --settings-nav-width: 200px;
+  --settings-content-width: 800px;
+  --memory-detail-width: 440px;
+  --memory-filter-width: 180px;
+  --stats-content-width: 1080px;
+  --stats-filter-width: 180px;
+  --chat-content-width: 760px;
+  --heat-cell-size: 11px;
+  --heat-cell-gap: 3px;
+  --heat-cell-radius: 2px;
+  --heat-cell-mini: 6px;
+  --heat-gap-mini: 1.5px;
+  --heat-level-0: #efede7;
+  --heat-level-1: #efd8cd;
+  --heat-level-2: #dfa98f;
+  --heat-level-3: #c97856;
+  --heat-level-4: #9f4d32;
+  --heat-level-5: #6e2f1c;
+  --titlebar-height: 0px;
+  --window-titlebar-height: 0px;
+  --workspace-tabs-height: 40px;
+
+  /* 状态点尺寸 */
+  --dot-sm: 6px;
+  --dot-md: 8px;
+
+  /* 层级 */
+  --layer-toast: 20;
+  --layer-dropdown: 30;
+  --layer-modal: 40;
+}
+
+/*
+ * 深色主题（SPEC-010 v2 外观）。暖近黑 Claude 桌面深色风：
+ * 只覆盖颜色/阴影/热力 token，尺寸/字体/圆角/动效继承 :root。
+ * 由 lib/theme.ts 据「跟随系统 / 浅色 / 深色」偏好显式写入 data-theme。
+ */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg-shell: #161618;
+  --bg-base: #1d1d1f;
+  --bg-panel: #19191b;
+  --bg-surface: #161618;
+  --bg-card: #242427;
+  --bg-hover: #2a2a2e;
+  --bg-active: #323237;
+  --bg-input: #242427;
+
+  --text-primary: #ececee;
+  --text-secondary: #adadb3;
+  --text-muted: #86868c;
+  --text-placeholder: #66666c;
+
+  --accent: #ededee;
+  --accent-hover: #ffffff;
+  --accent-fg: #1a1a1a;
+  --accent-soft: #2f2f34;
+
+  --status-working: #6fae6f;
+  --status-ok: #6fae6f;
+  --status-waiting: #d6a44a;
+  --status-resumable: #6f9bd6;
+  --status-disconnect: #8a857b;
+  --status-update: #d6a44a;
+  --status-danger: #e0685a;
+  --danger: #e0685a;
+  --danger-fg: #1a1a1a;
+  --accent-gold: #d6a44a;
+  --overlay-bg: rgba(0, 0, 0, 0.55);
+  --tool-claude: #db7355;
+  --tool-codex: #6f9bd6;
+  --tool-gemini: #6fae6f;
+  --tool-hermes: #c49a5c;
+  --tool-openclaw: #79b8cc;
+  --tool-opencode: #a98bc9;
+  --tool-pi: #8e8eff;
+  --tool-generic: #9a958c;
+  --search-highlight: #5c4f2a;
+
+  --border-subtle: #2a2a2e;
+  --border-medium: #38383d;
+  --border-strong: #ededee;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-hover-lift: 0 2px 8px rgba(0, 0, 0, 0.45);
+  --shadow-input-focus: none;
+  --shadow-pop: 0 8px 28px rgba(0, 0, 0, 0.55);
+  --shadow-modal: 0 28px 80px rgba(0, 0, 0, 0.55);
+
+  --term-bg: #1e1d1a;
+  --term-fg: #ece8e0;
+  --term-selection: #3a3530;
+
+  --syntax-keyword: #e7886a;
+  --syntax-string: #6fae6f;
+  --syntax-number: #6f9bd6;
+  --syntax-comment: #8a857b;
+  --syntax-function: #a98bc9;
+  --syntax-punct: #b3aea3;
+  --diff-add-fg: #6fae6f;
+  --diff-add-bg: rgba(111, 174, 111, 0.13);
+  --diff-del-fg: #e0685a;
+  --diff-del-bg: rgba(224, 104, 90, 0.13);
+  --diff-meta-fg: #6f9bd6;
+
+  --heat-level-0: #2a2823;
+  --heat-level-1: #3a2a22;
+  --heat-level-2: #6e3f2c;
+  --heat-level-3: #a3593c;
+  --heat-level-4: #db7355;
+  --heat-level-5: #f08c6a;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@keyframes overlay-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

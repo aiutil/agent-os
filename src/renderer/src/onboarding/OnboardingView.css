@@ -1,0 +1,193 @@
+.onboarding {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-base);
+  padding: var(--space-8);
+  padding-top: calc(var(--titlebar-height) + var(--space-8));
+}
+
+.onboarding__card {
+  width: 100%;
+  max-width: 560px;
+  background: var(--bg-card);
+  border: var(--border-width) solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-pop);
+  padding: var(--space-8);
+}
+
+.onboarding__title {
+  font-family: var(--font-serif);
+  font-size: var(--text-2xl);
+  color: var(--text-primary);
+  margin-bottom: var(--space-2);
+  letter-spacing: -0.01em;
+}
+
+/* hero 前缀的品牌 logo —— 统一品牌资产（assets/agentos-logo.png）。
+   JSX 内渲染（aria-hidden）以避免伪元素被屏读器朗读。 */
+.onboarding__brand-mark {
+  width: 30px;
+  height: 30px;
+  margin-right: var(--space-2);
+  border-radius: 7px;
+  vertical-align: -7px;
+  flex-shrink: 0;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.onboarding__error {
+  margin-right: auto;
+  font-size: var(--text-sm);
+  color: var(--danger);
+}
+
+.onboarding__subtitle {
+  font-size: var(--text-base);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-6);
+}
+
+.onboarding__progress {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin: var(--space-3) 0 var(--space-6);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.onboarding__progress > div {
+  display: flex;
+  gap: 5px;
+  flex: 1;
+  max-width: 240px;
+}
+.onboarding__progress i {
+  height: 4px;
+  flex: 1;
+  border-radius: var(--radius-full);
+  background: var(--bg-active);
+}
+.onboarding__progress i.is-active {
+  background: var(--accent);
+}
+
+.onboarding__step-title {
+  margin: 0 0 var(--space-2);
+  color: var(--text-primary);
+  font-size: var(--text-xl);
+}
+.onboarding__step-desc {
+  margin: 0 0 var(--space-4);
+  color: var(--text-secondary);
+  font-size: var(--text-base);
+  line-height: 1.65;
+}
+.onboarding__guide-step {
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.onboarding__guide-items {
+  list-style: none;
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+}
+.onboarding__guide-items li {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--bg-panel);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.onboarding__guide-items li span {
+  color: var(--status-ok);
+  font-weight: 700;
+}
+
+.onboarding__section {
+  border: var(--border-width) solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.onboarding__section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  margin-bottom: var(--space-3);
+}
+
+.onboarding__list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.onboarding__tool {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--bg-panel);
+}
+
+.onboarding__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.onboarding__tool-name {
+  font-size: var(--text-base);
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.onboarding__tool-meta {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.onboarding__missing {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.onboarding__missing-chip {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  background: var(--bg-hover);
+  border-radius: var(--radius-sm);
+  padding: 2px var(--space-2);
+}
+
+.onboarding__hint {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.onboarding__actions {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: flex-end;
+}

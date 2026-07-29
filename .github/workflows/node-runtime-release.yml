@@ -1,0 +1,216 @@
+name: Verified desktop and node release
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish verified assets and product-site updates to aiutil/agent-os
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: node-runtime-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  authorize-publish-source:
+    name: Authorize publish source
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require main for external publish
+        if: ${{ inputs.publish && github.ref != 'refs/heads/main' }}
+        run: |
+          echo "publish=true is only allowed from refs/heads/main; got $GITHUB_REF" >&2
+          exit 1
+
+  build:
+    name: Build ${{ matrix.platform }}
+    needs: authorize-publish-source
+    env:
+      MIXPANEL_PRODUCTION_TOKEN: ${{ secrets.MIXPANEL_PRODUCTION_TOKEN }}
+      MIXPANEL_DEV_TOKEN: ${{ secrets.MIXPANEL_DEV_TOKEN }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: mac-arm64
+            runner: macos-14
+            desktop_command: npx electron-builder --mac dmg --arm64 --publish never
+          - platform: mac-x64
+            runner: macos-15-intel
+            desktop_command: npx electron-builder --mac dmg --x64 --publish never
+          - platform: linux-arm64
+            runner: ubuntu-24.04-arm
+            desktop_command: npx electron-builder --linux AppImage --arm64 --publish never
+          - platform: linux-x64
+            runner: ubuntu-24.04
+            desktop_command: npx electron-builder --linux AppImage deb --x64 --publish never
+          - platform: win-x64
+            runner: windows-2022
+            desktop_command: npx electron-builder --win nsis --x64 --publish never
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20.17.0
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      # package-lock.json is generated with legacy peer resolution because
+      # @lobehub/icons exposes an optional React 19 UI peer while Agent OS uses React 18.
+      - run: npm ci --legacy-peer-deps
+      - run: npm run build
+      - run: node scripts/build-node-dist.cjs
+      - name: Build native desktop installer
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: ${{ matrix.desktop_command }}
+      - name: Build native Linux ARM64 deb
+        if: ${{ matrix.platform == 'linux-arm64' }}
+        run: node scripts/build-linux-deb.cjs
+      - name: Stage native release assets for cross-runner merge
+        shell: bash
+        run: |
+          stage_dir="release/.transport/${{ matrix.platform }}"
+          mkdir -p "$stage_dir"
+          cp release/agentos-node-*.tar.gz "$stage_dir/"
+          cp release/Agent-Os-* "$stage_dir/"
+          cp release/agentos-desktop-*-manifest.json "$stage_dir/"
+      # Actions Artifact has a small account-wide quota whose deletion is recalculated only
+      # every 6–12 hours. Release assets use the separate 10 GB Actions Cache as an ephemeral,
+      # run-scoped transport; provenance/exact-set checks still gate the public Release.
+      - uses: actions/cache/save@v4
+        with:
+          path: release/.transport/${{ matrix.platform }}
+          key: release-assets-${{ github.run_id }}-${{ matrix.platform }}
+          enableCrossOsArchive: true
+
+  verify-and-publish:
+    name: Verify and optionally publish
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20.17.0
+          cache: npm
+      - uses: actions/cache/restore@v4
+        with:
+          path: release/.transport/mac-arm64
+          key: release-assets-${{ github.run_id }}-mac-arm64
+          fail-on-cache-miss: true
+          enableCrossOsArchive: true
+      - uses: actions/cache/restore@v4
+        with:
+          path: release/.transport/mac-x64
+          key: release-assets-${{ github.run_id }}-mac-x64
+          fail-on-cache-miss: true
+          enableCrossOsArchive: true
+      - uses: actions/cache/restore@v4
+        with:
+          path: release/.transport/linux-arm64
+          key: release-assets-${{ github.run_id }}-linux-arm64
+          fail-on-cache-miss: true
+          enableCrossOsArchive: true
+      - uses: actions/cache/restore@v4
+        with:
+          path: release/.transport/linux-x64
+          key: release-assets-${{ github.run_id }}-linux-x64
+          fail-on-cache-miss: true
+          enableCrossOsArchive: true
+      - uses: actions/cache/restore@v4
+        with:
+          path: release/.transport/win-x64
+          key: release-assets-${{ github.run_id }}-win-x64
+          fail-on-cache-miss: true
+          enableCrossOsArchive: true
+      - name: Merge native release assets
+        run: |
+          mkdir -p release
+          find release/.transport -type f -exec cp {} release/ \;
+      - name: Generate aggregate manifest
+        run: node scripts/generate-node-release-manifest.cjs
+      - name: Enforce runtime and release gates
+        run: node scripts/release-gh.cjs --dry-run
+      - name: Stage verified private Release draft
+        if: ${{ inputs.publish }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node scripts/release-gh.cjs --stage-only
+      - uses: actions/cache/save@v4
+        with:
+          path: |
+            release/agentos-node-*
+            release/agentos-release-*-provenance.json
+            scripts/install-node.sh
+          key: node-runtime-release-bundle-${{ github.run_id }}
+      - name: Synchronize agent-life Page and README
+        id: site-sync
+        if: ${{ inputs.publish }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh auth setup-git
+          echo "path=$GITHUB_WORKSPACE" >> "$GITHUB_OUTPUT"
+          node scripts/sync-agent-life-site.cjs --repo-dir "$GITHUB_WORKSPACE" --site-dir "$GITHUB_WORKSPACE/site"
+          git config user.name "agent-os-release-bot"
+          git config user.email "agent-os-release-bot@users.noreply.github.com"
+          if git diff --quiet; then
+            echo "commit=" >> "$GITHUB_OUTPUT"
+          else
+            git add README.md site/index.html site/guide.html site/changelog.html
+            version="$(node -p "require('./package.json').version")"
+            git commit -m "chore(release): publish v${version} site"
+            echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+            git push origin HEAD:main
+          fi
+      - name: Wait for public Page and README
+        if: ${{ inputs.publish }}
+        run: |
+          for attempt in $(seq 1 30); do
+            if node scripts/check-public-release-consistency.cjs --pre-publish; then exit 0; fi
+            if [ "$attempt" -lt 30 ]; then sleep 10; fi
+          done
+          exit 1
+      - name: Promote verified draft to Latest
+        id: promote
+        if: ${{ inputs.publish }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/release-gh.cjs --promote-only
+      - name: Roll back site when draft was not promoted
+        if: ${{ always() && inputs.publish && steps.site-sync.outputs.commit != '' && steps.promote.outcome != 'success' && (failure() || cancelled()) }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          site_dir="${{ steps.site-sync.outputs.path }}"
+          site_commit="${{ steps.site-sync.outputs.commit }}"
+          git -C "$site_dir" fetch origin main
+          if git -C "$site_dir" merge-base --is-ancestor "$site_commit" origin/main; then
+            git -C "$site_dir" pull --rebase origin main
+            git -C "$site_dir" revert --no-edit "$site_commit"
+            git -C "$site_dir" push origin main
+          fi
+      - name: Verify public version surfaces after publish
+        if: ${{ inputs.publish }}
+        run: |
+          for attempt in $(seq 1 30); do
+            if npm run verify:release-consistency; then exit 0; fi
+            if [ "$attempt" -lt 30 ]; then sleep 10; fi
+          done
+          exit 1
+      - name: Verify five public node assets after publish
+        if: ${{ inputs.publish }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: npm run verify:node-release-public

@@ -1,0 +1,186 @@
+/* Web 聚合页样式（SPEC-011）。 */
+
+.webagg-page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  padding-top: var(--titlebar-height);
+  position: relative;
+}
+
+/* ── 配置栏 ── */
+.webagg-toolbar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-5);
+  border-bottom: var(--border-width) solid var(--border-subtle);
+  background: var(--bg-panel);
+}
+
+.webagg-toolbar__title {
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--text-primary);
+  flex-shrink: 0;
+}
+
+.webagg-provider-chips {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.webagg-provider-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px var(--space-2);
+  border: var(--border-width) solid var(--border-medium);
+  border-radius: var(--radius-sm);
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  cursor: pointer;
+  transition: background-color var(--dur-instant) ease-out, color var(--dur-instant) ease-out,
+    border-color var(--dur-instant) ease-out;
+}
+.webagg-provider-chip:hover {
+  background: var(--bg-active);
+}
+.webagg-provider-chip.is-active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.webagg-provider-chip__dot {
+  width: var(--dot-sm);
+  height: var(--dot-sm);
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+.webagg-provider-chip__dot.is-logged-in {
+  background: var(--status-ok);
+}
+.webagg-provider-chip__dot.is-logged-out {
+  background: var(--status-waiting);
+}
+
+/* ── Web view 容器区域 ── */
+.webagg-views {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  position: relative;
+}
+
+/* 每列占位符（实际 view 由 Electron 覆盖在上面） */
+.webagg-column {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  border-right: var(--border-width) solid var(--border-subtle);
+}
+.webagg-column:last-child {
+  border-right: none;
+}
+
+.webagg-col-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  background: var(--bg-panel);
+  border-bottom: var(--border-width) solid var(--border-subtle);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.webagg-col-header__warn {
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklch, var(--status-waiting) 12%, var(--bg-base));
+  color: var(--status-waiting);
+  border: var(--border-width) solid color-mix(in oklch, var(--status-waiting) 30%, var(--border-subtle));
+  font-size: var(--text-xs);
+}
+
+.webagg-col-header__reload {
+  margin-left: auto;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  padding: 2px var(--space-1);
+  transition: color var(--dur-instant) ease-out;
+}
+.webagg-col-header__reload:hover {
+  color: var(--text-primary);
+}
+
+/* 实际 web view 填充区（告知 Electron 此区域留给 WebContentsView） */
+.webagg-col-body {
+  position: absolute;
+  inset: 28px 0 0 0; /* header height */
+  background: transparent;
+}
+
+/* ── 广播输入框 ── */
+.webagg-broadcast {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-5);
+  border-top: var(--border-width) solid var(--border-subtle);
+  background: var(--bg-panel);
+}
+
+.webagg-broadcast__input {
+  flex: 1;
+  height: 38px;
+  padding: 0 var(--space-4);
+  border: var(--border-width) solid var(--border-medium);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font: inherit;
+  box-shadow: var(--shadow-card);
+}
+.webagg-broadcast__input:focus {
+  outline: none;
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-input-focus);
+}
+
+.webagg-broadcast__hint {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.webagg-broadcast__hint.is-failed {
+  color: var(--status-danger);
+}
+
+/* ── 空态 ── */
+.webagg-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  color: var(--text-muted);
+  text-align: center;
+  padding: var(--space-8);
+}
+.webagg-empty__title {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--text-secondary);
+}

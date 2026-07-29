@@ -1,0 +1,214 @@
+.search-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay-bg);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 80px;
+  z-index: var(--layer-modal);
+  animation: overlay-in var(--dur-modal-in) ease-out;
+}
+
+.search-modal-box {
+  width: min(560px, calc(100% - var(--space-8)));
+  border: var(--border-width) solid var(--border-medium);
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-pop);
+  overflow: hidden;
+  animation: modal-slide-in var(--dur-modal-in) cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes modal-slide-in {
+  from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.search-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: var(--border-width) solid var(--border-subtle);
+  color: var(--text-muted);
+}
+
+.search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: var(--text-base);
+  outline: none;
+}
+.search-input:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-input-focus);
+  border-radius: var(--radius-sm);
+}
+.search-input::placeholder {
+  color: var(--text-muted);
+}
+
+.search-esc-btn {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  border: var(--border-width) solid var(--border-medium);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  background: var(--bg-card);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.search-esc-btn:hover {
+  background: var(--bg-hover);
+}
+.search-esc-btn:focus-visible {
+  outline: var(--border-width) solid var(--accent);
+  outline-offset: 1px;
+}
+
+.search-results {
+  max-height: 360px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-1) 0;
+}
+
+.search-empty {
+  padding: var(--space-6);
+  text-align: center;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.search-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-left: 2px solid transparent;
+  transition: background-color var(--dur-instant) ease-out, border-color var(--dur-instant) ease-out;
+}
+.search-item:hover {
+  background: var(--bg-hover);
+  border-left-color: var(--accent);
+}
+.search-item:focus-visible {
+  outline: var(--border-width) solid var(--accent);
+  outline-offset: -1px;
+}
+
+.search-item__dot {
+  width: var(--dot-sm);
+  height: var(--dot-sm);
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: var(--space-1);
+}
+
+.search-item__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.search-item__title {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.search-item__preview {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.search-item__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-2xs);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+/* 状态作为带色点的小标签，从灰字流里跳出来 */
+.search-item__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: var(--space-2);
+}
+.search-item__status-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* 时间推到行尾，给一行内容一个右锚点 */
+.search-item__time {
+  margin-left: auto;
+  padding-left: var(--space-2);
+  flex-shrink: 0;
+}
+
+/* 搜索分组标签栏 */
+.search-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 4px var(--space-4) 0;
+  border-bottom: var(--border-width) solid var(--border-subtle);
+}
+
+.search-tab {
+  padding: 5px 10px;
+  border-radius: 6px 6px 0 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color var(--dur-instant) ease-out;
+}
+.search-tab:hover { color: var(--text-secondary); }
+.search-tab.is-active {
+  color: var(--text-primary);
+  font-weight: 500;
+  border-bottom-color: var(--text-primary);
+}
+
+/* 结果分组标题 */
+.search-group-label {
+  padding: 8px var(--space-4) 4px;
+  font-size: var(--text-2xs);
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: .02em;
+}
+
+/* 内容搜索高亮（snippetHtml 中的 em 标签） */
+.search-item__snippet em {
+  color: var(--text-primary);
+  font-style: normal;
+  font-weight: 500;
+}

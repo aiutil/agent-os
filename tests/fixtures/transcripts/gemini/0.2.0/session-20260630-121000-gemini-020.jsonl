@@ -1,0 +1,2 @@
+{"sessionId":"gemini-session-020","type":"user","content":[{"text":"启动远程 OpenCode"}],"timestamp":"2026-06-30T12:10:00.000Z"}
+{"sessionId":"gemini-session-020","type":"model","content":[{"text":"OpenCode 已在远程工作目录启动。"}],"timestamp":"2026-06-30T12:10:05.000Z","summary":"启动远程 OpenCode"}

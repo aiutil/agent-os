@@ -1,0 +1,10 @@
+{
+  "toolId": "claude",
+  "cliVersion": "2.1.156",
+  "file": "session.jsonl",
+  "messageCount": 6,
+  "roles": ["user", "assistant", "tool", "tool", "assistant", "assistant"],
+  "title": "[REDACTED_TEXT]",
+  "nativeSessionId": "00000000-0000-4000-8000-000000000004",
+  "parseErrors": 0
+}

@@ -1,0 +1,15 @@
+{
+  "name": "agentos-remote-node",
+  "version": "0.2.8",
+  "private": true,
+  "type": "module",
+  "description": "Agent OS 远程节点运行时依赖（容器内安装为 linux 原生）",
+  "dependencies": {
+    "better-sqlite3": "^12.10.0",
+    "chokidar": "^4.0.3",
+    "cross-spawn": "^7.0.6",
+    "node-pty": "^1.1.0-beta11",
+    "selfsigned": "^2.4.1",
+    "ws": "^8.21.0"
+  }
+}

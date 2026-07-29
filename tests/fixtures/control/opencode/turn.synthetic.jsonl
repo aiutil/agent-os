@@ -1,0 +1,4 @@
+{"type":"step_start","sessionID":"ses_1"}
+{"type":"text","sessionID":"ses_1","part":{"text":"读取文件"}}
+{"type":"tool_use","sessionID":"ses_1","part":{"tool":"read","callID":"call_1","state":{"input":{"path":"a.txt"},"status":"completed","output":"hello"}}}
+{"type":"error","sessionID":"ses_1","error":{"message":"boom"}}

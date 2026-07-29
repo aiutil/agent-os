@@ -1,0 +1,23 @@
+{
+  "version": "0.3.3",
+  "date": "2026-07-23",
+  "summaryZh": "本版本统一会话与 CLI 标题治理：聊天标题由 runtime 一次定稿，CLI 改用净化后的 transcript，存量坏标题按真实消息惰性修复，并让侧栏、页头、标签、归档与搜索使用同一展示口径。",
+  "changelog": [
+    {
+      "title": "会话标题来源统一",
+      "body": "移除 renderer、消息渠道与 runtime 之间的重复改名竞争；聊天任务被 runtime 接受后即以真实 prompt 定稿，用户手动改名不会被后续回合覆盖。"
+    },
+    {
+      "title": "CLI 标题更可靠、更安全",
+      "body": "不再从 PTY 原始按键推断标题，避免 IME 分片、控制序列和敏感命令造成截断或凭据泄漏；native transcript 就绪后再生成任务级标题。"
+    },
+    {
+      "title": "历史标题自动修复",
+      "body": "识别项目占位名、默认 session 名、注入上下文和序列化 transcript；旧聊天会话从 SQLite 首条真实用户消息幂等恢复，标题中的 password、token、API key 等值会被遮罩。"
+    },
+    {
+      "title": "全界面一致命名",
+      "body": "会话/CLI 侧栏、工作台和聊天页头、标签页、总览、归档及搜索统一使用共享标题投影；CLI 产品名也统一为 Claude Code、Gemini CLI、Cursor Agent、Hermes Agent 等正式名称。"
+    }
+  ]
+}

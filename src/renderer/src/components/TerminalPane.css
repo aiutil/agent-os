@@ -1,0 +1,17 @@
+.terminal-pane {
+  flex: 1;
+  min-height: 0;
+  background: var(--term-bg);
+  color: var(--term-fg);
+  padding: var(--space-3);
+  overflow: hidden;
+}
+
+.terminal-pane .xterm {
+  height: 100%;
+  color: var(--term-fg);
+}
+
+.terminal-pane .xterm-viewport {
+  background-color: transparent !important;
+}

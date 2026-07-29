@@ -1,0 +1,3 @@
+{"type":"session","id":"pi-session-020","workspace":"/workspace/pi-next","timestamp":"2026-06-04T11:00:00.000Z"}
+{"type":"message","role":"user","content":[{"type":"text","text":"修复测试"}],"timestamp":"2026-06-04T11:00:00.000Z"}
+{"type":"message","role":"assistant","content":"测试已修复","timestamp":"2026-06-04T11:01:00.000Z"}

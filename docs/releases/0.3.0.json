@@ -1,0 +1,27 @@
+{
+  "version": "0.3.0",
+  "date": "2026-07-19",
+  "summaryZh": "本版本完成消息通道与远程节点可靠性升级：飞书交互改为真实端到端健康状态，新增个人微信、企业微信、Telegram 与 WhatsApp；局域网节点安装、升级和发布链路增加脚本摘要、原子回滚、主控接管确认与同源制品门禁。",
+  "changelog": [
+    {
+      "title": "五平台消息通道",
+      "body": "飞书不再把传输连接误报为可用；个人微信、企业微信、Telegram 与 WhatsApp 使用各自独立 transport、接入流程、访问控制和错误状态。"
+    },
+    {
+      "title": "远程节点真实验收",
+      "body": "Runtime protocol 升至 8，主控只有完成协议、真实 PTY 探针和 Agent 发现后才返回 node-adopted；安装与升级以该确认作为成功边界。"
+    },
+    {
+      "title": "一键安装与升级回滚",
+      "body": "接入命令先验证桌面端锚定的脚本 SHA-256；安装和 agentos-cli update 均使用完整 stage、固定 Node、全文件校验、原子提升与失败恢复。"
+    },
+    {
+      "title": "同源发布事务",
+      "body": "五个平台由原生 runner 同时生成桌面和节点制品；Release 先进入私有 draft，远端 exact asset set、bytes 与 SHA-256 全部一致后才晋升 Latest。"
+    },
+    {
+      "title": "桌面更新完整性",
+      "body": "更新器识别 x64、x86_64、amd64 与 arm64、aarch64 架构别名，禁止异构 fallback，并在安装前验证 GitHub asset bytes 与 SHA-256 digest。"
+    }
+  ]
+}

@@ -1,0 +1,201 @@
+/* 共享 UI 基元样式（SPEC-005 v2）。仅用 tokens.css 变量，深浅色自动成立。 */
+
+/* ── 按钮 ── */
+.ui-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background-color var(--dur-instant) ease-out,
+    border-color var(--dur-instant) ease-out,
+    color var(--dur-instant) ease-out,
+    opacity var(--dur-instant) ease-out;
+}
+.ui-btn--md {
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+}
+.ui-btn--sm {
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-xs);
+}
+.ui-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.ui-btn:focus-visible,
+.ui-iconbtn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--bg-card), 0 0 0 4px var(--accent);
+}
+
+.ui-btn--primary {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+.ui-btn--primary:not(:disabled):hover {
+  background: var(--accent-hover);
+}
+.ui-btn--secondary {
+  background: var(--bg-card);
+  border-color: var(--border-medium);
+  color: var(--text-primary);
+}
+.ui-btn--secondary:not(:disabled):hover {
+  background: var(--bg-hover);
+}
+.ui-btn--ghost {
+  background: transparent;
+  color: var(--text-secondary);
+}
+.ui-btn--ghost:not(:disabled):hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+.ui-btn--danger {
+  background: var(--danger);
+  color: var(--danger-fg);
+}
+.ui-btn--danger:not(:disabled):hover {
+  opacity: 0.9;
+}
+
+.ui-btn__spinner {
+  width: 12px;
+  height: 12px;
+  border: 1.5px solid currentColor;
+  border-top-color: transparent;
+  border-radius: var(--radius-full);
+  opacity: 0.8;
+  animation: ui-spin 0.7s linear infinite;
+}
+@keyframes ui-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── 图标按钮 ── */
+.ui-iconbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    background-color var(--dur-instant) ease-out,
+    color var(--dur-instant) ease-out;
+}
+.ui-iconbtn--md {
+  width: 28px;
+  height: 28px;
+}
+.ui-iconbtn--sm {
+  width: 24px;
+  height: 24px;
+}
+.ui-iconbtn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* ── 弹窗 ── */
+.ui-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--layer-modal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6);
+  background: var(--overlay-bg);
+  animation: ui-overlay-in var(--dur-modal-in) ease-out;
+}
+.ui-modal {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-height: calc(100vh - var(--space-12));
+  background: var(--bg-card);
+  border: var(--border-width) solid var(--border-medium);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-pop);
+  overflow: hidden;
+  animation: ui-modal-in var(--dur-modal-in) cubic-bezier(0.16, 1, 0.3, 1);
+}
+.ui-modal--sm {
+  max-width: 420px;
+}
+.ui-modal--md {
+  max-width: 560px;
+}
+.ui-modal--lg {
+  max-width: 760px;
+}
+
+.ui-modal__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: var(--border-width) solid var(--border-subtle);
+}
+.ui-modal__title {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.ui-modal__close {
+  margin-right: calc(-1 * var(--space-1));
+}
+.ui-modal__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-5);
+}
+.ui-modal__foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-5);
+  border-top: var(--border-width) solid var(--border-subtle);
+}
+
+.ui-confirm__msg {
+  font-size: var(--text-base);
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+.ui-confirm__foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+@keyframes ui-overlay-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes ui-modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+}

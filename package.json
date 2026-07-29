@@ -1,0 +1,157 @@
+{
+  "name": "agent-os",
+  "version": "0.3.8",
+  "description": "Agent OS v2 — 个人 AI 超级工作台：统一接入主流 AI CLI，沉淀记忆、知识与成长",
+  "homepage": "https://agentos.aiutil.com/",
+  "author": {
+    "name": "lohasle",
+    "email": "lohasle@users.noreply.github.com"
+  },
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./out/main/index.js",
+  "bin": {
+    "agent-os": "./scripts/agent-os.mjs",
+    "agent-os-memory": "./scripts/agent-os-memory.mjs"
+  },
+  "scripts": {
+    "dev": "electron-vite dev",
+    "start": "electron-vite preview",
+    "build": "npm run typecheck && electron-vite build",
+    "typecheck:node": "tsc -p tsconfig.node.json --noEmit",
+    "typecheck:web": "tsc -p tsconfig.web.json --noEmit",
+    "typecheck": "npm run typecheck:node && npm run typecheck:web",
+    "test": "node scripts/run-vitest-electron.cjs run",
+    "test:watch": "node scripts/run-vitest-electron.cjs",
+    "test:remote-node": "npm run build && node scripts/test-remote-node-docker.cjs",
+    "fixture:scrub": "vite-node scripts/scrub-fixture.ts",
+    "lint": "eslint . --ext .ts,.tsx",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
+    "rebuild": "electron-rebuild -f -w node-pty,better-sqlite3",
+    "postinstall": "electron-builder install-app-deps",
+    "pack:mac": "npm run build && electron-builder --mac --publish never",
+    "pack:win": "npm run build && electron-builder --win --publish never",
+    "pack:linux": "npm run build && electron-builder --linux --publish never",
+    "dist:node": "node scripts/build-node-dist.cjs",
+    "dist:node:all": "node scripts/build-node-dist-all.cjs",
+    "release:node": "npm run build && npm run dist:node:all && npm run release:gh",
+    "verify:release-consistency": "node scripts/check-public-release-consistency.cjs",
+    "verify:node-release-public": "node scripts/check-public-node-release.cjs",
+    "memory": "node scripts/agent-os-memory.mjs",
+    "release:gh": "node scripts/release-gh.cjs"
+  },
+  "dependencies": {
+    "@icon-park/react": "^1.4.2",
+    "@larksuiteoapi/node-sdk": "^1.67.0",
+    "@lobehub/icons": "^5.10.0",
+    "@types/qrcode": "^1.5.6",
+    "@wecom/aibot-node-sdk": "^1.0.7",
+    "better-sqlite3": "^12.10.0",
+    "bonjour-service": "^1.4.3",
+    "chokidar": "^4.0.3",
+    "cross-spawn": "^7.0.6",
+    "electron-store": "^10.0.1",
+    "fast-glob": "^3.3.3",
+    "mixpanel-browser": "^2.81.0",
+    "node-pty": "^1.1.0-beta11",
+    "prism-react-renderer": "^2.4.1",
+    "qrcode": "^1.5.4",
+    "react-markdown": "^9.1.0",
+    "remark-gfm": "^4.0.1",
+    "selfsigned": "^2.4.1",
+    "ws": "^8.21.0"
+  },
+  "devDependencies": {
+    "@electron/rebuild": "^3.7.1",
+    "@eslint/js": "^9.16.0",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^22.10.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@types/ws": "^8.18.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "@xterm/addon-fit": "^0.10.0",
+    "@xterm/xterm": "^5.5.0",
+    "electron": "^36.9.5",
+    "electron-builder": "^25.1.8",
+    "electron-vite": "^2.3.0",
+    "eslint": "^9.16.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.8.0",
+    "playwright": "^1.60.0",
+    "prettier": "^3.4.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.18.0",
+    "vite": "^5.4.11",
+    "vitest": "^2.1.8",
+    "zustand": "^5.0.2"
+  },
+  "build": {
+    "npmRebuild": false,
+    "appId": "com.lohas.agent-life",
+    "productName": "Agent OS",
+    "afterPack": "build/afterpack-adhoc-sign.cjs",
+    "afterAllArtifactBuild": "build/after-all-artifact-build.cjs",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "out/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "assets/icons",
+        "to": "icons"
+      }
+    ],
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "icon": "assets/icons/icon.icns",
+      "extendInfo": {
+        "NSLocalNetworkUsageDescription": "Agent OS uses the local network to discover and securely pair with nearby Agent OS devices.",
+        "NSBonjourServices": [
+          "_agentos-pair._tcp"
+        ]
+      },
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "Agent-Os-${version}-mac-${arch}.${ext}"
+    },
+    "win": {
+      "icon": "assets/icons/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "Agent-Os-${version}-win-${arch}-setup.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "include": "build/nsis/close-running-agent-os.nsh"
+    },
+    "linux": {
+      "icon": "assets/icons/icon_1024x1024.png",
+      "category": "Development",
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "artifactName": "Agent-Os-${version}-linux-${arch}.${ext}"
+    }
+  }
+}

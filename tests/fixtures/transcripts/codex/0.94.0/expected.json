@@ -1,0 +1,10 @@
+{
+  "toolId": "codex",
+  "cliVersion": "0.94.0",
+  "file": "session.jsonl",
+  "messageCount": 7,
+  "roles": ["system", "user", "user", "system", "user", "assistant", "assistant"],
+  "title": "[REDACTED_TEXT]",
+  "nativeSessionId": "00000000-0000-4000-8000-000000000001",
+  "parseErrors": 0
+}

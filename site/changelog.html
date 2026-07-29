@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>更新记录 — Agent OS</title>
+<meta name="description" content="Agent OS 版本更新记录。" />
+<meta name="theme-color" content="#f6f8fc" />
+<link rel="icon" type="image/png" href="./agentos-icon.png" />
+<link rel="apple-touch-icon" href="./agentos-icon.png" />
+<style>
+  :root{
+    --bg:#f6f8fc;--surface:#fff;--surface-soft:#f0f3f9;--text:#101828;--text-2:#344054;
+    --muted:#667085;--line:#e4e7ec;--line-strong:#d0d5dd;--blue:#2563eb;--blue-dark:#1d4ed8;
+    --blue-soft:#eaf1ff;--dark:#111827;--radius:16px;--shadow:0 1px 2px rgba(16,24,40,.05),0 10px 28px rgba(16,24,40,.06);
+    --font:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    --mono:"SFMono-Regular",Consolas,"Liberation Mono",monospace;--max:1240px;--content:960px;--gut:clamp(18px,4vw,48px);
+  }
+  *{box-sizing:border-box}html{scroll-behavior:smooth;overflow-x:clip}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:clip}
+  button,a{font:inherit;touch-action:manipulation;-webkit-tap-highlight-color:rgba(37,99,235,.14)}a{color:inherit;text-decoration:none}
+  h1,p{margin-top:0}h1{text-wrap:balance}p{text-wrap:pretty}:focus-visible{outline:3px solid rgba(37,99,235,.38);outline-offset:3px}
+  .skip{position:fixed;left:16px;top:12px;z-index:300;transform:translateY(-160%);background:var(--dark);color:#fff;padding:10px 14px;border-radius:8px;font-size:14px}.skip:focus{transform:none}
+  .wrap{width:min(100%,var(--max));margin:0 auto;padding-left:var(--gut);padding-right:var(--gut)}
+  .site-header{position:sticky;top:0;z-index:80;border-bottom:1px solid rgba(228,231,236,.88);background:rgba(246,248,252,.9);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+  .nav-row{height:68px;display:flex;align-items:center;gap:28px}.brand{display:inline-flex;align-items:center;gap:11px;font-weight:720;letter-spacing:-.01em;white-space:nowrap}.brand img{width:34px;height:34px;border-radius:10px;display:block;object-fit:cover}
+  .version{font:11px/1 var(--mono);color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:5px 8px;background:var(--surface)}
+  .nav-links{display:flex;align-items:center;gap:24px;margin-left:auto;font-size:14px;color:var(--text-2)}.nav-links a{padding:8px 0}.nav-links a:hover{color:var(--blue)}
+  .nav-download{border-radius:10px;background:var(--dark);color:#fff;padding:9px 14px;font-size:13px;font-weight:650}.nav-download:hover{background:#273244}
+  .page-hero{padding:clamp(52px,7vw,88px) 0 58px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#f8faff 0%,var(--bg) 100%)}
+  .hero-inner{max-width:var(--content);margin:0 auto}.kicker{display:inline-flex;align-items:center;gap:9px;margin-bottom:18px;color:var(--blue);font:650 12px/1.2 var(--mono);letter-spacing:.08em;text-transform:uppercase}.kicker::before{content:"";width:24px;height:2px;background:var(--blue);border-radius:2px}
+  h1{font-size:clamp(40px,5.5vw,64px);line-height:1.05;letter-spacing:-.045em;margin-bottom:18px}.sub{color:var(--text-2);font-size:clamp(16px,1.6vw,18px);margin-bottom:0;max-width:760px}.sub a{color:var(--blue);text-decoration:underline;text-underline-offset:3px}.sub a:hover{color:var(--blue-dark)}
+  .timeline{max-width:var(--content);margin:0 auto;padding-top:48px;padding-bottom:96px;display:grid;gap:14px}.ver{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:clamp(24px,4vw,34px);box-shadow:0 1px 2px rgba(16,24,40,.03);scroll-margin-top:88px}.ver:first-child{border-color:#bdd0ff;box-shadow:var(--shadow)}
+  .ver__head{display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap}.ver__tag{font:650 15px/1 var(--mono);color:var(--blue);background:var(--blue-soft);border-radius:999px;padding:8px 10px}.ver:first-child .ver__head::after{content:"当前版本";font-size:11px;font-weight:680;color:#18794e;background:#ecfdf3;border-radius:999px;padding:6px 9px}.ver__date{margin-left:auto;color:var(--muted);font:12px/1 var(--mono)}
+  .ver__list{list-style:none;margin:0;padding:0;display:grid;gap:2px}.ver__list li{position:relative;padding:8px 0 8px 23px;color:var(--text-2);font-size:15px}.ver__list li::before{content:"";position:absolute;left:1px;top:18px;width:7px;height:7px;border-radius:50%;background:var(--blue)}.ver__list li b{color:var(--text);font-weight:680}
+  code{font-family:var(--mono);font-size:.88em;background:var(--surface-soft);border-radius:5px;padding:2px 5px;overflow-wrap:anywhere}
+  footer{border-top:1px solid var(--line);padding:34px 0 46px}.footer{display:flex;align-items:center;justify-content:space-between;gap:28px;color:var(--muted);font-size:12px}.footer-brand{display:flex;align-items:center;gap:9px;color:var(--text-2);font-weight:650}.footer-brand img{width:25px;height:25px;border-radius:7px}.footer-links{display:flex;align-items:center;gap:20px;flex-wrap:wrap}.footer-links a:hover{color:var(--blue)}
+  @media(max-width:760px){.nav-links{display:none}.nav-download{margin-left:auto}.page-hero{padding-top:44px}.ver__date{width:100%;margin-left:0}.footer{align-items:flex-start;flex-direction:column}}
+  @media(max-width:480px){.site-header .wrap{padding-left:14px;padding-right:14px}.version{display:none}.timeline{padding-top:30px}.ver{padding:22px 19px}.ver__list li{font-size:14px}}
+  @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<a class="skip" href="#changelog">跳到更新记录</a>
+<header class="site-header">
+  <div class="wrap nav-row">
+    <a class="brand" href="index.html" aria-label="Agent OS 首页"><img src="./agentos-icon.png" alt="" width="34" height="34" />Agent OS</a>
+    <span class="version">v0.3.8</span>
+    <nav class="nav-links" aria-label="主导航"><a href="index.html#product">产品界面</a><a href="guide.html">使用指南</a><a href="index.html#capabilities">核心能力</a></nav>
+    <a class="nav-download" href="index.html#download">下载</a>
+  </div>
+</header>
+
+<main id="changelog">
+  <header class="page-hero">
+    <div class="wrap"><div class="hero-inner">
+      <div class="kicker">Changelog</div>
+      <h1>版本更新记录</h1>
+      <p class="sub">这里记录 Agent OS 每个公开版本的实际变化。最新安装包见 <a href="https://github.com/aiutil/agent-os/releases">GitHub Releases</a>，平台与安装方式见 <a href="guide.html#install">使用指南</a>。</p>
+    </div></div>
+  </header>
+
+  <div class="wrap"><div class="timeline">
+
+  <section class="ver">
+    <div class="ver__head"><span class="ver__tag">v0.3.8</span><span class="ver__date">2026-07-24</span></div>
+    <ul class="ver__list">
+      <li><b>项目筛选更容易使用</b> — 项目筛选器支持按名称或完整路径即时搜索，列表同时展示项目名和可换行的完整路径，相似目录也能准确区分。</li>
+      <li><b>新增项目分组统计</b> — 统计页新增项目视图，可比较每个项目的会话、提示、Token 和估算费用；点击项目即可查看该项目的每日 Token 使用曲线。</li>
+      <li><b>统计数据支持导出</b> — 总览、Models、项目列表和单项目详情均可导出当前范围与筛选条件下的 CSV，便于在 Excel、Numbers 或脚本中继续分析。</li>
+      <li><b>历史数据兼容性</b> — 缺少工作目录信息的历史会话会稳定归入“未识别项目”，仍可查看详情与趋势并单独导出。</li>
+      <li><b>构建来源</b> — 本版本制品绑定 Agent-OS 源码 <code>f10bf3ac96d0</code>，完整 revision 与逐文件摘要见 Release provenance。</li>
+    </ul>
+  </section>
+
+  <section class="ver">
+    <div class="ver__head"><span class="ver__tag">v0.3.7</span><span class="ver__date">2026-07-24</span></div>
+    <ul class="ver__list">
+      <li><b>图片附件发送前可确认</b> — 选择、粘贴或拖拽图片后，首屏与已有会话都会显示带文件名和删除按钮的缩略图；普通文件继续使用紧凑胶囊，预览失败也不会影响发送。</li>
+      <li><b>定时任务更自然</b> — 新增每隔 N 分钟或小时的固定间隔计划，手工表单与自然语言创建共用同一调度模型；任务说明从编辑、执行到会话展示都保留原始换行。</li>
+      <li><b>消息渠道成为完整控制面</b> — 飞书、微信、企业微信、Telegram 等已接入渠道可查看和切换自己的会话，创建、查看、编辑、暂停、恢复与确认删除当前工作区任务，并用 /steer 即时修正运行方向。</li>
+      <li><b>运行中调整方向</b> — 对话输入区在 Agent 工作时同时提供调整方向、排队和中断；steer 会安全结束当前回合，在同一会话与原生 Agent 上下文中优先执行修正指令。</li>
+      <li><b>安全迁移与可用性</b> — 设置中可导入导出长期记忆、任务和非敏感 Agent 偏好；API Key、渠道凭据、远程 token、设备私钥和会话正文不会进入备份。</li>
+      <li><b>发布重跑更可靠</b> — 同一源码版本的公开 Release 重跑只复用并校验单个 aggregate manifest，随后继续执行严格的来源、资产集合与 SHA-256 后验。</li>
+      <li><b>构建来源</b> — 本版本制品绑定 Agent-OS 源码 <code>c6672f7b1f0b</code>，完整 revision 与逐文件摘要见 Release provenance。</li>
+    </ul>
+  </section>
+
+  <section class="ver">
+    <div class="ver__head"><span class="ver__tag">v0.3.5</span><span class="ver__date">2026-07-23</span></div>
+    <ul class="ver__list">
+      <li><b>模型列表实时对齐 Agent</b> — Codex、OpenCode、Pi、Cursor 与 Hermes 从各自原生协议、命令或原生缓存读取真实模型；没有可靠枚举接口的 Agent 不再展示猜测列表，可输入 CLI 原生模型 ID。</li>
+      <li><b>原生思考级别</b> — Codex、Claude、OpenCode 与 Pi 的思考级别来自当前模型元数据或当前 CLI 帮助，并通过各 Agent 的原生参数启动；对话和 CLI 终端使用同一选择逻辑。</li>
+      <li><b>附件能力精确对齐</b> — Codex 图片、Pi 文件与图片、Hermes 单图等能力按 Agent 与当前模型取交集；首条消息和已有会话均支持选择、粘贴与拖放，不支持的类型或数量会在启动 Agent 前明确拒绝。</li>
+      <li><b>远程协议与可靠性</b> — 远程 Runtime 返回自身模型目录和结构化附件能力，协议版本升级以阻止旧节点误解析；本地附件到远程节点的上传协议完成前继续安全禁用。</li>
+      <li><b>构建来源</b> — 本版本制品绑定 Agent-OS 源码 <code>a1aac29239d0</code>，完整 revision 与逐文件摘要见 Release provenance。</li>
+    </ul>
+  </section>
+
+  <section class="ver">
+    <div class="ver__head"><span class="ver__tag">v0.3.4</span><span class="ver__date">2026-07-23</span></div>
+    <ul class="ver__list">
+      <li><b>Windows 自动更新恢复</b> — 修复 Windows 10 上从 0.3.0、0.3.2 等版本升级时，进度完成后因只读文件句柄执行 fsync 报 EPERM、无法进入安装步骤的问题。</li>
+      <li><b>下载安全门禁保持不变</b> — 更新包仍须通过 HTTPS、bytes 与 GitHub SHA-256 校验，并在 fsync 成功后才原子提升；真实持久化失败仍会清理临时文件并拒绝安装。</li>
+      <li><b>构建来源</b> — 本版本制品绑定 Agent-OS 源码 <code>fcc8e1f78778</code>，完整 revision 与逐文件摘要见 Release provenance。</li>
+    </ul>
+  </section>
+
+  <section class="ver">
+    <div class="ver__head"><span class="ver__tag">v0.3.3</span><span class="ver__date">2026-07-23</span></div>
+    <ul class="ver__list">
+      <li><b>会话标题来源统一</b> — 移除 renderer、消息渠道与 runtime 之间的重复改名竞争；聊天任务被 runtime 接受后即以真实 prompt 定稿，用户手动改名不会被后续回合覆盖。</li>
+      <li><b>CLI 标题更可靠、更安全</b> — 不再从 PTY 原始按键推断标题，避免 IME 分片、控制序列和敏感命令造成截断或凭据泄漏；native transcript 就绪后再生成任务级标题。</li>
+      <li><b>历史标题自动修复</b> — 识别项目占位名、默认 session 名、注入上下文和序列化 transcript；旧聊天会话从 SQLite 首条真实用户消息幂等恢复，标题中的 password、token、API key 等值会被遮罩。</li>
+      <li><b>全界面一致命名</b> — 会话/CLI 侧栏、工作台和聊天页头、标签页、总览、归档及搜索统一使用共享标题投影；CLI 产品名也统一为 Claude Code、Gemini CLI、Cursor Agent、Hermes Agent 等正式名称。</li>
+      <li><b>构建来源</b> — 本版本制品绑定 Agent-OS 源码 <code>0f1d88b0681f</code>，完整 revision 与逐文件摘要见 Release provenance。</li>
+    </ul>
+  </section>
+
+  <section class="ver">
+    <div class="ver__head"><span class="ver__tag">v0.3.2</span><span class="ver__date">2026-07-22</span></div>
+    <ul class="ver__list">
+      <li><b>执行过程连续流归并</b> — 同一会话、同一回合内相邻的思考或文本 delta 按原文连续展示，不再把“未完成”等一句话从任意流片段边界拆开。</li>
+      <li><b>语义边界保持清晰</b> — 工具调用、工具结果、权限请求、错误以及跨回合事件仍保持独立过程节点，兼顾可读性与执行审计。</li>
+      <li><b>历史记录即时兼容</b> — 归并发生在共享任务投影层，无需迁移 SQLite 数据；已有任务运行记录打开后即可获得新的连续展示效果。</li>
+      <li><b>构建来源</b> — 本版本制品绑定 Agent-OS 源码 <code>87907abec348</code>，完整 revision 与逐文件摘要见 Release provenance。</li>
+    </ul>
+  </section>
+
+  <section class="ver">
+    <div class="ver__head"><span class="ver__tag">v0.3.1</span><span class="ver__date">2026-07-22</span></div>
+    <ul class="ver__list">
+      <li><b>多平台消息通道</b> — 飞书改为端到端健康状态；个人微信、企业微信、Telegram 与 WhatsApp 使用独立 transport、接入流程、访问控制和错误状态。</li>
+      <li><b>语义定时与任务状态</b> — 支持“先说今晚 9 点、再补任务内容”的两轮创建；看板卡片、最近更新与详情统一使用工作流状态，确认后不再残留待确认。</li>
+      <li><b>产品可运营性</b> — 新增基础运营 CLI、分步功能引导、关于页版本目录、崩溃诊断与恢复入口，并接入经过隐私白名单约束的 Mixpanel Full 分析。</li>
+      <li><b>会话与渲染可靠性</b> — 收口会话级缓存生命周期，增强流式 Markdown、未闭合代码围栏和严格模式下的稳定渲染，避免异常内容导致空白。</li>
+      <li><b>远程节点与同源发布</b> — 统一受托管设备运行状态与远程 Agent 选择；五个平台继续由原生 runner 构建，并以 provenance、逐文件摘要和 draft 晋升门禁保证源码与制品同源。</li>
+      <li><b>构建来源</b> — 本版本制品绑定 Agent-OS 源码 <code>fb3cf5c8b8af</code>，完整 revision 与逐文件摘要见 Release provenance。</li>
+    </ul>
+  </section>
+
+  <section class="ver">
+    <div class="ver__head"><span class="ver__tag">v0.3.0</span><span class="ver__date">2026-07-19</span></div>
+    <ul class="ver__list">
+      <li><b>五平台消息通道</b> — 飞书不再把传输连接误报为可用；个人微信、企业微信、Telegram 与 WhatsApp 使用各自独立 transport、接入流程、访问控制和错误状态。</li>
+      <li><b>远程节点真实验收</b> — Runtime protocol 升至 8，主控只有完成协议、真实 PTY 探针和 Agent 发现后才返回 node-adopted；安装与升级以该确认作为成功边界。</li>
+      <li><b>一键安装与升级回滚</b> — 接入命令先验证桌面端锚定的脚本 SHA-256；安装和 agentos-cli update 均使用完整 stage、固定 Node、全文件校验、原子提升与失败恢复。</li>
+      <li><b>同源发布事务</b> — 五个平台由原生 runner 同时生成桌面和节点制品；Release 先进入私有 draft，远端 exact asset set、bytes 与 SHA-256 全部一致后才晋升 Latest。</li>
+      <li><b>桌面更新完整性</b> — 更新器识别 x64、x86_64、amd64 与 arm64、aarch64 架构别名，禁止异构 fallback，并在安装前验证 GitHub asset bytes 与 SHA-256 digest。</li>
+      <li><b>构建来源</b> — 本版本制品绑定 Agent-OS 源码 <code>c172f0fd57cb</code>，完整 revision 与逐文件摘要见 Release provenance。</li>
+    </ul>
+  </section>
+
+  <section class="ver">
+    <div class="ver__head"><span class="ver__tag">v0.2.9</span><span class="ver__date">2026-07-18</span></div>
+    <ul class="ver__list">
+      <li><b>任务 fallback 可用</b> — daemon 暂时不可用时，进程内 Runtime 仍可创建、编辑、删除和运行任务，不再提示“当前 Runtime Host 不支持任务调度”。</li>
+      <li><b>周期调度互斥</b> — daemon 与 fallback 共用同一任务仓储，并在切换时严格交接调度器，避免丢任务或重复触发。</li>
+      <li><b>桌面单实例</b> — 重复启动只聚焦已有窗口，不再让不同版本争抢同一个 daemon。</li>
+      <li><b>任务详情闭环</b> — 同一任务集中展示多次运行记录、执行阶段与输出事件，并提供独立“交付物”页签；结果进入 Review 后可打开关联会话，再由用户确认 Done。</li>
+      <li><b>飞书消息渠道</b> — 设置页新增消息渠道中心，飞书机器人通过长连接把 IM 消息转交给本机 Agent OS，并显示连接、消息、闭环与错误状态；其他平台按各自状态展示。</li>
+      <li><b>远程托管中心</b> — 本机可作为主控选择可访问网卡，为不同平台生成节点接入命令，并集中检查节点在线状态、版本兼容与 CLI 可用性。</li>
+      <li><b>完整发布验收</b> — 全量 350 项测试、41 项任务专项测试及安装包真机任务/Cron/单实例验证通过；19 个资产按源码 <code>4a51dc8</code> 重建并完成 SHA-256 核验。</li>
+    </ul>
+  </section>
+
+  <section class="ver">
+    <div class="ver__head"><span class="ver__tag">v0.2.8</span><span class="ver__date">2026-07-18</span></div>
+    <ul class="ver__list">
+      <li><b>Agent 任务看板</b> — 新增 Todo、In Progress、Review、Done 四列工作流，可创建任务、指定 Runtime Host / Agent CLI / 模型 / 工作区并跟踪执行状态。</li>
+      <li><b>完整定时任务系统</b> — 支持一次性计划与 Cron、时区、错过执行策略、暂停 / 恢复 / 立即运行，并保留独立运行记录。</li>
+      <li><b>后台可靠执行</b> — 计划由 Runtime daemon 持有；关闭桌面窗口后仍可运行，同一工作区自动串行，异常退出任务可恢复为中断状态。</li>
+      <li><b>真实会话联动</b> — 任务执行创建真实 Agent 会话，成功后自动进入 Review，由用户人工确认 Done，也可从任务记录直接打开会话。</li>
+      <li><b>重度历史库启动修复</b> — 存量原生会话回填改为后台执行，并将 transcript 元数据读取并发限制为 8，避免近千份 Claude / Pi 记录同时打开导致窗口迟迟不出现。</li>
+      <li><b>远程节点制品修复</b> — 修复 macOS 节点包中 <code>node-pty</code> 辅助程序缺少执行权限导致的 <code>posix_spawnp failed</code>。</li>
+      <li><b>最终制品刷新</b> — 19 个 Release 资产已按源码提交 <code>0368955</code> 完成最终重建与 SHA-256 核验，桌面首页同步展示最终构建状态。</li>
+      <li><b>产品网站内容校准</b> — 官网按当前左侧导航重写产品能力，新增完整使用指南和 7 个桌面制品直达下载，并明确 CLI 登录、本地数据与模型服务边界。</li>
+    </ul>
+  </section>
+
+  <section class="ver">
+    <div class="ver__head"><span class="ver__tag">v0.2.7</span><span class="ver__date">2026-07-16</span></div>
+    <ul class="ver__list">
+      <li><b>连续输入不丢失</b> — 活动回合运行期间新增持久 FIFO 队列，支持附件、取消和 daemon 重启恢复，回合结束后按顺序自动发送。</li>
+      <li><b>会话滚动稳定</b> — 用户上滚阅读历史时不再被流式输出强制拉回底部；新增“跳到最新”，切换会话后恢复正确跟随状态。</li>
+      <li><b>Claude 输出可靠性</b> — 兼容 assistant 消息快照，重试过程不再被误判为空闲，并保留最终失败的真实原因。</li>
+      <li><b>Claude 附件修正</b> — 本地附件不再误用远端资源 <code>--file</code>，改由路径引用配合 Read 工具读取。</li>
+      <li><b>远程节点协议升级</b> — runtime protocol 升级到 5，节点重连时同步刷新宿主版本与协议版本。</li>
+    </ul>
+  </section>
+
+  <section class="ver">
+    <div class="ver__head"><span class="ver__tag">v0.2.6</span><span class="ver__date">2026-07-03</span></div>
+    <ul class="ver__list">
+      <li><b>会话内 Ctrl/Cmd+F 搜索</b> — 活跃会话与历史详情中原地高亮所有匹配、当前匹配深色聚焦；Enter 下一个、Shift+Enter 上一个、Esc 关闭，带 N/M 计数。</li>
+      <li><b>思考 / 工具过程交互重构</b> — 运行中默认展开、流式内容自动撑高度，整个回合彻底完成后才折叠；过程步骤（thinking / tool）运行中展开；消息头像与顶部状态旁增加运行三点指示。</li>
+      <li><b>历史 / 记忆会话接力</b> — 存储中的历史会话详情页接入「接力给…」，复用同一份目标 Agent 选择菜单（本机 / 远程分组 + 模型选择）。</li>
+      <li><b>多 CLI 附件支持</b> — Claude / Codex 等支持附件的 CLI 可在对话里粘贴、拖拽上传文件（SPEC-038）。</li>
+      <li><b>浮层窄窗自适应</b> — Agent 选择等下拉浮层在窗口过窄时自动避让视口边界，不再被右侧裁切。</li>
+    </ul>
+  </section>
+
+  <section class="ver">
+    <div class="ver__head"><span class="ver__tag">v0.2.5</span><span class="ver__date">2026-06-30</span></div>
+    <ul class="ver__list">
+      <li>远程工作区选择与节点引导流程优化（SPEC-032）。</li>
+      <li>恢复 Windows / Linux 安装包的交叉打包与发布。</li>
+    </ul>
+  </section>
+
+  <section class="ver">
+    <div class="ver__head"><span class="ver__tag">v0.2.4</span><span class="ver__date">2026-06-29</span></div>
+    <ul class="ver__list">
+      <li>跨 Agent 接力（Relay）关系链路与标准上下文包生成（SPEC-017）。</li>
+      <li>会话消息顺序与标题改名的修复。</li>
+    </ul>
+  </section>
+
+  <section class="ver">
+    <div class="ver__head"><span class="ver__tag">v0.2.3</span><span class="ver__date">2026-06-22</span></div>
+    <ul class="ver__list">
+      <li>Pi 角色解析与索引版本门控修复。</li>
+      <li>会话真实标题（SPEC-035）。</li>
+    </ul>
+  </section>
+
+  </div></div>
+</main>
+
+<footer><div class="wrap footer"><div class="footer-brand"><img src="./agentos-icon.png" alt="" width="25" height="25" />Agent OS · AIUtil 产品</div><div class="footer-links"><a href="https://aiutil.com">AIUtil</a><a href="https://aiutil.com/about">关于</a><a href="https://agentos.aiutil.com">Agent OS</a><a href="https://radar.aiutil.com">前沿论文</a><a href="https://github-research.aiutil.com">GitHub 趋势</a><a href="https://nimbus.aiutil.com">Nimbus</a><a href="https://visionai.aiutil.com">VisionAI</a><a href="https://github.com/aiutil/agent-os">源码</a><span>Apache-2.0</span></div></div></footer>
+</body>
+</html>

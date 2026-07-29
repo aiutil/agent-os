@@ -1,0 +1,1 @@
+{"session_id":"hermes-session-100","session_start":"2026-06-01T08:00:00.000Z","last_updated":"2026-06-01T08:02:00.000Z","workspace":"/workspace/hermes","messages":[{"role":"user","content":"检查服务状态","timestamp":"2026-06-01T08:00:00.000Z"},{"role":"assistant","content":"服务运行正常","timestamp":"2026-06-01T08:02:00.000Z"}]}

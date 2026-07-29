@@ -1,0 +1,183 @@
+/* 全局基础样式（SPEC-001）。 */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  color: var(--text-primary);
+  background: var(--bg-shell);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow: hidden;
+}
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+}
+
+input {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+code,
+.mono {
+  font-family: var(--font-mono);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-medium);
+  border-radius: var(--radius-full);
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+  background-clip: content-box;
+}
+
+/* 应用三栏壳体 */
+.app-shell {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  background: var(--bg-shell);
+  overflow: hidden;
+}
+
+.app-content-surface {
+  --titlebar-height: 0px;
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  /* 内容区平铺贴边：tab 直接贴顶，无圆角/无悬浮阴影（浮起效果改放到左侧 dock 面板）。 */
+  margin: 0;
+  overflow: hidden;
+  background: var(--bg-surface);
+}
+
+.app-page-content {
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  background: var(--bg-surface);
+}
+
+.app-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg-surface);
+}
+
+/* 通用空态 */
+.empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  color: var(--text-secondary);
+  text-align: center;
+  padding: var(--space-8);
+}
+
+.empty-state__title {
+  font-family: var(--font-serif);
+  font-size: var(--text-2xl);
+  color: var(--text-primary);
+}
+
+.empty-state__hint {
+  font-size: var(--text-base);
+  color: var(--text-secondary);
+  max-width: 420px;
+}
+
+/* 通用按钮 */
+/* 旧 .btn 与共享基元 .ui-btn 对齐为同一视觉家族（SPEC-005 v2 一致性）。 */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-instant) ease-out,
+    border-color var(--dur-instant) ease-out,
+    color var(--dur-instant) ease-out,
+    opacity var(--dur-instant) ease-out;
+}
+.btn--primary {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+.btn--primary:hover {
+  background: var(--accent-hover);
+}
+.btn--ghost {
+  color: var(--text-secondary);
+  border: var(--border-width) solid var(--border-medium);
+  background: var(--bg-card);
+}
+.btn--ghost:hover {
+  background: var(--bg-hover);
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button:focus-visible,
+[role="button"]:focus-visible {
+  outline: var(--border-width) solid var(--border-strong);
+  outline-offset: var(--focus-inset);
+}
+
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+select {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  cursor: pointer;
+}

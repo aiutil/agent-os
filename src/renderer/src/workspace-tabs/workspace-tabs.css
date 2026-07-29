@@ -1,0 +1,138 @@
+/* 工作区 tab 贴顶（点 7）*/
+.workspace-tabs {
+  height: var(--workspace-tabs-height);
+  flex: 0 0 var(--workspace-tabs-height);
+  min-width: 0;
+  display: flex;
+  align-items: stretch;
+  padding: 0 var(--space-2);
+  background: var(--bg-surface);
+  -webkit-app-region: drag;
+}
+
+.workspace-tab,
+.workspace-tabs__new {
+  -webkit-app-region: no-drag;
+}
+
+.workspace-tabs__scroller {
+  min-width: 0;
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.workspace-tabs__scroller::-webkit-scrollbar {
+  display: none;
+}
+
+.workspace-tabs__empty {
+  align-self: center;
+  padding: 0 var(--space-2);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}
+
+.workspace-tab {
+  position: relative;
+  width: clamp(80px, 12vw, 160px);
+  height: 26px;
+  flex: 0 0 clamp(80px, 12vw, 160px);
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0 var(--space-2);
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  text-align: left;
+  font-size: var(--text-sm);
+  transition:
+    background-color var(--dur-instant) ease-out,
+    border-color var(--dur-instant) ease-out,
+    color var(--dur-instant) ease-out;
+}
+
+.workspace-tab:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* 选中：极浅底色 + 细边框，轻微区分不强调 */
+.workspace-tab.is-active {
+  background: var(--bg-panel);
+  border-color: var(--border-subtle);
+  color: var(--text-primary);
+}
+
+.workspace-tab__glyph {
+  width: 13px;
+  height: 13px;
+  flex: 0 0 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  opacity: 0.75;
+}
+
+.workspace-tab__title {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-sm);
+  font-weight: 450;
+}
+
+.workspace-tab__close {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-xs);
+  color: var(--text-muted);
+  opacity: 0;
+  transition:
+    opacity var(--dur-instant) ease-out,
+    background-color var(--dur-instant) ease-out;
+}
+
+.workspace-tab:hover .workspace-tab__close,
+.workspace-tab.is-active .workspace-tab__close {
+  opacity: 1;
+}
+
+.workspace-tab__close:hover {
+  background: var(--bg-active);
+  color: var(--text-primary);
+}
+
+.workspace-tabs__new {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  align-self: center;
+  margin: 0 0 0 var(--space-1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+}
+
+.workspace-tabs__new:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}

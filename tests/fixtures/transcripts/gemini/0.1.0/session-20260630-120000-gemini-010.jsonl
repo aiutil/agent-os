@@ -1,0 +1,1 @@
+{"$set":{"sessionId":"gemini-session-010","summary":"检查远程目录","startTime":"2026-06-30T12:00:00.000Z","messages":[{"type":"user","content":"检查远程目录"},{"type":"model","content":"远程目录可以列出。"}]}}

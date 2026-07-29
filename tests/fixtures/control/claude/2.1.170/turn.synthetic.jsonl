@@ -1,0 +1,7 @@
+{"type":"system","subtype":"init","cwd":"/tmp/spec-016","session_id":"00000000-0000-4000-8000-000000000016","tools":["Read","Edit","Bash"],"model":"claude-sonnet-4-5","permissionMode":"default","claude_code_version":"2.1.170"}
+{"type":"stream_event","event":{"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"正在检查"}}}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"tool_use","id":"toolu_01","name":"Read","input":{"file_path":"src/App.tsx"}}]}}
+{"type":"user","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_01","content":"export function App() {}","is_error":false}]}}
+{"type":"result","subtype":"success","is_error":false,"duration_ms":1200,"duration_api_ms":900,"num_turns":1,"result":"完成","session_id":"00000000-0000-4000-8000-000000000016","total_cost_usd":0.0012}
+{"type":"system","subtype":"api_retry","attempt":1,"max_retries":10,"retry_delay_ms":500,"error":"unknown","session_id":"00000000-0000-4000-8000-000000000016"}
+{"type":"future_event","payload":{"value":1}}

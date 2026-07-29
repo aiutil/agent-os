@@ -1,0 +1,6 @@
+{"type":"thread.started","thread_id":"th_abc"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"type":"agent_message","text":"正在检查目录"}}
+{"type":"item.completed","item":{"type":"command_execution","id":"cmd_1","command":"ls -la","aggregated_output":"file.txt","exit_code":0,"status":"completed"}}
+{"type":"turn.completed","usage":{"input_tokens":10,"output_tokens":20}}
+{"type":"future_codex_event","data":1}

@@ -1,0 +1,5 @@
+{"type":"system","subtype":"init","session_id":"cur_1","model":"sonnet-4"}
+{"type":"assistant","timestamp_ms":1,"message":{"content":[{"type":"text","text":"你好"}]}}
+{"type":"assistant","timestamp_ms":2,"message":{"content":[{"type":"text","text":"，世界"}]}}
+{"type":"assistant","message":{"content":[{"type":"text","text":"你好，世界"}]}}
+{"type":"result","usage":{"inputTokens":5}}

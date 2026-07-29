@@ -1,0 +1,8 @@
+{"timestamp":"2026-06-12T01:00:00.000Z","type":"session_meta","payload":{"id":"22222222-2222-4222-8222-222222222222","cwd":"/workspace/demo","timestamp":"2026-06-12T01:00:00.000Z","cli_version":"0.137.0"}}
+{"timestamp":"2026-06-12T01:00:01.000Z","type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"Fix the parser"}]}}
+{"timestamp":"2026-06-12T01:00:02.000Z","type":"response_item","payload":{"type":"message","role":"assistant","content":[{"type":"output_text","text":"I will add a test first."}]}}
+{"timestamp":"2026-06-12T01:00:03.000Z","type":"response_item","payload":{"type":"function_call","name":"exec_command","arguments":"{\"cmd\":\"npm test\"}","call_id":"call-1"}}
+{"timestamp":"2026-06-12T01:00:04.000Z","type":"response_item","payload":{"type":"function_call_output","call_id":"call-1","output":"tests passed"}}
+{"timestamp":"2026-06-12T01:00:05.000Z","type":"event_msg","payload":{"type":"agent_message","message":"duplicate display event"}}
+{"timestamp":"2026-06-12T01:00:06.000Z","type":"future_record","payload":{"type":"new_shape"}}
+{broken synthetic json
