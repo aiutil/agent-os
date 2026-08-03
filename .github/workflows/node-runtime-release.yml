@@ -238,7 +238,7 @@ jobs:
       - name: Stage verified canonical private Release draft
         if: ${{ inputs.publish }}
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.CANONICAL_RELEASE_TOKEN }}
         run: |
           node scripts/release-gh.cjs --repo aiutil/agent-os --stage-only
       - name: Stage byte-identical legacy migration draft
@@ -249,7 +249,7 @@ jobs:
       - name: Verify canonical and legacy drafts are byte-identical
         if: ${{ inputs.publish }}
         env:
-          CANONICAL_GH_TOKEN: ${{ github.token }}
+          CANONICAL_GH_TOKEN: ${{ secrets.CANONICAL_RELEASE_TOKEN }}
           LEGACY_GH_TOKEN: ${{ secrets.LEGACY_RELEASE_TOKEN }}
         run: node scripts/verify-release-mirror.cjs --draft
       - uses: actions/cache/save@v4
@@ -275,7 +275,7 @@ jobs:
         id: promote
         if: ${{ inputs.publish }}
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.CANONICAL_RELEASE_TOKEN }}
         run: node scripts/release-gh.cjs --repo aiutil/agent-os --promote-only
       - name: Verify public version surfaces after publish
         if: ${{ inputs.publish }}
@@ -288,7 +288,7 @@ jobs:
       - name: Verify five public node assets after publish
         if: ${{ inputs.publish }}
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.CANONICAL_RELEASE_TOKEN }}
         run: npm run verify:node-release-public
       - name: Promote legacy migration bridge after canonical verification
         if: ${{ inputs.publish }}
@@ -298,6 +298,6 @@ jobs:
       - name: Verify public canonical and legacy releases are byte-identical
         if: ${{ inputs.publish }}
         env:
-          CANONICAL_GH_TOKEN: ${{ github.token }}
+          CANONICAL_GH_TOKEN: ${{ secrets.CANONICAL_RELEASE_TOKEN }}
           LEGACY_GH_TOKEN: ${{ secrets.LEGACY_RELEASE_TOKEN }}
         run: node scripts/verify-release-mirror.cjs
