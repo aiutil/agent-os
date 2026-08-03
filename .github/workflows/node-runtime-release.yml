@@ -68,7 +68,7 @@ jobs:
       - run: npm ci --legacy-peer-deps
       - run: npm run build
       - run: node scripts/build-node-dist.cjs
-      - name: Require fixed self-signed macOS code-signing credentials
+      - name: Prepare fixed self-signed macOS code-signing credentials
         if: ${{ startsWith(matrix.platform, 'mac-') }}
         env:
           CSC_LINK: ${{ secrets.MACOS_CSC_LINK }}
@@ -83,26 +83,44 @@ jobs:
           signing_keychain="$RUNNER_TEMP/agentos-self-signing.keychain-db"
           signing_p12="$RUNNER_TEMP/agentos-self-signing.p12"
           signing_cert="$RUNNER_TEMP/agentos-self-signing.pem"
+          keychain_password="$(openssl rand -hex 24)"
           echo "CSC_KEYCHAIN=$signing_keychain" >> "$GITHUB_ENV"
           echo "CSC_P12_PATH=$signing_p12" >> "$GITHUB_ENV"
           echo "CSC_CERT_PATH=$signing_cert" >> "$GITHUB_ENV"
-          keychain_password="$(openssl rand -hex 24)"
+          echo "CSC_KEYCHAIN_PASSWORD=$keychain_password" >> "$GITHUB_ENV"
           printf '%s' "$CSC_LINK" | base64 -D > "$signing_p12"
-          echo "Creating isolated signing keychain"
-          security create-keychain -p "$keychain_password" "$signing_keychain"
-          security unlock-keychain -p "$keychain_password" "$signing_keychain"
-          security set-keychain-settings "$signing_keychain"
-          security list-keychains -d user -s "$signing_keychain"
-          echo "Importing fixed self-signed identity"
-          security import "$signing_p12" -k "$signing_keychain" -P "$CSC_KEY_PASSWORD" -T /usr/bin/codesign
-          security find-certificate -c "Agent OS Self-Signed" -p "$signing_keychain" > "$signing_cert"
-          echo "Trusting identity in isolated keychain"
-          security add-trusted-cert -r trustRoot -k "$signing_keychain" "$signing_cert"
-          echo "Granting codesign key partition access"
-          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$keychain_password" "$signing_keychain"
-          echo "Validating fixed signing identity"
-          security find-identity -v -p codesigning "$signing_keychain" | grep '"Agent OS Self-Signed"'
           echo "CSC_NAME=Agent OS Self-Signed" >> "$GITHUB_ENV"
+      - name: Create isolated macOS signing keychain
+        if: ${{ startsWith(matrix.platform, 'mac-') }}
+        shell: bash
+        run: |
+          security create-keychain -p "$CSC_KEYCHAIN_PASSWORD" "$CSC_KEYCHAIN"
+          security unlock-keychain -p "$CSC_KEYCHAIN_PASSWORD" "$CSC_KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$CSC_KEYCHAIN"
+          security list-keychains -d user -s "$CSC_KEYCHAIN"
+      - name: Import fixed self-signed macOS identity
+        if: ${{ startsWith(matrix.platform, 'mac-') }}
+        shell: bash
+        env:
+          CSC_KEY_PASSWORD: ${{ secrets.MACOS_CSC_KEY_PASSWORD }}
+        run: |
+          security import "$CSC_P12_PATH" -k "$CSC_KEYCHAIN" -P "$CSC_KEY_PASSWORD" -T /usr/bin/codesign
+          security find-certificate -c "Agent OS Self-Signed" -p "$CSC_KEYCHAIN" > "$CSC_CERT_PATH"
+      - name: Trust fixed identity in isolated macOS keychain
+        if: ${{ startsWith(matrix.platform, 'mac-') }}
+        shell: bash
+        run: |
+          security add-trusted-cert -r trustRoot -k "$CSC_KEYCHAIN" "$CSC_CERT_PATH"
+      - name: Grant macOS codesign key partition access
+        if: ${{ startsWith(matrix.platform, 'mac-') }}
+        shell: bash
+        run: |
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$CSC_KEYCHAIN_PASSWORD" "$CSC_KEYCHAIN"
+      - name: Validate fixed macOS signing identity
+        if: ${{ startsWith(matrix.platform, 'mac-') }}
+        shell: bash
+        run: |
+          security find-identity -v -p codesigning "$CSC_KEYCHAIN" | grep '"Agent OS Self-Signed"'
       - name: Build native desktop installer
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: ${{ startsWith(matrix.platform, 'mac-') && 'true' || 'false' }}
