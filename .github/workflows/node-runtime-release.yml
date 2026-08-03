@@ -245,6 +245,7 @@ jobs:
         if: ${{ inputs.publish }}
         env:
           GH_TOKEN: ${{ secrets.LEGACY_RELEASE_TOKEN }}
+          AGENTOS_REUSE_EXISTING_NODE_MANIFEST: 'true'
         run: node scripts/release-gh.cjs --repo lohasle/agent-life --stage-only
       - name: Verify canonical and legacy drafts are byte-identical
         if: ${{ inputs.publish }}
