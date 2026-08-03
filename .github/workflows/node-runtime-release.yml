@@ -108,12 +108,16 @@ jobs:
         run: |
           security import "$CSC_P12_PATH" -k "$CSC_KEYCHAIN" -P "$CSC_KEY_PASSWORD" -T /usr/bin/codesign
           security find-certificate -c "Agent OS Self-Signed" -p "$CSC_KEYCHAIN" > "$CSC_CERT_PATH"
-      - name: Import fixed identity trust settings on ephemeral macOS runner
+      - name: Generate fixed identity trust settings on ephemeral macOS runner
         if: ${{ startsWith(matrix.platform, 'mac-') }}
         shell: bash
         run: |
           security add-trusted-cert -p codeSign -r trustRoot -k "$CSC_KEYCHAIN" \
             -o "$CSC_TRUST_SETTINGS_PATH" "$CSC_CERT_PATH"
+      - name: Import fixed identity trust settings on ephemeral macOS runner
+        if: ${{ startsWith(matrix.platform, 'mac-') }}
+        shell: bash
+        run: |
           security trust-settings-import "$CSC_TRUST_SETTINGS_PATH"
       - name: Grant macOS codesign key partition access
         if: ${{ startsWith(matrix.platform, 'mac-') }}
