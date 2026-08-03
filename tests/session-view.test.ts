@@ -102,7 +102,10 @@ describe('buildSessionViews', () => {
   })
   it('归档会话不进入工作台列表，但其持久化数据可由仓储保留', () => {
     const views = buildSessionViews(
-      [session({ id: 'active' }), session({ id: 'archived', archivedAt: '2026-06-23T00:00:00.000Z' })],
+      [
+        session({ id: 'active' }),
+        session({ id: 'archived', archivedAt: '2026-06-23T00:00:00.000Z' })
+      ],
       []
     )
     expect(views.map((view) => view.id)).toEqual(['active'])
@@ -125,5 +128,23 @@ describe('groupByProject', () => {
     expect(groups).toHaveLength(2)
     expect(groups[0].workspacePath).toBe('/a/new')
     expect(groups[0].projectName).toBe('new')
+  })
+
+  it('相同路径的本地与远程会话按运行节点隔离', () => {
+    const views = buildSessionViews(
+      [
+        session({ id: 'local', workspacePath: '/workspace/lohas' }),
+        session({ id: 'remote-a', workspacePath: '/workspace/lohas', runtimeHostId: 'node-a' }),
+        session({ id: 'remote-b', workspacePath: '/workspace/lohas', runtimeHostId: 'node-b' })
+      ],
+      []
+    )
+
+    const groups = groupByProject(views)
+    expect(groups).toHaveLength(3)
+    expect(groups.map((group) => group.runtimeHostId)).toEqual(
+      expect.arrayContaining([undefined, 'node-a', 'node-b'])
+    )
+    expect(groups.every((group) => group.projectName === 'lohas')).toBe(true)
   })
 })

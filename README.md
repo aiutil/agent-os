@@ -12,7 +12,7 @@ separate product.
 
 ## Current release
 
-Version `0.3.8` provides builds for macOS, Windows, and Linux. Download them
+Version `0.3.9` provides builds for macOS, Windows, and Linux. Download them
 from [GitHub Releases](https://github.com/aiutil/agent-os/releases).
 
 ## Development

@@ -45,7 +45,7 @@
 <header class="site-header">
   <div class="wrap nav-row">
     <a class="brand" href="index.html" aria-label="Agent OS 首页"><img src="./agentos-icon.png" alt="" width="34" height="34" />Agent OS</a>
-    <span class="version">v0.3.8</span>
+    <span class="version">v0.3.9</span>
     <nav class="nav-links" aria-label="主导航"><a href="index.html#product">产品界面</a><a href="guide.html">使用指南</a><a href="index.html#capabilities">核心能力</a></nav>
     <a class="nav-download" href="index.html#download">下载</a>
   </div>
@@ -61,6 +61,16 @@
   </header>
 
   <div class="wrap"><div class="timeline">
+
+  <section class="ver">
+    <div class="ver__head"><span class="ver__tag">v0.3.9</span><span class="ver__date">2026-08-03</span></div>
+    <ul class="ver__list">
+      <li><b>更新地址迁移到 aiutil/agent-os</b> — v0.3.9 同步提供给新旧制品仓的用户，安装后统一从 aiutil/agent-os 检查后续更新。</li>
+      <li><b>macOS 固定自签名</b> — macOS 发布包使用固定自签名证书并验证代码完整性，但未使用 Apple Developer ID、未公证；首次打开如被拦截，请前往“系统设置 → 隐私与安全”点击“仍要打开”（Privacy &amp; Security → Open Anyway）。</li>
+      <li><b>远程运行来源更清楚</b> — CLI 与会话项目列表会在远程项目名称后显示节点名称；本地项目继续保持原有显示。</li>
+      <li><b>构建来源</b> — 本版本制品的完整源码 revision 与逐文件摘要见 Release provenance。</li>
+    </ul>
+  </section>
 
   <section class="ver">
     <div class="ver__head"><span class="ver__tag">v0.3.8</span><span class="ver__date">2026-07-24</span></div>

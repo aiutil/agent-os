@@ -8,6 +8,7 @@ import type {
   WorkbenchSessionView,
   SessionProjectGroup
 } from '@shared/types'
+import { remoteRuntimeHostId, sessionProjectGroupKey } from '@shared/session-origin'
 
 /** PATH basename 作为项目名；根目录回退为完整路径。 */
 export function projectNameOf(workspacePath: string): string {
@@ -63,26 +64,33 @@ export function buildSessionViews(
       .map((session) =>
         buildSessionView(
           session,
-          session.terminalSessionId ? byId.get(session.terminalSessionId) ?? null : null,
+          session.terminalSessionId ? (byId.get(session.terminalSessionId) ?? null) : null,
           canResumeTool(session.toolId)
         )
       )
   )
 }
 
-/** 按工作目录分组，组内和分组均按最近活跃时间倒序。SPEC-031：稳定排序。 */
+/** 按运行节点 + 工作目录分组，组内和分组均按最近活跃时间倒序。 */
 export function groupByProject(views: WorkbenchSessionView[]): SessionProjectGroup[] {
-  const groups = new Map<string, WorkbenchSessionView[]>()
+  const groups = new Map<string, SessionProjectGroup>()
   for (const view of views) {
-    const list = groups.get(view.workspacePath) ?? []
-    list.push(view)
-    groups.set(view.workspacePath, list)
+    const runtimeHostId = remoteRuntimeHostId(view.runtimeHostId)
+    const key = sessionProjectGroupKey(view.workspacePath, runtimeHostId)
+    const group = groups.get(key) ?? {
+      ...(runtimeHostId ? { runtimeHostId } : {}),
+      workspacePath: view.workspacePath,
+      projectName: projectNameOf(view.workspacePath),
+      sessions: []
+    }
+    group.sessions.push(view)
+    groups.set(key, group)
   }
 
-  const result: SessionProjectGroup[] = []
-  for (const [workspacePath, list] of groups) {
-    result.push({ workspacePath, projectName: projectNameOf(workspacePath), sessions: sortSessionViews(list) })
-  }
+  const result = Array.from(groups.values()).map((group) => ({
+    ...group,
+    sessions: sortSessionViews(group.sessions)
+  }))
   result.sort((a, b) => {
     const aLatest = a.sessions[0]?.lastActivityAt ?? ''
     const bLatest = b.sessions[0]?.lastActivityAt ?? ''

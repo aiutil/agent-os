@@ -2,10 +2,15 @@
 // 会话/CLI 模式切换 + 新建（CLI 走弹窗快速启动）+ 按项目分组（首组展开、其余折叠、可滚动）
 // + 固定在底部的活动热力。
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useSessionsStore } from '../../../stores/sessionsStore'
 import { useUiStore } from '../../../stores/uiStore'
-import type { WorkbenchSessionView } from '@shared/types'
+import type { RemoteNodeStatus, WorkbenchSessionView } from '@shared/types'
+import {
+  remoteNodeTipLabel,
+  remoteRuntimeHostId,
+  sessionProjectGroupKey
+} from '@shared/session-origin'
 import { ToolIcon } from '../../../lib/toolIcons'
 import { sessionDisplayTitle } from '../../../lib/sessionTitle'
 import { ActivityHeat } from './ActivityHeat'
@@ -96,6 +101,17 @@ export function ChatSecPanel({
   const rename = useSessionsStore((s) => s.rename)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
+  const [remoteStatuses, setRemoteStatuses] = useState<RemoteNodeStatus[]>([])
+
+  useEffect(() => {
+    void window.agentOs.runtime.remoteNodeStatuses().then(setRemoteStatuses).catch(() => {})
+    return window.agentOs.events.onRemoteNodeStateChanged((status) => {
+      setRemoteStatuses((current) => [
+        ...current.filter((candidate) => candidate.id !== status.id),
+        status
+      ])
+    })
+  }, [])
 
   const startRename = (view: WorkbenchSessionView): void => {
     setEditingId(view.id)
@@ -127,22 +143,32 @@ export function ChatSecPanel({
       return (b.updatedAt ?? '').localeCompare(a.updatedAt ?? '')
     })
 
-  const groups: Array<{ path: string; items: WorkbenchSessionView[] }> = []
+  const groups: Array<{
+    id: string
+    path: string
+    runtimeHostId?: string
+    items: WorkbenchSessionView[]
+  }> = []
   for (const v of list) {
-    const key = v.workspacePath || ''
-    let g = groups.find((x) => x.path === key)
+    const path = v.workspacePath || ''
+    const runtimeHostId = remoteRuntimeHostId(v.runtimeHostId)
+    const id = sessionProjectGroupKey(path, runtimeHostId)
+    let g = groups.find((candidate) => candidate.id === id)
     if (!g) {
-      g = { path: key, items: [] }
+      g = { id, path, ...(runtimeHostId ? { runtimeHostId } : {}), items: [] }
       groups.push(g)
     }
     g.items.push(v)
   }
 
   // 默认首组展开、其余折叠；用户手动切换后以记录为准。搜索时全部展开以暴露所有命中。
-  const isOpen = (path: string, index: number): boolean =>
-    q !== '' ? true : openGroups[path] ?? index === 0
-  const toggle = (path: string, index: number): void =>
-    setOpenGroups((prev) => ({ ...prev, [path]: !(prev[path] ?? index === 0) }))
+  const isOpen = (groupId: string, index: number): boolean =>
+    q !== '' ? true : (openGroups[groupId] ?? index === 0)
+  const toggle = (groupId: string, index: number): void =>
+    setOpenGroups((prev) => ({
+      ...prev,
+      [groupId]: !(prev[groupId] ?? index === 0)
+    }))
 
   return (
     <>
@@ -187,14 +213,29 @@ export function ChatSecPanel({
           </div>
         )}
         {groups.map((g, index) => {
-          const open = isOpen(g.path, index)
+          const open = isOpen(g.id, index)
+          const nodeLabel = remoteNodeTipLabel(
+            g.runtimeHostId,
+            remoteStatuses,
+            t('chat.node.remoteNode')
+          )
           return (
-            <div key={g.path || '~'}>
-              <button className="chat-folder" onClick={() => toggle(g.path, index)}>
+            <div key={g.id}>
+              <button className="chat-folder" onClick={() => toggle(g.id, index)}>
                 <span className="chat-folder__icon">
                   <IcFolder />
                 </span>
-                <span className="chat-folder__name">{g.path ? basename(g.path) : t('chat.folder.home')}</span>
+                <span className="chat-folder__name">
+                  {g.path ? basename(g.path) : t('chat.folder.home')}
+                </span>
+                {nodeLabel ? (
+                  <span
+                    className="chat-folder__node-tip"
+                    title={`${t('chat.node.remoteNode')}：${nodeLabel}`}
+                  >
+                    {nodeLabel}
+                  </span>
+                ) : null}
                 <span className={`chat-folder__chevron ${open ? 'is-open' : ''}`}>
                   <svg width="9" height="9" viewBox="0 0 9 9" fill="none">
                     <path d="M2.5 1.5l3 3-3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />

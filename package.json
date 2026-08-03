@@ -1,6 +1,6 @@
 {
   "name": "agent-os",
-  "version": "0.3.8",
+  "version": "0.3.9",
   "description": "Agent OS v2 — 个人 AI 超级工作台：统一接入主流 AI CLI，沉淀记忆、知识与成长",
   "homepage": "https://agentos.aiutil.com/",
   "author": {
@@ -92,7 +92,6 @@
     "npmRebuild": false,
     "appId": "com.lohas.agent-life",
     "productName": "Agent OS",
-    "afterPack": "build/afterpack-adhoc-sign.cjs",
     "afterAllArtifactBuild": "build/after-all-artifact-build.cjs",
     "directories": {
       "output": "release"
@@ -110,6 +109,9 @@
     "mac": {
       "category": "public.app-category.developer-tools",
       "icon": "assets/icons/icon.icns",
+      "hardenedRuntime": true,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
       "extendInfo": {
         "NSLocalNetworkUsageDescription": "Agent OS uses the local network to discover and securely pair with nearby Agent OS devices.",
         "NSBonjourServices": [

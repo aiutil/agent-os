@@ -1,14 +1,15 @@
 #!/usr/bin/env node
 /* eslint-disable @typescript-eslint/no-require-imports */
 /* global require, process, __dirname, console */
-// 把 release/ 下当前版本的安装包（制品）发布到 github.com/aiutil/agent-os。
+// 把 release/ 下当前版本的安装包（制品）发布到 canonical 仓库，或发布到受限的迁移桥仓库。
 // 仅上传制品，不上传源码。既可本地手动执行，也由 node-runtime-release workflow 在五平台产包汇总后调用。
-// 要求 gh 当前登录账号（或 GH_TOKEN 对应账号）对 aiutil/agent-os 有写权限。
+// 要求 gh 当前登录账号（或 GH_TOKEN 对应账号）对目标仓库有写权限。
 //
 // 用法：
 //   npm run pack:mac           # 先在对应平台打包（mac 产 dmg / win 产 exe / linux 产 AppImage+deb）
 //   node scripts/release-gh.cjs   # 创建/更新 v<version> release 并上传当前平台已有制品
 //   node scripts/release-gh.cjs --dry-run # 只做制品/清单门禁，绝不写 GitHub
+//   node scripts/release-gh.cjs --repo lohasle/agent-life --stage-only # 仅用于迁移桥
 //   node scripts/release-gh.cjs --notes "本次更新说明"   # 自定义说明（默认 --generate-notes）
 
 const fs = require('node:fs')
@@ -33,11 +34,24 @@ const {
 } = require('./published-release-manifest.cjs')
 
 const ROOT = path.resolve(__dirname, '..')
-const REPO = 'aiutil/agent-os'
+const CANONICAL_REPO = 'aiutil/agent-os'
+const LEGACY_REPO = 'lohasle/agent-life'
+const ALLOWED_RELEASE_REPOS = new Set([CANONICAL_REPO, LEGACY_REPO])
+const repoIndex = process.argv.indexOf('--repo')
+const REPO = repoIndex >= 0 ? process.argv[repoIndex + 1] : CANONICAL_REPO
+if (!ALLOWED_RELEASE_REPOS.has(REPO)) {
+  console.error(`✗ 不允许的发布目标：${REPO || '<empty>'}`)
+  console.error(`  允许目标仅为：${Array.from(ALLOWED_RELEASE_REPOS).join(', ')}`)
+  process.exit(1)
+}
 const RELEASE_DIR = path.join(ROOT, 'release')
 
 const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'))
 const version = pkg.version
+if (REPO === LEGACY_REPO && version !== '0.3.9') {
+  console.error(`✗ ${LEGACY_REPO} 只允许发布 v0.3.9 迁移桥；当前版本为 v${version}`)
+  process.exit(1)
+}
 const tag = `v${version}`
 const dryRun = process.argv.includes('--dry-run')
 const stageOnly = process.argv.includes('--stage-only')
@@ -103,7 +117,7 @@ function assertRemoteProvenance(release) {
   assertCompatibleProvenance(localProvenance, JSON.parse(remoteRaw), `已存在的 ${tag} provenance`)
 }
 
-// 1) 校验 gh 已安装并确认当前账号（releases 必须落到 aiutil/agent-os）。
+// 1) 校验 gh 已安装。目标仓库由 allowlist 约束，写权限由 GitHub API 在实际操作时验证。
 let activeUser = ''
 if (dryRun) {
   activeUser = 'dry-run'
@@ -113,13 +127,6 @@ if (dryRun) {
   } catch (err) {
     console.error('✗ 未检测到可用的 gh CLI 或未登录。请先 `gh auth login`。')
     console.error(String(err.stderr || err.message || err))
-    process.exit(1)
-  }
-  if (activeUser !== 'aiutil') {
-    console.error(`✗ 当前 gh 账号为 "${activeUser}"，但发布目标是 ${REPO}。`)
-    console.error(
-      '  请先切换：`gh auth switch -u aiutil`（或 `gh auth login` 登录 aiutil 账号）后重试。'
-    )
     process.exit(1)
   }
 }
@@ -145,7 +152,7 @@ if (!dryRun) {
     )
     const remoteMainCommit = sh('gh', [
       'api',
-      'repos/aiutil/agent-os/git/ref/heads/main',
+      `repos/${CANONICAL_REPO}/git/ref/heads/main`,
       '--jq',
       '.object.sha'
     ])
@@ -155,7 +162,7 @@ if (!dryRun) {
       actualSourceRepository,
       actualSourceTreeClean
     })
-    console.log(`✓ 发布来源已绑定 aiutil/agent-os main：${localHead.slice(0, 12)}`)
+    console.log(`✓ 发布来源已绑定 ${CANONICAL_REPO} main：${localHead.slice(0, 12)}`)
   } catch (error) {
     console.error(`✗ 发布来源门禁失败：${error instanceof Error ? error.message : String(error)}`)
     console.error('  只能从已推送且与远端 main 精确一致的 Agent-OS commit 发布 Latest。')
@@ -420,7 +427,12 @@ try {
       console.log(`→ 复用同源 draft ${tag}，安全重试资产上传…`)
     } else {
       console.log(`→ 创建私有 draft ${tag}；完整性复验前不会公开…`)
-      const notes = customNotes ? `${customNotes}\n\n${sourceMarker}` : sourceMarker
+      const legacyNotes =
+        `Agent OS ${tag} migration bridge. Future updates and source are hosted at ` +
+        `https://github.com/${CANONICAL_REPO}.`
+      const notes = customNotes
+        ? `${customNotes}\n\n${sourceMarker}`
+        : `${REPO === LEGACY_REPO ? `${legacyNotes}\n\n` : ''}${sourceMarker}`
       const args = [
         'release',
         'create',
@@ -434,7 +446,7 @@ try {
         '--notes',
         notes
       ]
-      if (!customNotes) args.push('--generate-notes')
+      if (!customNotes && REPO === CANONICAL_REPO) args.push('--generate-notes')
       sh('gh', args, { stdio: 'inherit' })
     }
 

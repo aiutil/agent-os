@@ -3,8 +3,6 @@
 
 const fs = require('node:fs')
 const path = require('node:path')
-const { buildLocalReleaseProvenance } = require('./release-provenance.cjs')
-
 const ROOT = path.resolve(__dirname, '..')
 
 function semverParts(version) {
@@ -43,7 +41,7 @@ function replaceCurrentProductVersionLabels(content, version) {
   return content.replace(/(Agent OS\s*·\s*v)\d+\.\d+\.\d+/g, `$1${version}`)
 }
 
-function renderChangelogSection(manifest, sourceRevision) {
+function renderChangelogSection(manifest) {
   const items = manifest.changelog.map((item) =>
     `      <li><b>${escapeHtml(item.title)}</b> — ${escapeHtml(item.body)}</li>`
   ).join('\n')
@@ -51,7 +49,7 @@ function renderChangelogSection(manifest, sourceRevision) {
     <div class="ver__head"><span class="ver__tag">v${manifest.version}</span><span class="ver__date">${manifest.date}</span></div>
     <ul class="ver__list">
 ${items}
-      <li><b>构建来源</b> — 本版本制品绑定 Agent-OS 源码 <code>${escapeHtml(sourceRevision.slice(0, 12))}</code>，完整 revision 与逐文件摘要见 Release provenance。</li>
+      <li><b>构建来源</b> — 本版本制品的完整源码 revision 与逐文件摘要见 Release provenance。</li>
     </ul>
   </section>
 
@@ -110,6 +108,14 @@ function updateIndex(content, previousVersion, version) {
     )
     .replaceAll('也可使用飞书机器人转交工作', '也可使用已授权消息通道转交工作')
     .replaceAll('hand it off through a Feishu bot', 'hand it off through an authorized message channel')
+    .replaceAll(
+      'macOS 当前制品未做 Apple Developer ID 公证，首次启动请在 Finder 中右键应用并选择“打开”。',
+      'macOS 制品使用自签名证书，未经过 Apple 公证。首次打开如被拦截，请前往“系统设置 → 隐私与安全”点击“仍要打开”。'
+    )
+    .replaceAll(
+      'The macOS build is not notarized with an Apple Developer ID. On first launch, right-click the app in Finder and choose Open.',
+      'The macOS build uses a self-signed certificate and is not notarized by Apple. If blocked, use System Settings → Privacy & Security → Open Anyway.'
+    )
 }
 
 function updateGuide(content, previousVersion, version) {
@@ -146,21 +152,20 @@ function updateGuide(content, previousVersion, version) {
     )
 }
 
-function updateChangelog(content, previousVersion, manifest, sourceRevision) {
+function updateChangelog(content, previousVersion, manifest) {
   let next = content
     .replaceAll(`<span class="version">v${previousVersion}</span>`, `<span class="version">v${manifest.version}</span>`)
     .replaceAll(`Agent OS · v${previousVersion}`, `Agent OS · v${manifest.version}`)
   if (!next.includes(`<span class="ver__tag">v${manifest.version}</span>`)) {
     const marker = '  <div class="wrap"><div class="timeline">\n\n'
     if (!next.includes(marker)) throw new Error('agent-life changelog timeline marker is missing')
-    next = next.replace(marker, `${marker}${renderChangelogSection(manifest, sourceRevision)}`)
+    next = next.replace(marker, `${marker}${renderChangelogSection(manifest)}`)
   }
   return next
 }
 
-function syncAgentLifeSite({ repoDir = siteDir, siteDir, manifest, sourceRevision, check = false }) {
+function syncAgentLifeSite({ repoDir = siteDir, siteDir, manifest, check = false }) {
   assertManifest(manifest)
-  if (!/^[a-f0-9]{40}$/i.test(sourceRevision || '')) throw new Error('source revision must be a clean 40-character commit')
   const files = {
     'README.md': path.join(repoDir, 'README.md'),
     'site/index.html': path.join(siteDir, 'index.html'),
@@ -181,7 +186,7 @@ function syncAgentLifeSite({ repoDir = siteDir, siteDir, manifest, sourceRevisio
     'README.md': updateReadme(original['README.md'], manifest),
     'site/index.html': updateIndex(original['site/index.html'], previousVersion, manifest.version),
     'site/guide.html': updateGuide(original['site/guide.html'], previousVersion, manifest.version),
-    'site/changelog.html': updateChangelog(original['site/changelog.html'], previousVersion, manifest, sourceRevision)
+    'site/changelog.html': updateChangelog(original['site/changelog.html'], previousVersion, manifest)
   }
   const changed = Object.keys(files).filter((name) => updated[name] !== original[name])
   if (!updated['README.md'].includes(`Version \`${manifest.version}\``)) {
@@ -214,15 +219,10 @@ if (require.main === module) {
     const manifestPath = path.join(ROOT, 'docs', 'releases', `${version}.json`)
     const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'))
     if (manifest.version !== version) throw new Error(`release manifest/package version mismatch: ${manifest.version} / ${version}`)
-    const provenance = buildLocalReleaseProvenance(ROOT)
-    if (!provenance.sourceTreeClean || !/^[a-f0-9]{40}$/i.test(provenance.sourceRevision || '')) {
-      throw new Error('site synchronization requires a clean Agent-OS source revision')
-    }
     const result = syncAgentLifeSite({
       repoDir,
       siteDir,
       manifest,
-      sourceRevision: provenance.sourceRevision,
       check: process.argv.includes('--check')
     })
     console.log(`✓ agent-life site ${result.previousVersion} → ${result.version}; changed: ${result.changed.join(', ') || 'none'}`)

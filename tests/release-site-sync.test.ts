@@ -10,13 +10,11 @@ const { syncAgentLifeSite } = require('../scripts/sync-agent-life-site.cjs') as 
     siteDir: string
     repoDir?: string
     manifest: Record<string, unknown>
-    sourceRevision: string
     check?: boolean
   }): { previousVersion: string; version: string; changed: string[] }
 }
 
 const directories: string[] = []
-const sourceRevision = 'a'.repeat(40)
 const manifest = JSON.parse(readFileSync('docs/releases/0.3.0.json', 'utf8')) as Record<string, unknown>
 
 afterEach(() => {
@@ -36,6 +34,8 @@ Version \`0.2.9\` provides native builds for macOS, Windows, and Linux.
 <img src="message-channels-feishu-v0.2.9.png" />
 <h3>飞书消息接入</h3>
 <p>通过飞书机器人长连接把 IM 消息转交给本机 Agent OS，无需公网入口；设置页集中展示各消息平台的接入状态。</p>
+<p>macOS 当前制品未做 Apple Developer ID 公证，首次启动请在 Finder 中右键应用并选择“打开”。</p>
+<p>The macOS build is not notarized with an Apple Developer ID. On first launch, right-click the app in Finder and choose Open.</p>
 <footer>Agent OS · v0.2.8</footer>
 `)
   writeFileSync(join(directory, 'site', 'guide.html'), `<span class="version">v0.2.9</span>
@@ -56,7 +56,7 @@ Version \`0.2.9\` provides native builds for macOS, Windows, and Linux.
 describe('SPEC-032 agent-life 公开站点同步', () => {
   it('从版本清单同步 Page/README/指南/更新记录，同时保留历史截图与历史版本', () => {
     const siteDir = fixture()
-    const result = syncAgentLifeSite({ repoDir: siteDir, siteDir: join(siteDir, 'site'), manifest, sourceRevision })
+    const result = syncAgentLifeSite({ repoDir: siteDir, siteDir: join(siteDir, 'site'), manifest })
     expect(result).toMatchObject({
       previousVersion: '0.2.9',
       version: '0.3.0',
@@ -71,15 +71,21 @@ describe('SPEC-032 agent-life 公开站点同步', () => {
     expect(index).toContain('多平台消息通道')
     expect(index).toContain('message-channels-feishu-v0.2.9.png')
     expect(index).not.toContain('飞书机器人通过长连接把 IM 消息转交')
+    expect(index).toContain('macOS 制品使用自签名证书，未经过 Apple 公证')
+    expect(index).toContain('The macOS build uses a self-signed certificate and is not notarized by Apple')
+    expect(index).toContain('Open Anyway')
+    expect(readFileSync('scripts/sync-agent-life-site.cjs', 'utf8')).not.toContain(
+      ['signed with Apple Developer ID', 'and notarized for normal installation'].join(' ')
+    )
     expect(index).toContain('<footer>Agent OS · v0.3.0</footer>')
     expect(index).not.toContain('Agent OS · v0.2.8')
     expect(guide).toContain('Windows 原生 GitHub-hosted runner')
     expect(guide).toContain('/releases/download/v0.3.0/Agent-Os-0.3.0-win-x64-setup.exe')
     expect(changelog).toContain('<span class="ver__tag">v0.3.0</span>')
     expect(changelog).toContain('<span class="ver__tag">v0.2.9</span>')
-    expect(changelog).toContain(sourceRevision.slice(0, 12))
+    expect(changelog).toContain('完整源码 revision 与逐文件摘要见 Release provenance')
 
-    const input = { repoDir: siteDir, siteDir: join(siteDir, 'site'), manifest, sourceRevision }
+    const input = { repoDir: siteDir, siteDir: join(siteDir, 'site'), manifest }
     expect(syncAgentLifeSite(input).changed).toEqual([])
     expect(() => syncAgentLifeSite({ ...input, check: true })).not.toThrow()
   })
@@ -87,11 +93,11 @@ describe('SPEC-032 agent-life 公开站点同步', () => {
   it('模板标记漂移或站点版本高于待发布版本时 fail closed', () => {
     const siteDir = fixture()
     writeFileSync(join(siteDir, 'README.md'), '# missing release marker\n')
-    expect(() => syncAgentLifeSite({ repoDir: siteDir, siteDir: join(siteDir, 'site'), manifest, sourceRevision })).toThrow('current version is missing')
+    expect(() => syncAgentLifeSite({ repoDir: siteDir, siteDir: join(siteDir, 'site'), manifest })).toThrow('current version is missing')
 
     const newer = fixture()
     const readmePath = join(newer, 'README.md')
     writeFileSync(readmePath, readFileSync(readmePath, 'utf8').replace('0.2.9', '9.0.0'))
-    expect(() => syncAgentLifeSite({ repoDir: newer, siteDir: join(newer, 'site'), manifest, sourceRevision })).toThrow('refusing site downgrade')
+    expect(() => syncAgentLifeSite({ repoDir: newer, siteDir: join(newer, 'site'), manifest })).toThrow('refusing site downgrade')
   })
 })
