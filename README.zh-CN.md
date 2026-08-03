@@ -11,7 +11,7 @@ Agent OS 是一款桌面端 Agent 工作台，用来运行、比较和审阅多�
 
 ## 当前版本
 
-`0.3.8` 提供 macOS、Windows 和 Linux 构建，可从
+`0.3.9` 提供 macOS、Windows 和 Linux 构建，可从
 [GitHub Releases](https://github.com/aiutil/agent-os/releases) 下载。
 
 ## 本地开发

@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       publish:
-        description: Publish verified assets and product-site updates to aiutil/agent-os
+        description: Publish verified assets to aiutil/agent-os and the v0.3.9 legacy migration bridge
         required: true
         default: false
         type: boolean
@@ -39,10 +39,10 @@ jobs:
         include:
           - platform: mac-arm64
             runner: macos-14
-            desktop_command: npx electron-builder --mac dmg --arm64 --publish never
+            desktop_command: npx electron-builder --mac dmg --arm64 --publish never -c.forceCodeSigning=true
           - platform: mac-x64
             runner: macos-15-intel
-            desktop_command: npx electron-builder --mac dmg --x64 --publish never
+            desktop_command: npx electron-builder --mac dmg --x64 --publish never -c.forceCodeSigning=true
           - platform: linux-arm64
             runner: ubuntu-24.04-arm
             desktop_command: npx electron-builder --linux AppImage --arm64 --publish never
@@ -68,10 +68,51 @@ jobs:
       - run: npm ci --legacy-peer-deps
       - run: npm run build
       - run: node scripts/build-node-dist.cjs
+      - name: Require fixed self-signed macOS code-signing credentials
+        if: ${{ startsWith(matrix.platform, 'mac-') }}
+        env:
+          CSC_LINK: ${{ secrets.MACOS_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.MACOS_CSC_KEY_PASSWORD }}
+        run: |
+          for key in CSC_LINK CSC_KEY_PASSWORD; do
+            if [ -z "${!key}" ]; then
+              echo "Missing required macOS release secret: $key" >&2
+              exit 1
+            fi
+          done
+          signing_keychain="$RUNNER_TEMP/agentos-self-signing.keychain-db"
+          signing_p12="$RUNNER_TEMP/agentos-self-signing.p12"
+          signing_cert="$RUNNER_TEMP/agentos-self-signing.pem"
+          echo "CSC_KEYCHAIN=$signing_keychain" >> "$GITHUB_ENV"
+          echo "CSC_P12_PATH=$signing_p12" >> "$GITHUB_ENV"
+          echo "CSC_CERT_PATH=$signing_cert" >> "$GITHUB_ENV"
+          keychain_password="$(openssl rand -hex 24)"
+          printf '%s' "$CSC_LINK" | base64 -D > "$signing_p12"
+          security create-keychain -p "$keychain_password" "$signing_keychain"
+          security unlock-keychain -p "$keychain_password" "$signing_keychain"
+          security set-keychain-settings "$signing_keychain"
+          security list-keychains -d user -s "$signing_keychain"
+          security import "$signing_p12" -k "$signing_keychain" -P "$CSC_KEY_PASSWORD" -T /usr/bin/codesign
+          security find-certificate -c "Agent OS Self-Signed" -p "$signing_keychain" > "$signing_cert"
+          security add-trusted-cert -d -r trustRoot -k "$signing_keychain" "$signing_cert"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$keychain_password" "$signing_keychain"
+          security find-identity -v -p codesigning "$signing_keychain" | grep '"Agent OS Self-Signed"'
+          echo "CSC_NAME=Agent OS Self-Signed" >> "$GITHUB_ENV"
       - name: Build native desktop installer
         env:
-          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+          CSC_IDENTITY_AUTO_DISCOVERY: ${{ startsWith(matrix.platform, 'mac-') && 'true' || 'false' }}
         run: ${{ matrix.desktop_command }}
+      - name: Verify fixed macOS self-signature and reject ad-hoc output
+        if: ${{ startsWith(matrix.platform, 'mac-') }}
+        shell: bash
+        run: |
+          shopt -s nullglob
+          dmg=(release/Agent-Os-*-mac-*.dmg)
+          if [ "${#dmg[@]}" -ne 1 ]; then
+            echo "Expected exactly one macOS DMG, found ${#dmg[@]}" >&2
+            exit 1
+          fi
+          node build/verify-macos-release.cjs "${dmg[0]}"
       - name: Build native Linux ARM64 deb
         if: ${{ matrix.platform == 'linux-arm64' }}
         run: node scripts/build-linux-deb.cjs
@@ -91,6 +132,18 @@ jobs:
           path: release/.transport/${{ matrix.platform }}
           key: release-assets-${{ github.run_id }}-${{ matrix.platform }}
           enableCrossOsArchive: true
+      - name: Remove temporary macOS signing material
+        if: ${{ always() && startsWith(matrix.platform, 'mac-') }}
+        shell: bash
+        run: |
+          if [ -n "${CSC_KEYCHAIN:-}" ]; then
+            security delete-keychain "$CSC_KEYCHAIN" || true
+          fi
+          for generated_file in "${CSC_P12_PATH:-}" "${CSC_CERT_PATH:-}"; do
+            if [ -n "$generated_file" ] && [ -f "$generated_file" ]; then
+              unlink "$generated_file"
+            fi
+          done
 
   verify-and-publish:
     name: Verify and optionally publish
@@ -141,12 +194,28 @@ jobs:
         run: node scripts/generate-node-release-manifest.cjs
       - name: Enforce runtime and release gates
         run: node scripts/release-gh.cjs --dry-run
-      - name: Stage verified private Release draft
+      - name: Require legacy migration release credential
+        if: ${{ inputs.publish }}
+        env:
+          LEGACY_RELEASE_TOKEN: ${{ secrets.LEGACY_RELEASE_TOKEN }}
+        run: test -n "$LEGACY_RELEASE_TOKEN"
+      - name: Stage verified canonical private Release draft
         if: ${{ inputs.publish }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          node scripts/release-gh.cjs --stage-only
+          node scripts/release-gh.cjs --repo aiutil/agent-os --stage-only
+      - name: Stage byte-identical legacy migration draft
+        if: ${{ inputs.publish }}
+        env:
+          GH_TOKEN: ${{ secrets.LEGACY_RELEASE_TOKEN }}
+        run: node scripts/release-gh.cjs --repo lohasle/agent-life --stage-only
+      - name: Verify canonical and legacy drafts are byte-identical
+        if: ${{ inputs.publish }}
+        env:
+          CANONICAL_GH_TOKEN: ${{ github.token }}
+          LEGACY_GH_TOKEN: ${{ secrets.LEGACY_RELEASE_TOKEN }}
+        run: node scripts/verify-release-mirror.cjs --draft
       - uses: actions/cache/save@v4
         with:
           path: |
@@ -154,26 +223,10 @@ jobs:
             release/agentos-release-*-provenance.json
             scripts/install-node.sh
           key: node-runtime-release-bundle-${{ github.run_id }}
-      - name: Synchronize agent-life Page and README
-        id: site-sync
+      - name: Verify Agent OS Page and README are synchronized
         if: ${{ inputs.publish }}
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
-          gh auth setup-git
-          echo "path=$GITHUB_WORKSPACE" >> "$GITHUB_OUTPUT"
-          node scripts/sync-agent-life-site.cjs --repo-dir "$GITHUB_WORKSPACE" --site-dir "$GITHUB_WORKSPACE/site"
-          git config user.name "agent-os-release-bot"
-          git config user.email "agent-os-release-bot@users.noreply.github.com"
-          if git diff --quiet; then
-            echo "commit=" >> "$GITHUB_OUTPUT"
-          else
-            git add README.md site/index.html site/guide.html site/changelog.html
-            version="$(node -p "require('./package.json').version")"
-            git commit -m "chore(release): publish v${version} site"
-            echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-            git push origin HEAD:main
-          fi
+          node scripts/sync-agent-life-site.cjs --repo-dir "$GITHUB_WORKSPACE" --site-dir "$GITHUB_WORKSPACE/site" --check
       - name: Wait for public Page and README
         if: ${{ inputs.publish }}
         run: |
@@ -182,25 +235,12 @@ jobs:
             if [ "$attempt" -lt 30 ]; then sleep 10; fi
           done
           exit 1
-      - name: Promote verified draft to Latest
+      - name: Promote verified canonical draft to Latest
         id: promote
         if: ${{ inputs.publish }}
         env:
           GH_TOKEN: ${{ github.token }}
-        run: node scripts/release-gh.cjs --promote-only
-      - name: Roll back site when draft was not promoted
-        if: ${{ always() && inputs.publish && steps.site-sync.outputs.commit != '' && steps.promote.outcome != 'success' && (failure() || cancelled()) }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          site_dir="${{ steps.site-sync.outputs.path }}"
-          site_commit="${{ steps.site-sync.outputs.commit }}"
-          git -C "$site_dir" fetch origin main
-          if git -C "$site_dir" merge-base --is-ancestor "$site_commit" origin/main; then
-            git -C "$site_dir" pull --rebase origin main
-            git -C "$site_dir" revert --no-edit "$site_commit"
-            git -C "$site_dir" push origin main
-          fi
+        run: node scripts/release-gh.cjs --repo aiutil/agent-os --promote-only
       - name: Verify public version surfaces after publish
         if: ${{ inputs.publish }}
         run: |
@@ -214,3 +254,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: npm run verify:node-release-public
+      - name: Promote legacy migration bridge after canonical verification
+        if: ${{ inputs.publish }}
+        env:
+          GH_TOKEN: ${{ secrets.LEGACY_RELEASE_TOKEN }}
+        run: node scripts/release-gh.cjs --repo lohasle/agent-life --promote-only
+      - name: Verify public canonical and legacy releases are byte-identical
+        if: ${{ inputs.publish }}
+        env:
+          CANONICAL_GH_TOKEN: ${{ github.token }}
+          LEGACY_GH_TOKEN: ${{ secrets.LEGACY_RELEASE_TOKEN }}
+        run: node scripts/verify-release-mirror.cjs

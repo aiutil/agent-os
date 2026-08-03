@@ -31,17 +31,43 @@ vi.mock('electron', () => ({
 const temporaryDirectories: string[] = []
 
 afterEach(() => {
-  for (const directory of temporaryDirectories.splice(0)) rmSync(directory, { recursive: true, force: true })
+  for (const directory of temporaryDirectories.splice(0))
+    rmSync(directory, { recursive: true, force: true })
 })
 
 function releaseAssets(version: string, body: Buffer): UpdateAsset[] {
   const digest = `sha256:${createHash('sha256').update(body).digest('hex')}`
   return [
-    { name: `Agent-OS-${version}-mac-arm64.dmg`, browser_download_url: 'https://example.test/mac-arm64', size: body.length, digest },
-    { name: `Agent-OS-${version}-mac-x64.dmg`, browser_download_url: 'https://example.test/mac-x64', size: body.length, digest },
-    { name: `Agent-OS-${version}-win-x64-setup.exe`, browser_download_url: 'https://example.test/win-x64', size: body.length, digest },
-    { name: `Agent-OS-${version}-linux-arm64.AppImage`, browser_download_url: 'https://example.test/linux-arm64', size: body.length, digest },
-    { name: `Agent-OS-${version}-linux-x86_64.AppImage`, browser_download_url: 'https://example.test/linux-x64', size: body.length, digest }
+    {
+      name: `Agent-OS-${version}-mac-arm64.dmg`,
+      browser_download_url: 'https://example.test/mac-arm64',
+      size: body.length,
+      digest
+    },
+    {
+      name: `Agent-OS-${version}-mac-x64.dmg`,
+      browser_download_url: 'https://example.test/mac-x64',
+      size: body.length,
+      digest
+    },
+    {
+      name: `Agent-OS-${version}-win-x64-setup.exe`,
+      browser_download_url: 'https://example.test/win-x64',
+      size: body.length,
+      digest
+    },
+    {
+      name: `Agent-OS-${version}-linux-arm64.AppImage`,
+      browser_download_url: 'https://example.test/linux-arm64',
+      size: body.length,
+      digest
+    },
+    {
+      name: `Agent-OS-${version}-linux-x86_64.AppImage`,
+      browser_download_url: 'https://example.test/linux-x64',
+      size: body.length,
+      digest
+    }
   ]
 }
 
@@ -82,7 +108,9 @@ describe('pickAsset（按平台/架构选安装包）', () => {
     expect(pickAsset(assets, 'linux', 'arm64')?.name).toBe('Agent-Os-0.2.0-linux-arm64.AppImage')
   })
   it('无匹配架构时拒绝异构资产，不再下载列表第一项', () => {
-    const onlyX64: UpdateAsset[] = [{ name: 'Agent-Os-0.2.0-mac-x64.dmg', browser_download_url: 'u', size: 1 }]
+    const onlyX64: UpdateAsset[] = [
+      { name: 'Agent-Os-0.2.0-mac-x64.dmg', browser_download_url: 'u', size: 1 }
+    ]
     expect(pickAsset(onlyX64, 'darwin', 'arm64')).toBeNull()
   })
   it('兼容 amd64/aarch64 别名和没有架构标记的旧版通用包', () => {
@@ -114,15 +142,23 @@ describe('桌面更新包完整性门禁', () => {
 
   it('Release API 与制品下载都显式强制 TLS 证书校验', async () => {
     const requestOptions: Array<Record<string, unknown>> = []
+    const requestTargets: string[] = []
     const getSpy = vi.spyOn(https, 'get')
     const implementation = (
       target: string | URL,
       options: Record<string, unknown>,
-      callback: (response: NodeJS.ReadableStream & { statusCode: number; headers: Record<string, string> }) => void
+      callback: (
+        response: NodeJS.ReadableStream & { statusCode: number; headers: Record<string, string> }
+      ) => void
     ): ReturnType<typeof https.get> => {
+      requestTargets.push(String(target))
       requestOptions.push(options)
       const body = String(target).includes('api.github.com')
-        ? JSON.stringify({ tag_name: 'v9.9.9', html_url: 'https://example.test/release', assets: [] })
+        ? JSON.stringify({
+            tag_name: 'v9.9.9',
+            html_url: 'https://example.test/release',
+            assets: []
+          })
         : ''
       const response = Object.assign(Readable.from([body]), { statusCode: 200, headers: {} })
       const request = new EventEmitter() as EventEmitter & {
@@ -146,6 +182,7 @@ describe('桌面更新包完整性门禁', () => {
 
       expect(requestOptions).toHaveLength(2)
       expect(requestOptions.every((options) => options.rejectUnauthorized === true)).toBe(true)
+      expect(requestTargets[0]).toBe('https://api.github.com/repos/aiutil/agent-os/releases/latest')
     } finally {
       getSpy.mockRestore()
     }
@@ -164,7 +201,15 @@ describe('桌面更新包完整性门禁', () => {
 
   it('拒绝绝对路径、父目录与正反斜杠 asset 名称', () => {
     expect(safeUpdateAssetName('Agent-OS-1.0.0.dmg')).toBe('Agent-OS-1.0.0.dmg')
-    for (const unsafe of ['/tmp/Agent-OS.dmg', '../Agent-OS.dmg', 'nested/Agent-OS.dmg', 'nested\\Agent-OS.dmg', 'bad\0name.dmg', '.', '..']) {
+    for (const unsafe of [
+      '/tmp/Agent-OS.dmg',
+      '../Agent-OS.dmg',
+      'nested/Agent-OS.dmg',
+      'nested\\Agent-OS.dmg',
+      'bad\0name.dmg',
+      '.',
+      '..'
+    ]) {
       expect(() => safeUpdateAssetName(unsafe)).toThrow('文件名')
     }
   })
@@ -241,8 +286,9 @@ describe('桌面更新包完整性门禁', () => {
     })
 
     try {
-      await expect(internal.downloadFile(asset.browser_download_url, destination, asset))
-        .rejects.toThrow('fsync failed')
+      await expect(
+        internal.downloadFile(asset.browser_download_url, destination, asset)
+      ).rejects.toThrow('fsync failed')
     } finally {
       fsyncSpy.mockRestore()
     }
@@ -261,10 +307,12 @@ describe('桌面更新包完整性门禁', () => {
     }
     internal.openDownload = vi.fn(async () => Readable.from([body]))
 
-    await expect(internal.downloadFile(asset.browser_download_url, destination, {
-      ...asset,
-      digest: `sha256:${'b'.repeat(64)}`
-    })).rejects.toThrow('完整性')
+    await expect(
+      internal.downloadFile(asset.browser_download_url, destination, {
+        ...asset,
+        digest: `sha256:${'b'.repeat(64)}`
+      })
+    ).rejects.toThrow('完整性')
 
     expect(existsSync(destination)).toBe(false)
     expect(existsSync(`${destination}.partial`)).toBe(false)
@@ -283,7 +331,11 @@ describe('UpdateService 下载状态与安装交接', () => {
       downloadedReleaseTag: string | null
       downloadFile: (url: string, destination: string, asset: UpdateAsset) => Promise<void>
       installMacInPlace: (filePath: string) => boolean
-      fetchLatestRelease: () => Promise<{ tagName: string; htmlUrl: string; assets: UpdateAsset[] } | null>
+      fetchLatestRelease: () => Promise<{
+        tagName: string
+        htmlUrl: string
+        assets: UpdateAsset[]
+      } | null>
     }
     directory: string
     selected: UpdateAsset
@@ -298,12 +350,20 @@ describe('UpdateService 下载状态与安装交接', () => {
       downloadedReleaseTag: string | null
       downloadFile: (url: string, destination: string, asset: UpdateAsset) => Promise<void>
       installMacInPlace: (filePath: string) => boolean
-      fetchLatestRelease: () => Promise<{ tagName: string; htmlUrl: string; assets: UpdateAsset[] } | null>
+      fetchLatestRelease: () => Promise<{
+        tagName: string
+        htmlUrl: string
+        assets: UpdateAsset[]
+      } | null>
     }
     const assets = releaseAssets(version, body)
     const selected = pickAsset(assets)
     if (!selected) throw new Error('current platform fixture missing')
-    internal.latestRelease = { tagName: `v${version}`, htmlUrl: 'https://example.test/release', assets }
+    internal.latestRelease = {
+      tagName: `v${version}`,
+      htmlUrl: 'https://example.test/release',
+      assets
+    }
     internal.downloadFile = vi.fn(async (_url, destination) => writeFileSync(destination, body))
     internal.installMacInPlace = vi.fn(() => false)
     return { service, internal, directory, selected }
@@ -314,7 +374,11 @@ describe('UpdateService 下载状态与安装交接', () => {
 
     await expect(service.startDownload()).resolves.toEqual({ started: true })
 
-    expect(service.getState()).toMatchObject({ status: 'downloaded', progress: 100, assetName: selected.name })
+    expect(service.getState()).toMatchObject({
+      status: 'downloaded',
+      progress: 100,
+      assetName: selected.name
+    })
     expect(internal.downloadedReleaseTag).toBe('v9.9.9')
     expect(internal.downloadedAsset).toEqual(selected)
     expect(internal.downloadedFilePath && readFileSync(internal.downloadedFilePath)).toEqual(body)
@@ -327,8 +391,14 @@ describe('UpdateService 下载状态与安装交接', () => {
     expect(oldPath && existsSync(oldPath)).toBe(true)
 
     const nextAssets = releaseAssets('9.9.10', body)
-    internal.latestRelease = { tagName: 'v9.9.10', htmlUrl: 'https://example.test/release-2', assets: nextAssets }
-    internal.downloadFile = vi.fn(async () => { throw new Error('network interrupted') })
+    internal.latestRelease = {
+      tagName: 'v9.9.10',
+      htmlUrl: 'https://example.test/release-2',
+      assets: nextAssets
+    }
+    internal.downloadFile = vi.fn(async () => {
+      throw new Error('network interrupted')
+    })
 
     const result = await service.startDownload()
 
@@ -345,7 +415,9 @@ describe('UpdateService 下载状态与安装交接', () => {
     let finishDownload: (() => void) | undefined
     internal.downloadFile = vi.fn(async (_url, destination) => {
       writeFileSync(destination, body)
-      await new Promise<void>((resolve) => { finishDownload = resolve })
+      await new Promise<void>((resolve) => {
+        finishDownload = resolve
+      })
     })
 
     const download = service.startDownload()
@@ -379,7 +451,12 @@ describe('UpdateService 下载状态与安装交接', () => {
 
     expect(oldPath && existsSync(oldPath)).toBe(false)
     expect(internal.downloadedFilePath).toBeNull()
-    expect(service.getState()).toMatchObject({ status: 'available', downloadedPath: '', assetName: '', progress: 0 })
+    expect(service.getState()).toMatchObject({
+      status: 'available',
+      downloadedPath: '',
+      assetName: '',
+      progress: 0
+    })
   })
 
   it('安装前重新计算 bytes/SHA，文件被篡改时删除并拒绝打开', async () => {
@@ -423,7 +500,8 @@ describe('UpdateService 下载状态与安装交接', () => {
     const result = await service.install({ quitAfterOpen: false })
 
     expect(result).toEqual({ ok: true, quit: false })
-    if (process.platform === 'darwin') expect(internal.installMacInPlace).toHaveBeenCalledWith(downloadedPath)
+    if (process.platform === 'darwin')
+      expect(internal.installMacInPlace).toHaveBeenCalledWith(downloadedPath)
     expect(shell.openPath).toHaveBeenCalledWith(downloadedPath)
   })
 })
@@ -448,10 +526,16 @@ describe('macOS 原地更新脚本事务顺序', () => {
     expect(backup).toBeLessThan(promote)
     expect(promote).toBeLessThan(launch)
     expect(launch).toBeLessThan(commit)
-    expect(MAC_INSTALL_SCRIPT).toContain('if [ "$PROMOTED" -eq 1 ] && [ -e "$TARGET" ]; then rm -rf "$TARGET"; fi')
-    expect(MAC_INSTALL_SCRIPT).toContain('if [ "$BACKED_UP" -eq 1 ] && [ -e "$BACKUP" ] && [ ! -e "$TARGET" ]; then mv "$BACKUP" "$TARGET" || true; fi')
+    expect(MAC_INSTALL_SCRIPT).toContain(
+      'if [ "$PROMOTED" -eq 1 ] && [ -e "$TARGET" ]; then rm -rf "$TARGET"; fi'
+    )
+    expect(MAC_INSTALL_SCRIPT).toContain(
+      'if [ "$BACKED_UP" -eq 1 ] && [ -e "$BACKUP" ] && [ ! -e "$TARGET" ]; then mv "$BACKUP" "$TARGET" || true; fi'
+    )
     expect(MAC_INSTALL_SCRIPT).not.toContain('hdiutil attach "$DMG" -nobrowse -noverify')
-    expect(MAC_INSTALL_SCRIPT).not.toContain('rm -rf "$TARGET"\nif ! /usr/bin/ditto "$SRC" "$TARGET"')
+    expect(MAC_INSTALL_SCRIPT).not.toContain(
+      'rm -rf "$TARGET"\nif ! /usr/bin/ditto "$SRC" "$TARGET"'
+    )
   })
 })
 
@@ -459,7 +543,11 @@ describe('UpdateService.check 节流（窗口内复用缓存，避免连续打 G
   it('非强制二次检查复用缓存、不发请求；force 绕过节流实时再拉', async () => {
     const svc = new UpdateService(() => null)
     const svcInternal = svc as unknown as {
-      fetchLatestRelease: () => Promise<{ tagName: string; htmlUrl: string; assets: UpdateAsset[] } | null>
+      fetchLatestRelease: () => Promise<{
+        tagName: string
+        htmlUrl: string
+        assets: UpdateAsset[]
+      } | null>
     }
     const spy = vi.spyOn(svcInternal, 'fetchLatestRelease').mockResolvedValue({
       tagName: 'v9.9.9',

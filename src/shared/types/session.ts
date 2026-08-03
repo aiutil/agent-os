@@ -68,12 +68,7 @@ export interface Conversation {
 }
 
 /** switchCli 状态机。 */
-export type HandoffStatus =
-  | 'generating'
-  | 'ready'
-  | 'starting'
-  | 'done'
-  | 'failed'
+export type HandoffStatus = 'generating' | 'ready' | 'starting' | 'done' | 'failed'
 
 /** previewHandoff 响应。 */
 export interface HandoffPreview {
@@ -247,11 +242,7 @@ export interface UpdateSessionPatch {
   archived?: boolean
 }
 
-export type ManagedChatMessageStatus =
-  | 'streaming'
-  | 'completed'
-  | 'interrupted'
-  | 'failed'
+export type ManagedChatMessageStatus = 'streaming' | 'completed' | 'interrupted' | 'failed'
 
 export interface ManagedChatMessage {
   id: string
@@ -275,11 +266,7 @@ export type ManagedChatTimelineItemType =
   | 'error'
   | 'permission'
 
-export type ManagedChatPermissionStatus =
-  | 'pending'
-  | 'allowed-once'
-  | 'allowed-always'
-  | 'denied'
+export type ManagedChatPermissionStatus = 'pending' | 'allowed-once' | 'allowed-always' | 'denied'
 
 export interface ManagedChatTimelineItem {
   id: string
@@ -335,6 +322,8 @@ export interface WorkbenchSessionView extends WorkbenchSession {
 
 /** 会话按项目（工作目录）分组的视图。 */
 export interface SessionProjectGroup {
+  /** 远程运行节点；本机项目不设置。 */
+  runtimeHostId?: string
   /** 工作目录绝对路径。 */
   workspacePath: string
   /** PATH basename，作为分组标题。 */
