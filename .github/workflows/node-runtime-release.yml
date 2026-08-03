@@ -83,10 +83,12 @@ jobs:
           signing_keychain="$RUNNER_TEMP/agentos-self-signing.keychain-db"
           signing_p12="$RUNNER_TEMP/agentos-self-signing.p12"
           signing_cert="$RUNNER_TEMP/agentos-self-signing.pem"
+          signing_trust="$RUNNER_TEMP/agentos-self-signing-trust.plist"
           keychain_password="$(openssl rand -hex 24)"
           echo "CSC_KEYCHAIN=$signing_keychain" >> "$GITHUB_ENV"
           echo "CSC_P12_PATH=$signing_p12" >> "$GITHUB_ENV"
           echo "CSC_CERT_PATH=$signing_cert" >> "$GITHUB_ENV"
+          echo "CSC_TRUST_SETTINGS_PATH=$signing_trust" >> "$GITHUB_ENV"
           echo "CSC_KEYCHAIN_PASSWORD=$keychain_password" >> "$GITHUB_ENV"
           printf '%s' "$CSC_LINK" | base64 -D > "$signing_p12"
           echo "CSC_NAME=Agent OS Self-Signed" >> "$GITHUB_ENV"
@@ -106,11 +108,13 @@ jobs:
         run: |
           security import "$CSC_P12_PATH" -k "$CSC_KEYCHAIN" -P "$CSC_KEY_PASSWORD" -T /usr/bin/codesign
           security find-certificate -c "Agent OS Self-Signed" -p "$CSC_KEYCHAIN" > "$CSC_CERT_PATH"
-      - name: Trust fixed identity in isolated macOS keychain
+      - name: Import fixed identity trust settings on ephemeral macOS runner
         if: ${{ startsWith(matrix.platform, 'mac-') }}
         shell: bash
         run: |
-          security add-trusted-cert -r trustRoot -k "$CSC_KEYCHAIN" "$CSC_CERT_PATH"
+          security add-trusted-cert -p codeSign -r trustRoot -k "$CSC_KEYCHAIN" \
+            -o "$CSC_TRUST_SETTINGS_PATH" "$CSC_CERT_PATH"
+          security trust-settings-import "$CSC_TRUST_SETTINGS_PATH"
       - name: Grant macOS codesign key partition access
         if: ${{ startsWith(matrix.platform, 'mac-') }}
         shell: bash
@@ -162,7 +166,7 @@ jobs:
           if [ -n "${CSC_KEYCHAIN:-}" ]; then
             security delete-keychain "$CSC_KEYCHAIN" || true
           fi
-          for generated_file in "${CSC_P12_PATH:-}" "${CSC_CERT_PATH:-}"; do
+          for generated_file in "${CSC_P12_PATH:-}" "${CSC_CERT_PATH:-}" "${CSC_TRUST_SETTINGS_PATH:-}"; do
             if [ -n "$generated_file" ] && [ -f "$generated_file" ]; then
               unlink "$generated_file"
             fi
