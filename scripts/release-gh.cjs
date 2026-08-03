@@ -56,6 +56,7 @@ const tag = `v${version}`
 const dryRun = process.argv.includes('--dry-run')
 const stageOnly = process.argv.includes('--stage-only')
 const promoteOnly = process.argv.includes('--promote-only')
+const reuseExistingNodeManifest = process.env.AGENTOS_REUSE_EXISTING_NODE_MANIFEST === 'true'
 if (stageOnly && promoteOnly) {
   console.error('✗ --stage-only 与 --promote-only 不能同时使用')
   process.exit(1)
@@ -238,18 +239,26 @@ if (hasNodeAssets && !dryRun) {
 // stage-only 上传的 manifest 必须与 promote-only 校验的 bytes 完全相同；
 // generatedAt 会令二次生成产生不同 digest，因此晋升阶段只复用已验证文件。
 if (hasNodeAssets && !promoteOnly && !reusedPublishedManifest) {
-  try {
-    execFileSync(
-      process.execPath,
-      [path.join(ROOT, 'scripts', 'generate-node-release-manifest.cjs')],
-      {
-        cwd: ROOT,
-        stdio: 'inherit'
-      }
-    )
-  } catch {
-    console.error('✗ 节点 aggregate manifest 生成失败，已停止发布。')
-    process.exit(1)
+  if (reuseExistingNodeManifest) {
+    if (!fs.existsSync(nodeManifestPath)) {
+      console.error('✗ 要求复用本次 run 的 aggregate manifest，但本地文件不存在。')
+      process.exit(1)
+    }
+    console.log('✓ 复用本次 run 已生成并校验过的 aggregate manifest，保持迁移双仓 bytes 一致')
+  } else {
+    try {
+      execFileSync(
+        process.execPath,
+        [path.join(ROOT, 'scripts', 'generate-node-release-manifest.cjs')],
+        {
+          cwd: ROOT,
+          stdio: 'inherit'
+        }
+      )
+    } catch {
+      console.error('✗ 节点 aggregate manifest 生成失败，已停止发布。')
+      process.exit(1)
+    }
   }
 }
 const nodeManifest = fs.existsSync(nodeManifestPath)
