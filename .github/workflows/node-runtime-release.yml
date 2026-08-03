@@ -83,12 +83,10 @@ jobs:
           signing_keychain="$RUNNER_TEMP/agentos-self-signing.keychain-db"
           signing_p12="$RUNNER_TEMP/agentos-self-signing.p12"
           signing_cert="$RUNNER_TEMP/agentos-self-signing.pem"
-          signing_trust="$RUNNER_TEMP/agentos-self-signing-trust.plist"
           keychain_password="$(openssl rand -hex 24)"
           echo "CSC_KEYCHAIN=$signing_keychain" >> "$GITHUB_ENV"
           echo "CSC_P12_PATH=$signing_p12" >> "$GITHUB_ENV"
           echo "CSC_CERT_PATH=$signing_cert" >> "$GITHUB_ENV"
-          echo "CSC_TRUST_SETTINGS_PATH=$signing_trust" >> "$GITHUB_ENV"
           echo "CSC_KEYCHAIN_PASSWORD=$keychain_password" >> "$GITHUB_ENV"
           printf '%s' "$CSC_LINK" | base64 -D > "$signing_p12"
           echo "CSC_NAME=Agent OS Self-Signed" >> "$GITHUB_ENV"
@@ -108,17 +106,20 @@ jobs:
         run: |
           security import "$CSC_P12_PATH" -k "$CSC_KEYCHAIN" -P "$CSC_KEY_PASSWORD" -T /usr/bin/codesign
           security find-certificate -c "Agent OS Self-Signed" -p "$CSC_KEYCHAIN" > "$CSC_CERT_PATH"
-      - name: Generate fixed identity trust settings on ephemeral macOS runner
+      - name: Trust fixed identity in macOS system keychain
         if: ${{ startsWith(matrix.platform, 'mac-') }}
         shell: bash
         run: |
-          security add-trusted-cert -p codeSign -r trustRoot -k "$CSC_KEYCHAIN" \
-            -o "$CSC_TRUST_SETTINGS_PATH" "$CSC_CERT_PATH"
-      - name: Import fixed identity trust settings on ephemeral macOS runner
-        if: ${{ startsWith(matrix.platform, 'mac-') }}
-        shell: bash
-        run: |
-          security trust-settings-import "$CSC_TRUST_SETTINGS_PATH"
+          system_keychain=/Library/Keychains/System.keychain
+          sudo -n security add-trusted-cert -p codeSign -r trustRoot -d \
+            -k "$system_keychain" "$CSC_CERT_PATH"
+          system_cert_sha1="$(sudo -n security find-certificate -c "Agent OS Self-Signed" -Z \
+            "$system_keychain" | awk '/SHA-1 hash:/{print $3; exit}')"
+          if [ -z "$system_cert_sha1" ]; then
+            echo "The fixed self-signed identity was not added to the macOS system keychain" >&2
+            exit 1
+          fi
+          echo "CSC_SYSTEM_CERT_SHA1=$system_cert_sha1" >> "$GITHUB_ENV"
       - name: Grant macOS codesign key partition access
         if: ${{ startsWith(matrix.platform, 'mac-') }}
         shell: bash
@@ -170,7 +171,11 @@ jobs:
           if [ -n "${CSC_KEYCHAIN:-}" ]; then
             security delete-keychain "$CSC_KEYCHAIN" || true
           fi
-          for generated_file in "${CSC_P12_PATH:-}" "${CSC_CERT_PATH:-}" "${CSC_TRUST_SETTINGS_PATH:-}"; do
+          if [ -n "${CSC_SYSTEM_CERT_SHA1:-}" ]; then
+            sudo -n security delete-certificate -Z "$CSC_SYSTEM_CERT_SHA1" \
+              /Library/Keychains/System.keychain || true
+          fi
+          for generated_file in "${CSC_P12_PATH:-}" "${CSC_CERT_PATH:-}"; do
             if [ -n "$generated_file" ] && [ -f "$generated_file" ]; then
               unlink "$generated_file"
             fi
