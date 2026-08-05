@@ -1,12 +1,21 @@
-import type { Lang } from '../i18n'
+import type { Lang, LanguagePreference } from '../i18n'
 import type { MirrorSettings } from './lifecycle'
 import type { DurableMemory, MemorySettings } from './memory'
+import type { KnowledgeArticle, KnowledgeComment } from './knowledge'
 import type { AgentTask } from './task'
 
 export interface PortableProviderPreference {
   toolId: string
   baseUrl?: string
   model?: string
+}
+
+/** 正文随备份保存，导入时在目标机重新落为 ~/.agent-os/knowledge 的 Markdown 文件。 */
+export type PortableKnowledgeArticle = Omit<KnowledgeArticle, 'path'>
+
+export interface PortableKnowledgeState {
+  articles: PortableKnowledgeArticle[]
+  comments: KnowledgeComment[]
 }
 
 export interface PortableBackupV1 {
@@ -16,6 +25,8 @@ export interface PortableBackupV1 {
   sourceVersion: string
   preferences: {
     language: Lang
+    /** 可选以兼容 0.4.0 前只保存生效语言的备份。 */
+    languagePreference?: LanguagePreference
     gamificationEnabled: boolean
     mirrorSettings: MirrorSettings
     providers: PortableProviderPreference[]
@@ -25,6 +36,8 @@ export interface PortableBackupV1 {
     settings: MemorySettings
     items: DurableMemory[]
   }
+  /** 可选以兼容 SPEC-046 前导出的 schema v1 备份。 */
+  knowledge?: PortableKnowledgeState
   tasks: AgentTask[]
 }
 
@@ -34,6 +47,7 @@ export interface PortableBackupSummary {
   memories: number
   tasks: number
   providers: number
+  knowledgeArticles?: number
   schedulesWillBePaused: number
   credentialsExcluded: true
 }
@@ -55,5 +69,6 @@ export interface PortableBackupImportResult {
   importedMemories: number
   importedTasks: number
   importedProviders: number
+  importedKnowledgeArticles?: number
   schedulesPaused: number
 }

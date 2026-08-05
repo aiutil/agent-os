@@ -10,6 +10,7 @@ import {
   type Vars
 } from '@shared/i18n'
 import { useUiStore } from '../stores/uiStore'
+import { useCallback } from 'react'
 
 type TFunction = (key: KeyPath<Dictionary>, vars?: Vars) => string
 
@@ -19,12 +20,14 @@ type TFunction = (key: KeyPath<Dictionary>, vars?: Vars) => string
  */
 export function useT(): { lang: Lang; t: TFunction } {
   const pref = useUiStore((s) => s.languagePreference)
-  const lang = resolveLang(pref)
-  const t: TFunction = (key, vars) => translate(lang, key, vars)
+  const systemLanguage = useUiStore((s) => s.platform?.systemLanguage)
+  const lang = resolveLang(pref, systemLanguage)
+  const t = useCallback<TFunction>((key, vars) => translate(lang, key, vars), [lang])
   return { lang, t }
 }
 
 /** 非 React 调用点（如 terminalRegistry 裸字节写入）取当前生效语言。 */
 export function getCurrentRendererLang(): Lang {
-  return resolveLang(useUiStore.getState().languagePreference)
+  const state = useUiStore.getState()
+  return resolveLang(state.languagePreference, state.platform?.systemLanguage)
 }

@@ -158,6 +158,17 @@ export const zh = {
       doc: '携带交接文档'
     }
   },
+  relay: {
+    to: '接力给', current: '当前：{{value}}', loading: '正在读取 Agent…', empty: '没有可接力的 Agent',
+    available: '可用', unavailable: '不可用', unavailableNotice: '{{name}} 暂不可接力：{{reason}}',
+    checkCli: '请先检查 CLI 状态', model: '模型', start: '开始接力', failed: '接力失败', failedWithError: '接力失败：{{error}}',
+    failedHint: '未能创建 {{name}} 会话。原会话没有变化。', close: '关闭',
+    running: '正在接力给 {{name}}', prepare: '准备标准上下文包', create: '创建目标 Agent 会话',
+    inject: '注入上下文', wait: '等待接手摘要', open: '打开新会话', cancel: '取消',
+    from: '接力自 {{tool}}', relayedTo: '已接力给 {{tool}}', short: '接力', sourceShort: '来源',
+    resumableRelayed: '可继续 · 已接力给 {{tool}}', runningFrom: '进行中 · 接力自 {{tool}}',
+    source: '来源：{{title}}', newSession: '新会话：{{title}}', copyContext: '复制上下文路径'
+  },
   tool: {
     status: {
       running: '执行中',
@@ -370,6 +381,17 @@ export const en: typeof zh = {
       text: 'Handed off from {{from}} to {{to}}',
       doc: 'Carries handoff doc'
     }
+  },
+  relay: {
+    to: 'Relay to', current: 'Current: {{value}}', loading: 'Loading agents…', empty: 'No agents available for relay',
+    available: 'Available', unavailable: 'Unavailable', unavailableNotice: '{{name}} cannot receive a relay: {{reason}}',
+    checkCli: 'Check the CLI status first', model: 'Model', start: 'Start relay', failed: 'Relay failed', failedWithError: 'Relay failed: {{error}}',
+    failedHint: 'Could not create a {{name}} session. The original session is unchanged.', close: 'Close',
+    running: 'Relaying to {{name}}', prepare: 'Prepare the standard context pack', create: 'Create the target agent session',
+    inject: 'Inject context', wait: 'Wait for the takeover summary', open: 'Open the new session', cancel: 'Cancel',
+    from: 'Relayed from {{tool}}', relayedTo: 'Relayed to {{tool}}', short: 'Relay', sourceShort: 'Source',
+    resumableRelayed: 'Resumable · Relayed to {{tool}}', runningFrom: 'Running · Relayed from {{tool}}',
+    source: 'Source: {{title}}', newSession: 'New session: {{title}}', copyContext: 'Copy context path'
   },
   tool: {
     status: {

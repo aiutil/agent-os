@@ -82,6 +82,14 @@ describe('sanitizeTranscriptTitle', () => {
     expect(sanitizeTranscriptTitle('# Agent OS 长期记忆 自动注入')).toBe('')
   })
 
+  it('从任务优先的 Agent OS 信封提取真实任务，不让记忆成为标题', () => {
+    expect(
+      sanitizeTranscriptTitle(
+        '<agent-os-task version="1">\n修复会话标题污染\n</agent-os-task>\n\n<agent-os-context version="1">\n# 协作偏好\n\n用中文回答\n</agent-os-context>'
+      )
+    ).toBe('修复会话标题污染')
+  })
+
   it('extracts the first non-greeting user intent from a serialized transcript', () => {
     expect(
       sanitizeTranscriptTitle('## user 你好 ## assistant 您好 ## user 分析当前会话标题为什么不一致 ## assistant 好')

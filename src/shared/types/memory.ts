@@ -122,6 +122,10 @@ export type MemoryConfidence = 'confirmed' | 'inferred'
 export type MemorySensitivity = 'normal' | 'private'
 export type MemoryEvidenceSource = 'session' | 'file' | 'manual' | 'agent'
 export type MemoryFeedbackOutcome = 'useful' | 'stale' | 'wrong'
+/** 记忆的认知类别，和原有 kind（内容形态）正交。 */
+export type MemoryClass = 'identity' | 'semantic' | 'episodic' | 'procedural'
+/** turn/session 只用于工作态；Vault 中可注入条目均为 durable。 */
+export type MemoryLifetime = 'turn' | 'session' | 'durable'
 
 export interface MemoryEvidence {
   sourceType: MemoryEvidenceSource
@@ -145,6 +149,15 @@ export interface DurableMemory {
   updatedAt: string
   expiresAt?: string
   rejectionReason?: string
+  /** SPEC-045：和 kind 解耦的认知类别；旧数据在打开 Vault 时惰性迁移。 */
+  memoryClass?: MemoryClass
+  lifetime?: 'durable'
+  /** 迁移前已存在的条目，仅用于审阅标识，绝不改变正文。 */
+  legacy?: boolean
+  lastAccessedAt?: string
+  accessCount?: number
+  validFrom?: string
+  validUntil?: string
 }
 
 export interface ListDurableMemoriesInput {
@@ -179,6 +192,8 @@ export interface UpdateDurableMemoryPatch {
   tags?: string[]
   pinned?: boolean
   expiresAt?: string | null
+  memoryClass?: MemoryClass
+  validUntil?: string | null
 }
 
 export interface MemoryFeedbackInput {
@@ -187,10 +202,32 @@ export interface MemoryFeedbackInput {
   agentId?: string
 }
 
+export interface WorkingMemoryState {
+  sessionId: string
+  goal?: string
+  constraints: string[]
+  decisions: string[]
+  openQuestions: string[]
+  artifacts: string[]
+  updatedAt: string
+  expiresAt: string
+}
+
+export interface UpdateWorkingMemoryInput {
+  sessionId: string
+  goal?: string | null
+  constraints?: string[]
+  decisions?: string[]
+  openQuestions?: string[]
+  artifacts?: string[]
+}
+
 export interface MemorySettings {
   enabled: boolean
   useMemories: boolean
   generateMemories: boolean
+  /** 允许使用共享提炼 CLI 把会话生成 Markdown 知识草稿；默认开启。 */
+  knowledgeCurationEnabled: boolean
   /** 默认拒绝包含 Web/MCP 等外部上下文的会话自动提炼。 */
   allowExternalContext: boolean
   /** 留空时由系统自动挑选一个支持隔离 headless 提炼的 CLI（优先 isolated 能力）。 */
@@ -198,9 +235,17 @@ export interface MemorySettings {
   /** 为提炼单独指定模型；未设置时才回退到对应 CLI 的 Provider 默认模型。 */
   curatorModel?: string
   contextTokenBudget: number
+  /** 记忆候选的用户可编辑提炼策略；修改只影响后续提炼。 */
+  memoryCurationPrompt: string
+  /** default 按当前界面语言解析内置提示词；custom 保留用户正文。 */
+  memoryCurationPromptMode?: 'default' | 'custom'
+  /** Markdown 知识草稿的用户可编辑提炼策略；修改只影响后续提炼。 */
+  knowledgeCurationPrompt: string
+  /** default 按当前界面语言解析内置提示词；custom 保留用户正文。 */
+  knowledgeCurationPromptMode?: 'default' | 'custom'
   /**
-   * 用户可编辑的提炼偏好（"提什么、不提什么"）。系统模板会包裹这段文本，
-   * JSON schema 等机器约束不在此暴露。留空则用内置默认偏好。
+   * 旧版记忆提炼字段，仅用于备份和本机设置迁移。
+   * @deprecated 使用 memoryCurationPrompt。
    */
   curationInstructions?: string
   /**
@@ -242,12 +287,23 @@ export interface ReferencedMemory {
   title: string
   kind: MemoryKind
   scope: MemoryScope
+  memoryClass?: MemoryClass
+}
+
+/** controller 生成并通过 daemon/远程节点传递的只读上下文快照。 */
+export interface TurnContextPack {
+  version: 1
+  text: string
+  referencedMemories: ReferencedMemory[]
+  generatedAt: string
+  estimatedTokens: number
 }
 
 export interface MemoryContextInput {
   cwd: string
   task: string
   agentId?: string
+  sessionId?: string
   tokenBudget?: number
 }
 
@@ -256,12 +312,69 @@ export interface MemoryContextItem {
   estimatedTokens: number
 }
 
-export interface MemoryContextPack {
+export interface MemoryContextPack extends TurnContextPack {
   text: string
   items: MemoryContextItem[]
   tokenBudget: number
   estimatedTokens: number
   truncated: boolean
+}
+
+export type GraphEntityType =
+  | 'memory'
+  | 'persona'
+  | 'scope'
+  | 'article'
+  | 'topic'
+  | 'tag'
+  | 'source-session'
+
+export type GraphRelation =
+  | 'belongs_to'
+  | 'evidenced_by'
+  | 'supersedes'
+  | 'derived_from'
+  | 'related_to'
+  | 'tagged_with'
+  | 'sourced_from'
+  | 'follows'
+  | 'references'
+
+export interface GraphNode {
+  id: string
+  type: GraphEntityType
+  label: string
+  group?: string
+  status?: string
+  weight: number
+  muted?: boolean
+}
+
+export interface GraphEdge {
+  id: string
+  source: string
+  target: string
+  relation: GraphRelation
+  weight?: number
+}
+
+export interface GraphSnapshot {
+  nodes: GraphNode[]
+  edges: GraphEdge[]
+  truncated: boolean
+}
+
+/** 图谱域共享的查询选项；服务端决定关系，renderer 不自行推断业务连接。 */
+export interface GraphQuery {
+  relations?: GraphRelation[]
+}
+
+export interface MemoryGraphInput extends GraphQuery {
+  query?: string
+  statuses?: MemoryStatus[]
+  scopes?: MemoryScope[]
+  includeSources?: boolean
+  limit?: number
 }
 
 export interface MemoryGatewayCapability {
@@ -323,6 +436,10 @@ export interface MemoryApi {
   forget(id: string): Promise<void>
   feedback(input: MemoryFeedbackInput): Promise<void>
   context(input: MemoryContextInput): Promise<MemoryContextPack>
+  graph(input?: MemoryGraphInput): Promise<GraphSnapshot>
+  working(sessionId: string): Promise<WorkingMemoryState | null>
+  updateWorking(input: UpdateWorkingMemoryInput): Promise<WorkingMemoryState>
+  clearWorking(sessionId: string): Promise<void>
   settings(): Promise<MemorySettings>
   updateSettings(patch: Partial<MemorySettings>): Promise<MemorySettings>
   /** 全局用户画像（人格）：单份、手动维护；context() 会作为最高优先级 preamble 注入。 */

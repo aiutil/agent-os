@@ -202,14 +202,14 @@ export class DaemonRuntimeHost implements RuntimeHost {
   kill(sessionId: string): Promise<boolean> {
     return this.call('kill', [sessionId])
   }
-  sendTurn(sessionId: string, text: string, files?: string[]): Promise<ChatTurnState> {
-    return this.call('sendTurn', files?.length ? [sessionId, text, files] : [sessionId, text])
+  sendTurn(sessionId: string, text: string, files?: string[], contextPack?: import('@shared/types').TurnContextPack): Promise<ChatTurnState> {
+    return this.call('sendTurn', contextPack ? [sessionId, text, files ?? [], contextPack] : files?.length ? [sessionId, text, files] : [sessionId, text])
   }
   steerTurn(sessionId: string, text: string, files?: string[]): Promise<ChatTurnState> {
     return this.call('steerTurn', files?.length ? [sessionId, text, files] : [sessionId, text])
   }
-  queueTurn(sessionId: string, text: string, files?: string[]): Promise<ManagedQueuedTurn> {
-    return this.call('queueTurn', files?.length ? [sessionId, text, files] : [sessionId, text])
+  queueTurn(sessionId: string, text: string, files?: string[], contextPack?: import('@shared/types').TurnContextPack): Promise<ManagedQueuedTurn> {
+    return this.call('queueTurn', contextPack ? [sessionId, text, files ?? [], contextPack] : files?.length ? [sessionId, text, files] : [sessionId, text])
   }
   listQueuedTurns(sessionId: string): Promise<ManagedQueuedTurn[]> {
     return this.call('listQueuedTurns', [sessionId])

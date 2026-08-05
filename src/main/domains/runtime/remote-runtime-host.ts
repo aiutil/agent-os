@@ -249,14 +249,14 @@ export class RemoteRuntimeHost implements RuntimeHost {
   kill(sessionId: string): Promise<boolean> {
     return this.live.kill(sessionId)
   }
-  sendTurn(sessionId: string, text: string, files?: string[]): Promise<ChatTurnState> {
-    return this.live.sendTurn(sessionId, text, files)
+  sendTurn(sessionId: string, text: string, files?: string[], contextPack?: import('@shared/types').TurnContextPack): Promise<ChatTurnState> {
+    return this.live.sendTurn(sessionId, text, files, contextPack)
   }
   steerTurn(sessionId: string, text: string, files?: string[]): Promise<ChatTurnState> {
     return this.live.steerTurn(sessionId, text, files)
   }
-  queueTurn(sessionId: string, text: string, files?: string[]): Promise<ManagedQueuedTurn> {
-    return this.live.queueTurn(sessionId, text, files)
+  queueTurn(sessionId: string, text: string, files?: string[], contextPack?: import('@shared/types').TurnContextPack): Promise<ManagedQueuedTurn> {
+    return this.live.queueTurn(sessionId, text, files, contextPack)
   }
   listQueuedTurns(sessionId: string): Promise<ManagedQueuedTurn[]> {
     return this.live.listQueuedTurns(sessionId)

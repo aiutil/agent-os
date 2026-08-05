@@ -46,6 +46,7 @@ function pageCurrentVersion(content) {
 function readmeCurrentVersion(content) {
   return /Version `(\d+\.\d+\.\d+)`/.exec(content)?.[1] ||
     /当前最新版本：\*\*v(\d+\.\d+\.\d+)\*\*\s*·\s*\d{4}-\d{2}-\d{2}/.exec(content)?.[1] ||
+    /releases\/tag\/v(\d+\.\d+\.\d+)/.exec(content)?.[1] ||
     ''
 }
 

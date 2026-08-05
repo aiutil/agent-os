@@ -16,8 +16,10 @@ import { useNotificationStore } from '../../../stores/notificationStore'
 import { useTasksStore } from '../../../stores/tasksStore'
 import { useToolsStore } from '../../../stores/toolsStore'
 import { Markdown } from '../../../lib/markdown/Markdown'
+import { useT } from '../../../lib/i18n'
 
 type TaskSection = 'board' | 'schedule'
+type TFunction = ReturnType<typeof useT>['t']
 
 const ACTIVE = new Set(['queued', 'running', 'needs_attention'])
 const EMPTY_TASK_RUNS: TaskRun[] = []
@@ -29,8 +31,8 @@ function notifyError(error: unknown): void {
   })
 }
 
-function hostLabel(hostId?: string): string {
-  return !hostId || hostId === 'local' ? '本机' : hostId
+function hostLabel(hostId: string | undefined, t: TFunction): string {
+  return !hostId || hostId === 'local' ? t('tasks.local') : hostId
 }
 
 function formatTime(value?: string): string {
@@ -45,26 +47,23 @@ function formatTime(value?: string): string {
   }).format(date)
 }
 
-function runStatusLabel(status: TaskRun['status']): string {
-  const labels: Record<TaskRun['status'], string> = {
-    queued: '排队中',
-    running: '执行中',
-    needs_attention: '需要处理',
-    succeeded: '执行成功',
-    failed: '执行失败',
-    interrupted: '已中断',
-    skipped: '已跳过'
-  }
-  return labels[status]
+function runStatusLabel(status: TaskRun['status'], t: TFunction): string {
+  if (status === 'queued') return t('tasks.status.queued')
+  if (status === 'running') return t('tasks.status.running')
+  if (status === 'needs_attention') return t('tasks.status.needsAttention')
+  if (status === 'succeeded') return t('tasks.status.succeeded')
+  if (status === 'failed') return t('tasks.status.failed')
+  if (status === 'interrupted') return t('tasks.status.interrupted')
+  return t('tasks.status.skipped')
 }
 
-function timelineTitle(item: ManagedChatTimelineItem): string {
-  if (item.type === 'thinking') return 'Agent 思考'
-  if (item.type === 'tool_use') return item.tool ? `调用工具 · ${item.tool}` : '调用工具'
-  if (item.type === 'tool_result') return item.tool ? `工具结果 · ${item.tool}` : '工具结果'
-  if (item.type === 'permission') return '权限请求'
-  if (item.type === 'error') return '执行错误'
-  return 'Agent 输出'
+function timelineTitle(item: ManagedChatTimelineItem, t: TFunction): string {
+  if (item.type === 'thinking') return t('tasks.timeline.thinking')
+  if (item.type === 'tool_use') return item.tool ? `${t('tasks.timeline.toolUse')} · ${item.tool}` : t('tasks.timeline.toolUse')
+  if (item.type === 'tool_result') return item.tool ? `${t('tasks.timeline.toolResult')} · ${item.tool}` : t('tasks.timeline.toolResult')
+  if (item.type === 'permission') return t('tasks.timeline.permission')
+  if (item.type === 'error') return t('tasks.timeline.error')
+  return t('tasks.timeline.output')
 }
 
 function detailPayload(value: unknown): string {
@@ -86,6 +85,7 @@ function TaskDetailModal({
   onClose(): void
   onOpenSession(id: string): void
 }): React.JSX.Element {
+  const { t, lang } = useT()
   const runs = useTasksStore((state) => state.runsByTask[task.id] ?? EMPTY_TASK_RUNS)
   const loadRuns = useTasksStore((state) => state.loadRuns)
   const update = useTasksStore((state) => state.update)
@@ -140,13 +140,13 @@ function TaskDetailModal({
           historyResult.reason instanceof Error
             ? historyResult.reason.message
             : String(historyResult.reason)
-        setSessionError(reason || '读取会话过程失败')
+        setSessionError(reason || t('tasks.detail.readFailed'))
       } else {
         setSessionError(null)
       }
       setSessionLoading(false)
     },
-    [sessionId]
+    [sessionId, t]
   )
 
   useEffect(() => {
@@ -172,7 +172,7 @@ function TaskDetailModal({
     [messages, selectedRun, timeline]
   )
   const fallbackProcess = scopedTimeline.length === 0 ? scopedMessages : []
-  const statusPresentation = presentTaskStatus(task)
+  const statusPresentation = presentTaskStatus(task, lang)
 
   const confirmTask = async (): Promise<void> => {
     setConfirming(true)
@@ -196,7 +196,7 @@ function TaskDetailModal({
         className="task-modal task-detail-modal"
         role="dialog"
         aria-modal="true"
-        aria-label={`任务详情：${task.title}`}
+        aria-label={t('tasks.detail.aria', { title: task.title })}
       >
         <header>
           <div>
@@ -207,7 +207,7 @@ function TaskDetailModal({
             <b className={`is-${statusPresentation.state}`} role="status" aria-live="polite">
               {statusPresentation.label}
             </b>
-            <button onClick={onClose} aria-label="关闭任务详情">
+            <button onClick={onClose} aria-label={t('tasks.detail.closeAria')}>
               ×
             </button>
           </div>
@@ -222,25 +222,25 @@ function TaskDetailModal({
             </strong>
           </div>
           <div>
-            <span>目标主机</span>
-            <strong>{hostLabel(task.runtimeHostId)}</strong>
+            <span>{t('tasks.detail.host')}</span>
+            <strong>{hostLabel(task.runtimeHostId, t)}</strong>
           </div>
           <div>
-            <span>权限 / 会话</span>
+            <span>{t('tasks.detail.permissionSession')}</span>
             <strong>
-              {task.permissionPreset} · {task.sessionPolicy === 'new' ? '每次新会话' : '延续上次'}
+              {task.permissionPreset} · {task.sessionPolicy === 'new' ? t('tasks.detail.newSession') : t('tasks.detail.continueSession')}
             </strong>
           </div>
           <div>
-            <span>最近更新</span>
+            <span>{t('tasks.detail.updated')}</span>
             <strong>{formatTime(task.updatedAt)}</strong>
           </div>
           <div className="task-detail__workspace">
-            <span>工作目录</span>
+            <span>{t('tasks.detail.workspace')}</span>
             <strong>{task.workspacePath}</strong>
           </div>
           <div className="task-detail__prompt">
-            <span>任务说明</span>
+            <span>{t('tasks.detail.prompt')}</span>
             <p>{task.prompt}</p>
           </div>
         </div>
@@ -250,14 +250,14 @@ function TaskDetailModal({
             <div className="task-detail__section-head">
               <div>
                 <span>RUN HISTORY</span>
-                <h3>运行记录</h3>
+                <h3>{t('tasks.detail.runs')}</h3>
               </div>
               <b>{runs.length}</b>
             </div>
             {runsLoading && runs.length === 0 && (
-              <p className="task-detail__empty">正在读取运行记录…</p>
+              <p className="task-detail__empty">{t('tasks.detail.loadingRuns')}</p>
             )}
-            {!runsLoading && runs.length === 0 && <p className="task-detail__empty">尚未执行</p>}
+            {!runsLoading && runs.length === 0 && <p className="task-detail__empty">{t('tasks.detail.neverRun')}</p>}
             {runs.map((run, index) => (
               <button
                 key={run.id}
@@ -265,9 +265,9 @@ function TaskDetailModal({
                 onClick={() => setSelectedRunId(run.id)}
               >
                 <span>
-                  #{runs.length - index} · {run.trigger === 'schedule' ? '定时触发' : '手动触发'}
+                  #{runs.length - index} · {run.trigger === 'schedule' ? t('tasks.detail.scheduledTrigger') : t('tasks.detail.manualTrigger')}
                 </span>
-                <strong>{runStatusLabel(run.status)}</strong>
+                <strong>{runStatusLabel(run.status, t)}</strong>
                 <em>{formatTime(run.startedAt ?? run.scheduledFor ?? run.finishedAt)}</em>
               </button>
             ))}
@@ -281,7 +281,7 @@ function TaskDetailModal({
                 role="tab"
                 aria-selected={tab === 'process'}
               >
-                执行过程 <span>{scopedTimeline.length || fallbackProcess.length}</span>
+                {t('tasks.detail.process')} <span>{scopedTimeline.length || fallbackProcess.length}</span>
               </button>
               <button
                 className={tab === 'delivery' ? 'is-active' : ''}
@@ -289,19 +289,19 @@ function TaskDetailModal({
                 role="tab"
                 aria-selected={tab === 'delivery'}
               >
-                交付物 <span>{deliveries.length}</span>
+                {t('tasks.detail.deliveries')} <span>{deliveries.length}</span>
               </button>
               <button
                 className="task-detail__refresh"
                 onClick={() => void refreshSession()}
                 disabled={!sessionId || sessionLoading}
               >
-                {sessionLoading ? '读取中…' : '刷新'}
+                {sessionLoading ? t('tasks.detail.loading') : t('tasks.detail.refresh')}
               </button>
             </div>
 
             {sessionError && (
-              <div className="task-detail__error">会话过程读取失败：{sessionError}</div>
+              <div className="task-detail__error">{t('tasks.detail.sessionError', { error: sessionError })}</div>
             )}
 
             {tab === 'process' && (
@@ -311,13 +311,13 @@ function TaskDetailModal({
                     <i />
                     <div>
                       <header>
-                        <strong>TaskRun · {runStatusLabel(selectedRun.status)}</strong>
+                        <strong>TaskRun · {runStatusLabel(selectedRun.status, t)}</strong>
                         <time>{formatTime(selectedRun.startedAt ?? selectedRun.scheduledFor)}</time>
                       </header>
                       <p>
-                        {selectedRun.trigger === 'schedule' ? '由定时计划触发' : '由用户手动触发'}
+                        {selectedRun.trigger === 'schedule' ? t('tasks.detail.scheduledBy') : t('tasks.detail.manualBy')}
                         {selectedRun.finishedAt
-                          ? ` · ${formatTime(selectedRun.finishedAt)} 结束`
+                          ? ` · ${t('tasks.detail.finishedAt', { time: formatTime(selectedRun.finishedAt) })}`
                           : ''}
                       </p>
                       {selectedRun.error && <pre>{selectedRun.error}</pre>}
@@ -340,11 +340,11 @@ function TaskDetailModal({
                       <i />
                       <div>
                         <header>
-                          <strong>{timelineTitle(item)}</strong>
+                          <strong>{timelineTitle(item, t)}</strong>
                           <time>{formatTime(item.createdAt)}</time>
                         </header>
                         {item.type === 'permission' && item.status && (
-                          <p>处理状态：{item.status}</p>
+                          <p>{t('tasks.timeline.handled', { status: item.status })}</p>
                         )}
                         {body && <pre>{body}</pre>}
                       </div>
@@ -356,7 +356,7 @@ function TaskDetailModal({
                     <i />
                     <div>
                       <header>
-                        <strong>{message.role === 'assistant' ? 'Agent 输出' : '任务输入'}</strong>
+                        <strong>{message.role === 'assistant' ? t('tasks.timeline.output') : t('tasks.timeline.input')}</strong>
                         <time>{formatTime(message.createdAt)}</time>
                       </header>
                       <pre>{message.text}</pre>
@@ -368,8 +368,8 @@ function TaskDetailModal({
                   scopedTimeline.length === 0 &&
                   fallbackProcess.length === 0 && (
                     <div className="task-detail__empty-state">
-                      <h3>尚无执行过程</h3>
-                      <p>运行任务后，这里会显示 Agent 的思考、工具调用、权限处理和输出。</p>
+                      <h3>{t('tasks.detail.noProcess')}</h3>
+                      <p>{t('tasks.detail.noProcessHint')}</p>
                     </div>
                   )}
                 {!sessionLoading &&
@@ -377,11 +377,11 @@ function TaskDetailModal({
                   scopedTimeline.length === 0 &&
                   fallbackProcess.length === 0 && (
                     <div className="task-detail__empty-state">
-                      <h3>本次运行没有会话过程</h3>
+                      <h3>{t('tasks.detail.noRunProcess')}</h3>
                       <p>
                         {selectedRun.sessionId
-                          ? '会话尚未产生可展示内容，或目标节点暂时离线。'
-                          : '本次运行在创建会话前结束。'}
+                          ? t('tasks.detail.noRunProcessSession')
+                          : t('tasks.detail.noRunProcessBeforeSession')}
                       </p>
                     </div>
                   )}
@@ -395,7 +395,7 @@ function TaskDetailModal({
                     <header>
                       <div>
                         <span>AGENT DELIVERY</span>
-                        <strong>{delivery.status === 'streaming' ? '生成中' : '最终交付'}</strong>
+                        <strong>{delivery.status === 'streaming' ? t('tasks.detail.streaming') : t('tasks.detail.final')}</strong>
                       </div>
                       <time>{formatTime(delivery.createdAt)}</time>
                     </header>
@@ -406,11 +406,11 @@ function TaskDetailModal({
                 ))}
                 {!sessionLoading && deliveries.length === 0 && (
                   <div className="task-detail__empty-state">
-                    <h3>暂无交付物</h3>
+                    <h3>{t('tasks.detail.noDelivery')}</h3>
                     <p>
                       {selectedRun?.status === 'running'
-                        ? 'Agent 仍在执行，最终回复产生后会显示在这里。'
-                        : '本次运行没有记录到 Agent 最终回复。'}
+                        ? t('tasks.detail.runningDeliveryHint')
+                        : t('tasks.detail.noDeliveryHint')}
                     </p>
                   </div>
                 )}
@@ -420,7 +420,7 @@ function TaskDetailModal({
         </div>
 
         <footer>
-          <button onClick={onClose}>关闭</button>
+          <button onClick={onClose}>{t('tasks.detail.close')}</button>
           <button
             className={task.boardStatus === 'review' ? undefined : 'is-primary'}
             disabled={!sessionId}
@@ -430,11 +430,11 @@ function TaskDetailModal({
               onClose()
             }}
           >
-            打开会话
+            {t('tasks.detail.openSession')}
           </button>
           {task.boardStatus === 'review' && (
             <button className="is-primary" disabled={confirming} onClick={() => void confirmTask()}>
-              {confirming ? '确认中…' : '确认完成'}
+              {confirming ? t('tasks.detail.confirming') : t('tasks.detail.confirm')}
             </button>
           )}
         </footer>
@@ -453,6 +453,7 @@ export function TasksSecPanel({
   onSection(section: TaskSection): void
   onNew(): void
 }): React.JSX.Element {
+  const { t, lang } = useT()
   const tasks = useTasksStore((state) => state.tasks)
   const loading = useTasksStore((state) => state.loading)
   const error = useTasksStore((state) => state.error)
@@ -465,9 +466,9 @@ export function TasksSecPanel({
       <div className="task-panel__head">
         <div>
           <div className="task-panel__eyebrow">TASK CORE</div>
-          <h2>{section === 'board' ? '任务看板' : '定时任务'}</h2>
+          <h2>{section === 'board' ? t('tasks.panel.board') : t('tasks.panel.schedules')}</h2>
         </div>
-        <button className="task-icon-button" onClick={onNew} aria-label="新建任务">
+        <button className="task-icon-button" onClick={onNew} aria-label={t('tasks.panel.newAria')}>
           ＋
         </button>
       </div>
@@ -476,44 +477,44 @@ export function TasksSecPanel({
           className={`mode-btn ${section === 'board' ? 'is-active' : ''}`}
           onClick={() => onSection('board')}
         >
-          看板
+          {t('tasks.panel.boardTab')}
         </button>
         <button
           className={`mode-btn ${section === 'schedule' ? 'is-active' : ''}`}
           onClick={() => onSection('schedule')}
         >
-          定时
+          {t('tasks.panel.scheduleTab')}
         </button>
       </div>
       <button className="panel-new" onClick={onNew}>
-        ＋ {section === 'board' ? '新建任务' : '新建定时任务'}
+        ＋ {section === 'board' ? t('tasks.panel.newTask') : t('tasks.panel.newSchedule')}
       </button>
       <div className="task-panel__metrics">
         <div>
           <strong>{active}</strong>
-          <span>执行中</span>
+          <span>{t('tasks.panel.running')}</span>
         </div>
         <div>
           <strong>{review}</strong>
-          <span>待审阅</span>
+          <span>{t('tasks.panel.review')}</span>
         </div>
         <div>
           <strong>{scheduled}</strong>
-          <span>已启用</span>
+          <span>{t('tasks.panel.enabled')}</span>
         </div>
       </div>
       <div className="panel-divider" />
       <div className="task-panel__hint">
         {loading
-          ? '正在读取 daemon 任务…'
+          ? t('tasks.panel.loading')
           : error
-            ? `Runtime 不可用：${error}`
-            : '任务由目标 Runtime daemon 持有；关闭桌面程序后，计划仍可继续。'}
+            ? t('tasks.panel.unavailable', { error })
+            : t('tasks.panel.daemonHint')}
       </div>
       <div className="task-panel__recent">
-        <div className="panel-group-label">最近更新</div>
+        <div className="panel-group-label">{t('tasks.panel.recent')}</div>
         {tasks.slice(0, 7).map((task) => {
-          const presentation = presentTaskStatus(task)
+          const presentation = presentTaskStatus(task, lang)
           return (
             <div className="task-panel__item" key={task.id}>
               <span className={`task-status-dot is-${presentation.state}`} />
@@ -526,22 +527,24 @@ export function TasksSecPanel({
             </div>
           )
         })}
-        {!loading && tasks.length === 0 && <div className="task-panel__empty">还没有任务</div>}
+        {!loading && tasks.length === 0 && <div className="task-panel__empty">{t('tasks.panel.empty')}</div>}
       </div>
     </div>
   )
 }
 
-const COLUMNS: Array<{
+function columns(t: TFunction): Array<{
   status: Exclude<TaskBoardStatus, 'backlog' | 'cancelled'>
   label: string
   hint: string
-}> = [
-  { status: 'todo', label: 'Todo', hint: '等待派发' },
-  { status: 'in_progress', label: 'In Progress', hint: 'Agent 正在工作' },
-  { status: 'review', label: 'Review', hint: '人工检查结果' },
-  { status: 'done', label: 'Done', hint: '已确认完成' }
-]
+}> {
+  return [
+    { status: 'todo', label: 'Todo', hint: t('tasks.board.todoHint') },
+    { status: 'in_progress', label: 'In Progress', hint: t('tasks.board.progressHint') },
+    { status: 'review', label: 'Review', hint: t('tasks.board.reviewHint') },
+    { status: 'done', label: 'Done', hint: t('tasks.board.doneHint') }
+  ]
+}
 
 function TaskCard({
   task,
@@ -554,11 +557,12 @@ function TaskCard({
   onDetail(id: string): void
   onOpenSession(id: string): void
 }): React.JSX.Element {
+  const { t, lang } = useT()
   const update = useTasksStore((state) => state.update)
   const runNow = useTasksStore((state) => state.runNow)
   const remove = useTasksStore((state) => state.remove)
   const active = ACTIVE.has(task.executionStatus)
-  const presentation = presentTaskStatus(task)
+  const presentation = presentTaskStatus(task, lang)
   return (
     <article
       className={`task-card is-${presentation.state}`}
@@ -567,7 +571,7 @@ function TaskCard({
     >
       <div className="task-card__head">
         <h3>{task.title}</h3>
-        <button onClick={() => onEdit(task)} aria-label="编辑任务">
+        <button onClick={() => onEdit(task)} aria-label={t('tasks.board.editAria')}>
           •••
         </button>
       </div>
@@ -578,32 +582,32 @@ function TaskCard({
           {task.assignee.model ? ` · ${task.assignee.model}` : ''}
         </span>
         <span>
-          {hostLabel(task.runtimeHostId)} · {task.workspacePath}
+          {hostLabel(task.runtimeHostId, t)} · {task.workspacePath}
         </span>
       </div>
       <div className={`task-card__state is-${presentation.state}`}>
         <span className={`task-status-dot is-${presentation.state}`} />
         {presentation.label}
       </div>
-      {task.lastError && <div className="task-card__error">最近一次执行：{task.lastError}</div>}
+      {task.lastError && <div className="task-card__error">{t('tasks.board.lastRun', { error: task.lastError })}</div>}
       <div className="task-card__actions">
-        <button onClick={() => onDetail(task.id)}>任务详情</button>
+        <button onClick={() => onDetail(task.id)}>{t('tasks.board.detail')}</button>
         {!active && task.boardStatus !== 'done' && (
           <button className="is-primary" onClick={() => void runNow(task.id).catch(notifyError)}>
-            运行
+            {t('tasks.board.run')}
           </button>
         )}
         {task.latestSessionId && (
-          <button onClick={() => onOpenSession(task.latestSessionId!)}>打开会话</button>
+          <button onClick={() => onOpenSession(task.latestSessionId!)}>{t('tasks.board.openSession')}</button>
         )}
         {task.boardStatus === 'review' && (
           <button onClick={() => void update(task.id, { boardStatus: 'done' }).catch(notifyError)}>
-            确认完成
+            {t('tasks.board.confirm')}
           </button>
         )}
         {!active && (
           <button className="is-danger" onClick={() => void remove(task.id).catch(notifyError)}>
-            删除
+            {t('tasks.board.delete')}
           </button>
         )}
       </div>
@@ -620,6 +624,7 @@ export function TaskBoardView({
   onEdit(task: AgentTask): void
   onOpenSession(id: string): void
 }): React.JSX.Element {
+  const { t } = useT()
   const tasks = useTasksStore((state) => state.tasks)
   const update = useTasksStore((state) => state.update)
   const [detailTaskId, setDetailTaskId] = useState<string | null>(null)
@@ -632,15 +637,15 @@ export function TaskBoardView({
         <header className="task-page-head">
           <div>
             <div className="task-page-head__eyebrow">AGENT DELIVERY</div>
-            <h1>任务看板</h1>
-            <p>先派单，再执行；Agent 完成后统一进入 Review，由你确认 Done。</p>
+            <h1>{t('tasks.board.title')}</h1>
+            <p>{t('tasks.board.description')}</p>
           </div>
           <button className="task-primary-button" onClick={onNew}>
-            ＋ 新建任务
+            ＋ {t('tasks.panel.newTask')}
           </button>
         </header>
         <div className="task-board">
-          {COLUMNS.map((column) => {
+          {columns(t).map((column) => {
             const items = visible.filter((task) =>
               column.status === 'todo'
                 ? task.boardStatus === 'todo' || task.boardStatus === 'backlog'
@@ -673,7 +678,7 @@ export function TaskBoardView({
                       onOpenSession={onOpenSession}
                     />
                   ))}
-                  {items.length === 0 && <div className="task-column__empty">拖放任务到这里</div>}
+                  {items.length === 0 && <div className="task-column__empty">{t('tasks.board.dropHere')}</div>}
                 </div>
               </section>
             )
@@ -691,11 +696,13 @@ export function TaskBoardView({
   )
 }
 
-function scheduleLabel(schedule: TaskSchedule): string {
-  if (schedule.kind === 'once') return `单次 · ${formatTime(schedule.runAt)}`
+function scheduleLabel(schedule: TaskSchedule, t: TFunction): string {
+  if (schedule.kind === 'once') return t('tasks.schedule.onceLabel', { time: formatTime(schedule.runAt) })
   if (schedule.kind === 'interval') {
     const hours = schedule.everyMs / 3_600_000
-    return Number.isInteger(hours) ? `每隔 ${hours} 小时` : `每隔 ${schedule.everyMs / 60_000} 分钟`
+    return Number.isInteger(hours)
+      ? t('tasks.schedule.everyHours', { count: hours })
+      : t('tasks.schedule.everyMinutes', { count: schedule.everyMs / 60_000 })
   }
   return `Cron · ${schedule.expression} · ${schedule.timeZone}`
 }
@@ -709,6 +716,7 @@ export function TaskScheduleView({
   onEdit(task: AgentTask): void
   onOpenSession(id: string): void
 }): React.JSX.Element {
+  const { t } = useT()
   const tasks = useTasksStore((state) => state.tasks).filter((task) => task.schedule)
   const update = useTasksStore((state) => state.update)
   const runNow = useTasksStore((state) => state.runNow)
@@ -724,11 +732,11 @@ export function TaskScheduleView({
         <header className="task-page-head">
           <div>
             <div className="task-page-head__eyebrow">DAEMON SCHEDULER</div>
-            <h1>定时任务</h1>
-            <p>每个计划绑定一个目标 Runtime 和一个 Agent CLI，并保留独立运行记录。</p>
+            <h1>{t('tasks.schedule.title')}</h1>
+            <p>{t('tasks.schedule.description')}</p>
           </div>
           <button className="task-primary-button" onClick={onNew}>
-            ＋ 新建定时任务
+            ＋ {t('tasks.panel.newSchedule')}
           </button>
         </header>
         <div className="schedule-list">
@@ -750,21 +758,21 @@ export function TaskScheduleView({
                   <span className={`schedule-toggle ${schedule.enabled ? 'is-on' : ''}`} />
                   <div>
                     <h2>{task.title}</h2>
-                    <p>{scheduleLabel(schedule)}</p>
+                    <p>{scheduleLabel(schedule, t)}</p>
                     <span>
-                      {task.assignee.toolId} · {hostLabel(task.runtimeHostId)} ·{' '}
+                      {task.assignee.toolId} · {hostLabel(task.runtimeHostId, t)} ·{' '}
                       {task.workspacePath}
                     </span>
                   </div>
                   <div className="schedule-card__next">
-                    <span>下一次</span>
-                    <strong>{schedule.enabled ? formatTime(schedule.nextRunAt) : '已暂停'}</strong>
+                    <span>{t('tasks.schedule.next')}</span>
+                    <strong>{schedule.enabled ? formatTime(schedule.nextRunAt) : t('tasks.schedule.paused')}</strong>
                   </div>
                 </button>
                 <div className="schedule-card__actions">
-                  <button onClick={() => setDetailTaskId(task.id)}>任务详情</button>
+                  <button onClick={() => setDetailTaskId(task.id)}>{t('tasks.schedule.detail')}</button>
                   <button disabled={active} onClick={() => void runNow(task.id).catch(notifyError)}>
-                    {active ? '执行中' : '立即运行'}
+                    {active ? t('tasks.schedule.running') : t('tasks.schedule.runNow')}
                   </button>
                   <button
                     onClick={() =>
@@ -773,26 +781,26 @@ export function TaskScheduleView({
                       }).catch(notifyError)
                     }
                   >
-                    {schedule.enabled ? '暂停' : '启用'}
+                    {schedule.enabled ? t('tasks.schedule.pause') : t('tasks.schedule.enable')}
                   </button>
-                  <button onClick={() => onEdit(task)}>编辑</button>
+                  <button onClick={() => onEdit(task)}>{t('tasks.schedule.edit')}</button>
                   {task.latestSessionId && (
-                    <button onClick={() => onOpenSession(task.latestSessionId!)}>打开会话</button>
+                    <button onClick={() => onOpenSession(task.latestSessionId!)}>{t('tasks.schedule.openSession')}</button>
                   )}
                 </div>
                 {expanded === task.id && (
                   <div className="schedule-runs">
-                    <h3>最近运行</h3>
+                    <h3>{t('tasks.schedule.recentRuns')}</h3>
                     {runs.slice(0, 8).map((run) => (
                       <div key={run.id}>
                         <span>
                           {formatTime(run.startedAt ?? run.scheduledFor ?? run.finishedAt)}
                         </span>
-                        <strong className={`is-${run.status}`}>{runStatusLabel(run.status)}</strong>
+                        <strong className={`is-${run.status}`}>{runStatusLabel(run.status, t)}</strong>
                         <em>{run.error ?? ''}</em>
                       </div>
                     ))}
-                    {runs.length === 0 && <p>暂无运行记录</p>}
+                    {runs.length === 0 && <p>{t('tasks.schedule.noRuns')}</p>}
                   </div>
                 )}
               </article>
@@ -800,9 +808,9 @@ export function TaskScheduleView({
           })}
           {tasks.length === 0 && (
             <div className="schedule-empty">
-              <h2>让重复工作按时发生</h2>
-              <p>新建一个单次、固定间隔或 Cron 计划，目标 daemon 会负责触发。</p>
-              <button onClick={onNew}>新建定时任务</button>
+              <h2>{t('tasks.schedule.emptyTitle')}</h2>
+              <p>{t('tasks.schedule.emptyHint')}</p>
+              <button onClick={onNew}>{t('tasks.panel.newSchedule')}</button>
             </div>
           )}
         </div>
@@ -835,6 +843,7 @@ export function TaskComposer({
   task?: AgentTask
   onClose(): void
 }): React.JSX.Element {
+  const { t } = useT()
   const runtimes = useToolsStore((state) => state.runtimes).filter(
     (runtime) => runtime.capabilities.chat && ['ready', 'updatable'].includes(runtime.health)
   )
@@ -934,7 +943,7 @@ export function TaskComposer({
   }
 
   const save = async (): Promise<void> => {
-    if (!selected) return notifyError('请选择可用的 Agent CLI')
+    if (!selected) return notifyError(t('tasks.composer.selectAgentError'))
     setSaving(true)
     try {
       const schedule = buildSchedule()
@@ -983,32 +992,32 @@ export function TaskComposer({
         className="task-modal"
         role="dialog"
         aria-modal="true"
-        aria-label={task ? '编辑任务' : '新建任务'}
+        aria-label={task ? t('tasks.composer.editAria') : t('tasks.composer.newAria')}
       >
         <header>
           <div>
             <span>{task ? 'EDIT TASK' : kind === 'schedule' ? 'NEW SCHEDULE' : 'NEW TASK'}</span>
-            <h2>{task ? '编辑任务' : kind === 'schedule' ? '新建定时任务' : '新建任务'}</h2>
+            <h2>{task ? t('tasks.composer.edit') : kind === 'schedule' ? t('tasks.composer.newSchedule') : t('tasks.composer.newTask')}</h2>
           </div>
           <button onClick={onClose}>×</button>
         </header>
         <div className="task-form">
           <label>
-            <span>标题</span>
+            <span>{t('tasks.composer.title')}</span>
             <input
               autoFocus
               value={title}
               onChange={(event) => setTitle(event.target.value)}
-              placeholder="例如：每日回顾未解决问题"
+              placeholder={t('tasks.composer.titlePlaceholder')}
             />
           </label>
           <label>
-            <span>任务说明 / 首轮 Prompt</span>
+            <span>{t('tasks.composer.prompt')}</span>
             <textarea
               value={prompt}
               onChange={(event) => setPrompt(event.target.value)}
               rows={5}
-              placeholder="说明目标、完成标准和边界…"
+              placeholder={t('tasks.composer.promptPlaceholder')}
             />
           </label>
           <div className="task-form__row">
@@ -1021,21 +1030,21 @@ export function TaskComposer({
                   setModel('')
                 }}
               >
-                <option value="">请选择</option>
+                <option value="">{t('tasks.composer.select')}</option>
                 {assignableRuntimes.map((runtime) => (
                   <option
                     key={`${runtime.runtimeHostId ?? 'local'}:${runtime.toolId}`}
                     value={`${runtime.runtimeHostId ?? 'local'}::${runtime.toolId}`}
                   >
-                    {runtime.displayName} · {hostLabel(runtime.runtimeHostId)}
+                    {runtime.displayName} · {hostLabel(runtime.runtimeHostId, t)}
                   </option>
                 ))}
               </select>
             </label>
             <label>
-              <span>模型（可选）</span>
+              <span>{t('tasks.composer.model')}</span>
               <select value={model} onChange={(event) => setModel(event.target.value)}>
-                <option value="">由 CLI 决定</option>
+                <option value="">{t('tasks.composer.modelAuto')}</option>
                 {models.map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.label}
@@ -1045,7 +1054,7 @@ export function TaskComposer({
             </label>
           </div>
           <label>
-            <span>工作目录</span>
+            <span>{t('tasks.composer.workspace')}</span>
             <div className="task-path-input">
               <input
                 value={workspacePath}
@@ -1062,14 +1071,14 @@ export function TaskComposer({
                       })
                   }
                 >
-                  选择…
+                  {t('tasks.composer.choose')}
                 </button>
               )}
             </div>
           </label>
           <div className="task-form__row">
             <label>
-              <span>权限</span>
+              <span>{t('tasks.composer.permission')}</span>
               <select
                 value={permissionPreset}
                 onChange={(event) =>
@@ -1082,54 +1091,54 @@ export function TaskComposer({
               </select>
             </label>
             <label>
-              <span>会话策略</span>
+              <span>{t('tasks.composer.sessionPolicy')}</span>
               <select
                 value={sessionPolicy}
                 onChange={(event) =>
                   setSessionPolicy(event.target.value as CreateTaskInput['sessionPolicy'])
                 }
               >
-                <option value="new">每次新会话</option>
-                <option value="continue_last">延续上次会话</option>
+                <option value="new">{t('tasks.composer.newSession')}</option>
+                <option value="continue_last">{t('tasks.composer.continueSession')}</option>
               </select>
             </label>
           </div>
           {permissionPreset === 'auto' && (
             <div className="task-form__warning">
-              无人值守 + Auto 会允许 Agent 自主执行工具，请确认任务说明和工作目录安全。
+              {t('tasks.composer.autoWarning')}
             </div>
           )}
           <fieldset className="task-schedule-fields">
-            <legend>计划</legend>
+            <legend>{t('tasks.composer.schedule')}</legend>
             <div className="task-schedule-tabs">
               <button
                 className={scheduleMode === 'none' ? 'is-active' : ''}
                 onClick={() => setScheduleMode('none')}
               >
-                无
+                {t('tasks.composer.none')}
               </button>
               <button
                 className={scheduleMode === 'once' ? 'is-active' : ''}
                 onClick={() => setScheduleMode('once')}
               >
-                单次
+                {t('tasks.composer.once')}
               </button>
               <button
                 className={scheduleMode === 'interval' ? 'is-active' : ''}
                 onClick={() => setScheduleMode('interval')}
               >
-                间隔
+                {t('tasks.composer.interval')}
               </button>
               <button
                 className={scheduleMode === 'cron' ? 'is-active' : ''}
                 onClick={() => setScheduleMode('cron')}
               >
-                周期 / Cron
+                {t('tasks.composer.cron')}
               </button>
             </div>
             {scheduleMode === 'once' && (
               <label>
-                <span>执行时间</span>
+                <span>{t('tasks.composer.runAt')}</span>
                 <input
                   type="datetime-local"
                   value={runAt}
@@ -1140,12 +1149,12 @@ export function TaskComposer({
             {scheduleMode === 'cron' && (
               <>
                 <div className="task-cron-presets">
-                  <button onClick={() => setCron('0 9 * * *')}>每天 09:00</button>
-                  <button onClick={() => setCron('0 9 * * 1-5')}>工作日 09:00</button>
-                  <button onClick={() => setCron('0 18 * * 5')}>每周五 18:00</button>
+                  <button onClick={() => setCron('0 9 * * *')}>{t('tasks.composer.daily')}</button>
+                  <button onClick={() => setCron('0 9 * * 1-5')}>{t('tasks.composer.weekdays')}</button>
+                  <button onClick={() => setCron('0 18 * * 5')}>{t('tasks.composer.friday')}</button>
                 </div>
                 <label>
-                  <span>五段 Cron</span>
+                  <span>{t('tasks.composer.cronField')}</span>
                   <input
                     className="is-mono"
                     value={cron}
@@ -1157,7 +1166,7 @@ export function TaskComposer({
             {scheduleMode === 'interval' && (
               <div className="task-form__row">
                 <label>
-                  <span>每隔</span>
+                  <span>{t('tasks.composer.every')}</span>
                   <input
                     type="number"
                     min={1}
@@ -1168,13 +1177,13 @@ export function TaskComposer({
                   />
                 </label>
                 <label>
-                  <span>单位</span>
+                  <span>{t('tasks.composer.unit')}</span>
                   <select
                     value={intervalUnit}
                     onChange={(event) => setIntervalUnit(event.target.value as 'minutes' | 'hours')}
                   >
-                    <option value="minutes">分钟</option>
-                    <option value="hours">小时</option>
+                    <option value="minutes">{t('tasks.composer.minutes')}</option>
+                    <option value="hours">{t('tasks.composer.hours')}</option>
                   </select>
                 </label>
               </div>
@@ -1182,19 +1191,19 @@ export function TaskComposer({
             {scheduleMode !== 'none' && (
               <div className="task-form__row">
                 <label>
-                  <span>时区</span>
+                  <span>{t('tasks.composer.timeZone')}</span>
                   <input value={timeZone} onChange={(event) => setTimeZone(event.target.value)} />
                 </label>
                 <label>
-                  <span>错过计划</span>
+                  <span>{t('tasks.composer.misfire')}</span>
                   <select
                     value={misfirePolicy}
                     onChange={(event) =>
                       setMisfirePolicy(event.target.value as TaskSchedule['misfirePolicy'])
                     }
                   >
-                    <option value="run_once">补跑一次</option>
-                    <option value="skip">跳过</option>
+                    <option value="run_once">{t('tasks.composer.runOnce')}</option>
+                    <option value="skip">{t('tasks.composer.skip')}</option>
                   </select>
                 </label>
               </div>
@@ -1207,14 +1216,14 @@ export function TaskComposer({
                 checked={runAfter}
                 onChange={(event) => setRunAfter(event.target.checked)}
               />
-              <span>创建后立即运行</span>
+              <span>{t('tasks.composer.runAfter')}</span>
             </label>
           )}
         </div>
         <footer>
-          <button onClick={onClose}>取消</button>
+          <button onClick={onClose}>{t('tasks.composer.cancel')}</button>
           <button className="is-primary" disabled={saving} onClick={() => void save()}>
-            {saving ? '保存中…' : task ? '保存修改' : '创建任务'}
+            {saving ? t('tasks.composer.saving') : task ? t('tasks.composer.save') : t('tasks.composer.create')}
           </button>
         </footer>
       </div>

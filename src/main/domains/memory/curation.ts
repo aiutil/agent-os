@@ -4,7 +4,7 @@ import { createInterface } from 'node:readline'
 import type { Readable } from 'node:stream'
 import type { CurateMemoryInput, DurableMemory, MemoryKind, MemoryScope } from '@shared/types'
 import type { CliAdapter } from '../adapters/types'
-import { MemoryVault, DEFAULT_CURATION_INSTRUCTIONS } from './vault'
+import { MemoryVault } from './vault'
 import { tr } from '@shared/i18n'
 
 const MAX_SOURCE_LENGTH = 60_000
@@ -49,7 +49,7 @@ function curationPrompt(source: CurateMemoryInput, instructions: string): string
     'Use scope user/project/repo/path/agent. Prefer repo only when the evidence is repository-specific.',
     '',
     '# Curation policy',
-    instructions.trim() || DEFAULT_CURATION_INSTRUCTIONS,
+    instructions.trim(),
     '',
     `Current working directory: ${source.cwd}`,
     '',
@@ -117,7 +117,7 @@ export class MemoryCurationService {
     }
     const output = await this.run(
       adapter,
-      curationPrompt(input, settings.curationInstructions ?? ''),
+      curationPrompt(input, settings.memoryCurationPrompt),
       input.cwd,
       this.getProviderEnv(adapter.id),
       settings.curatorModel?.trim() || this.getProviderModel(adapter.id)
@@ -133,8 +133,8 @@ export class MemoryCurationService {
       const tags = isChannel
         ? [...new Set([...(item.tags ?? []), input.channelTag!.trim(), 'channel'].map((t) => t.trim()).filter(Boolean))]
         : item.tags
-      // 自动整理直接落 active（免审批），由 vault.addActive 做 title+scope+scopeRef 去重。
-      proposals.push(this.vault.addActive({
+      // 自动整理仅创建候选；用户确认前不得进入 Context Pack（SPEC-028/045）。
+      proposals.push(this.vault.propose({
         kind: item.kind,
         title: item.title,
         content: item.content,
@@ -147,6 +147,33 @@ export class MemoryCurationService {
     // 成功提炼后统一打水位线（即便本轮没有产出候选，也记录"已看过"，避免后台反复重试）。
     this.vault.recordCuration(input.sourceId, input.messageCount ?? null)
     return proposals
+  }
+
+  /** 供知识提炼复用同一受限 headless 模型通道；不改变记忆自动提炼的水位线。 */
+  async runRestricted(
+    prompt: string,
+    cwd: string,
+    options: { hasExternalContext?: boolean } = {}
+  ): Promise<string> {
+    const settings = this.vault.getSettings()
+    if (!settings.knowledgeCurationEnabled) throw new Error('知识提炼已在设置中关闭')
+    if (options.hasExternalContext && !settings.allowExternalContext) {
+      throw new Error(tr('memory.curation.error.externalContext'))
+    }
+    const adapter = this.resolveCurator(settings.curatorAgentId?.trim() || undefined)
+    if (!adapter?.headlessJson) throw new Error(tr('memory.curation.error.noCurator'))
+    return this.run(
+      adapter,
+      prompt,
+      cwd,
+      this.getProviderEnv(adapter.id),
+      settings.curatorModel?.trim() || this.getProviderModel(adapter.id)
+    )
+  }
+
+  /** 知识域只读取未来提炼使用的策略；已生成 Markdown 不会被追溯修改。 */
+  getKnowledgeCurationPrompt(): string {
+    return this.vault.getSettings().knowledgeCurationPrompt
   }
 
   private async run(

@@ -7,6 +7,7 @@ import type {
   UpdateSessionPatch,
   UpdateTaskPatch
 } from '@shared/types'
+import type { TurnContextPack } from '@shared/types'
 
 export const DAEMON_RPC_METHODS = [
   'hello',
@@ -66,6 +67,7 @@ export type DaemonRpcParams =
   | [string, UpdateTaskPatch]
   | [string, string, PermissionDecision]
   | [string, string, string[]]
+  | [string, string, string[], TurnContextPack]
 
 export interface DaemonRpcRequest {
   type: 'request'

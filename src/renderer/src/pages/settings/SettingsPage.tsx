@@ -263,7 +263,7 @@ export function SettingsPage(): React.JSX.Element {
 
   const openLoginSession = async (tool: DiscoveryResult): Promise<void> => {
     const created = await createSession({
-      name: `${tool.displayName} 登录`,
+      name: t('settings.cli.loginSession', { name: tool.displayName }),
       toolId: tool.toolId,
       workspacePath: ''
     })

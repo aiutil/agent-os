@@ -9,10 +9,11 @@ import type {
   ManagedQueuedTurn,
   ManagedChatTimelineItem,
   ManagedChatTimelineItemType,
-  ReferencedMemory
+  ReferencedMemory,
+  TurnContextPack
 } from '@shared/types'
 
-const SCHEMA_VERSION = 4
+const SCHEMA_VERSION = 5
 const MAX_TEXT_LENGTH = 20_000
 
 // trigram FTS 需 ≥3 字符；不足的词（含 1-2 个 CJK 字）退回 LIKE。
@@ -64,6 +65,7 @@ interface QueuedTurnRow {
   session_id: string
   text: string
   files_json: string
+  context_pack: string | null
   status: 'queued'
   created_at: string
   updated_at: string
@@ -127,6 +129,22 @@ function parseStringArray(value: string | null): string[] {
     return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : []
   } catch {
     return []
+  }
+}
+
+function parseContextPack(value: string | null): TurnContextPack | undefined {
+  const parsed = parseJson(value)
+  if (!parsed || typeof parsed !== 'object') return undefined
+  const item = parsed as Partial<TurnContextPack>
+  if (item.version !== 1 || typeof item.text !== 'string' || !Array.isArray(item.referencedMemories)) {
+    return undefined
+  }
+  return {
+    version: 1,
+    text: item.text,
+    referencedMemories: item.referencedMemories as TurnContextPack['referencedMemories'],
+    generatedAt: typeof item.generatedAt === 'string' ? item.generatedAt : new Date(0).toISOString(),
+    estimatedTokens: typeof item.estimatedTokens === 'number' ? item.estimatedTokens : 0
   }
 }
 
@@ -405,7 +423,7 @@ export class ChatSqliteStore {
 
   enqueueTurn(
     sessionId: string,
-    input: { text: string; files?: string[] }
+    input: { text: string; files?: string[]; contextPack?: TurnContextPack }
   ): ManagedQueuedTurn {
     const now = new Date().toISOString()
     const created: ManagedQueuedTurn = {
@@ -413,6 +431,7 @@ export class ChatSqliteStore {
       sessionId,
       text: safeText(input.text) ?? '',
       files: input.files ?? [],
+      ...(input.contextPack ? { contextPack: input.contextPack } : {}),
       status: 'queued',
       createdAt: now,
       updatedAt: now
@@ -420,12 +439,13 @@ export class ChatSqliteStore {
     this.touchSession(sessionId, now)
     this.database
       .prepare(
-        `INSERT INTO chat_queued_turns (id, session_id, text, files_json, status, created_at, updated_at)
-         VALUES (@id, @sessionId, @text, @filesJson, @status, @createdAt, @updatedAt)`
+        `INSERT INTO chat_queued_turns (id, session_id, text, files_json, context_pack, status, created_at, updated_at)
+         VALUES (@id, @sessionId, @text, @filesJson, @contextPack, @status, @createdAt, @updatedAt)`
       )
       .run({
         ...created,
-        filesJson: JSON.stringify(created.files)
+        filesJson: JSON.stringify(created.files),
+        contextPack: safeJson(created.contextPack)
       })
     return created
   }
@@ -433,7 +453,7 @@ export class ChatSqliteStore {
   listQueuedTurns(sessionId: string): ManagedQueuedTurn[] {
     return this.database
       .prepare(
-        `SELECT id, session_id, text, files_json, status, created_at, updated_at
+        `SELECT id, session_id, text, files_json, context_pack, status, created_at, updated_at
          FROM chat_queued_turns
          WHERE session_id = ?
          ORDER BY created_at ASC, rowid ASC`
@@ -503,6 +523,7 @@ export class ChatSqliteStore {
       sessionId: row.session_id,
       text: row.text,
       files: parseStringArray(row.files_json),
+      ...(parseContextPack(row.context_pack) ? { contextPack: parseContextPack(row.context_pack) } : {}),
       status: row.status,
       createdAt: row.created_at,
       updatedAt: row.updated_at
@@ -561,6 +582,7 @@ export class ChatSqliteStore {
         session_id TEXT NOT NULL,
         text TEXT NOT NULL,
         files_json TEXT NOT NULL DEFAULT '[]',
+        context_pack TEXT,
         status TEXT NOT NULL DEFAULT 'queued' CHECK(status IN ('queued')),
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
@@ -605,6 +627,13 @@ export class ChatSqliteStore {
         this.database.exec('ALTER TABLE chat_messages ADD COLUMN referenced_memories TEXT')
       } catch {
         // 列已存在（全新库或重复迁移）：忽略。
+      }
+    }
+    if (previous < 5) {
+      try {
+        this.database.exec('ALTER TABLE chat_queued_turns ADD COLUMN context_pack TEXT')
+      } catch {
+        // 新库已经在 CREATE TABLE 中具备该列，或重复迁移时列已存在。
       }
     }
     this.database.pragma(`user_version = ${SCHEMA_VERSION}`)

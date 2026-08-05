@@ -3,8 +3,19 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Agent OS — 安全托管远程 Agent，一条消息通道切换所有 Agent</title>
-<meta name="description" content="Agent OS 让受托管主机自行控制授权与文件访问边界，并把飞书等消息渠道变成所有已安装 Agent 的统一入口；使用 /use 切换 Agent，原有会话与记忆继续保留。" />
+<title>Agent OS — 让每个 Agent 协作，让每次工作持续积累</title>
+<meta name="description" content="Agent OS 是面向 AI 编程 CLI 的桌面工作台：在本机或授权远程节点运行，用会话、任务、运行记录和多 Agent 对比审阅结果，再沉淀为可召回记忆与可阅读知识。" />
+<link rel="canonical" href="https://agentos.aiutil.com/" />
+<link rel="alternate" hreflang="zh-CN" href="https://agentos.aiutil.com/?lang=zh" />
+<link rel="alternate" hreflang="en" href="https://agentos.aiutil.com/?lang=en" />
+<link rel="alternate" hreflang="x-default" href="https://agentos.aiutil.com/" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Agent OS" />
+<meta property="og:title" content="Agent OS — 让每个 Agent 协作，让每次工作持续积累" />
+<meta property="og:description" content="在本机或授权远程节点运行 AI CLI，用证据审阅每次执行，再把成果沉淀为记忆与 Markdown 知识。" />
+<meta property="og:image" content="https://agentos.aiutil.com/knowledge-atlas-v0.4.0.png" />
+<meta property="og:url" content="https://agentos.aiutil.com/" />
+<meta name="twitter:card" content="summary_large_image" />
 <meta name="theme-color" content="#f6f8fc" />
 <link rel="icon" type="image/png" href="./agentos-icon.png" />
 <link rel="apple-touch-icon" href="./agentos-icon.png" />
@@ -93,6 +104,8 @@
   .shot-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
   .shot-card{min-width:0;padding:0;border:1px solid var(--line);border-radius:var(--radius-sm);overflow:hidden;background:var(--surface);text-align:left;cursor:zoom-in;box-shadow:0 1px 2px rgba(16,24,40,.04);transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
   .shot-card:hover{transform:translateY(-2px);border-color:#b8c7e6;box-shadow:var(--shadow-sm)}
+  .shot-card:nth-child(8){order:-2}
+  .shot-card:nth-child(9){order:-1}
   .shot-card-head{height:38px;display:flex;align-items:center;gap:8px;padding:0 11px;border-bottom:1px solid var(--line);font-size:12px;font-weight:680;min-width:0}
   .shot-index{font:10px/1 var(--mono);color:var(--blue)}
   .shot-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -102,7 +115,7 @@
   .module-list{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
   .module-list span{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 8px}
 
-  .highlight-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+  .highlight-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
   .highlight{display:flex;flex-direction:column;min-width:0;padding:clamp(24px,3vw,36px);border:1px solid var(--line);border-radius:var(--radius-lg);background:var(--bg);overflow:hidden}
   .highlight-kicker{display:inline-flex;align-items:center;gap:9px;color:var(--blue);font:650 11px/1.3 var(--mono);letter-spacing:.08em;text-transform:uppercase;margin-bottom:18px}
   .highlight-kicker::before{content:"";width:20px;height:2px;border-radius:2px;background:var(--blue)}
@@ -124,6 +137,13 @@
   .feature-note{color:var(--muted);font-size:12px;line-height:1.6;margin:-4px 0 22px}
   .feature-visual{display:block;margin:auto 0 0;border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden;box-shadow:var(--shadow-sm)}
   .feature-visual img{display:block;width:100%;height:auto}
+
+  .demo-shell{display:grid;grid-template-columns:minmax(0,.7fr) minmax(520px,1.3fr);gap:clamp(30px,6vw,86px);align-items:center}
+  .demo-copy h2{font-size:clamp(34px,4.4vw,54px);letter-spacing:-.04em;line-height:1.06;margin-bottom:18px}
+  .demo-copy p{color:var(--text-2);font-size:17px;line-height:1.72;margin-bottom:18px}
+  .demo-meta{display:flex;align-items:center;gap:9px;flex-wrap:wrap;color:var(--muted);font:11px/1.4 var(--mono)}
+  .demo-meta span{border:1px solid var(--line);border-radius:999px;background:var(--surface);padding:6px 9px}
+  .demo-video{display:block;width:100%;aspect-ratio:16/9;border:1px solid var(--line-strong);border-radius:var(--radius-md);background:#0b1424;box-shadow:var(--shadow-lg)}
 
   .section{padding:clamp(72px,9vw,112px) 0}
   .section.alt{background:var(--surface);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
@@ -202,6 +222,7 @@
 
   @media(max-width:1020px){
     .hero-top{grid-template-columns:1fr}.release-card{max-width:720px}.shot-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .demo-shell{grid-template-columns:1fr}.demo-copy{max-width:720px}
     .highlight-grid{grid-template-columns:1fr}
     .principle-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
     .workflow{grid-template-columns:repeat(2,minmax(0,1fr))}.workflow-step:nth-child(2){border-right:0}.workflow-step:nth-child(-n+2){border-bottom:1px solid var(--line)}.workflow-step:nth-child(2)::after{display:none}
@@ -234,7 +255,7 @@
       <img src="./agentos-icon.png" alt="" width="34" height="34" />
       <span>Agent OS</span>
     </a>
-    <span class="version">v0.3.9</span>
+    <span class="version">v0.4.0</span>
     <nav class="nav-links" aria-label="主导航" data-aria-key="aria.nav">
       <a href="#product" data-i18n="nav.product">产品界面</a>
       <a href="#highlights" data-i18n="nav.highlights">核心亮点</a>
@@ -256,21 +277,21 @@
       <div class="hero-top">
         <div class="hero-copy">
           <span class="eyebrow" data-i18n="hero.eyebrow">桌面端 Agent 工作台</span>
-          <h1 data-i18n="hero.title">安全托管远程 Agent，一条消息通道切换所有 Agent。</h1>
-          <p data-i18n="hero.body">受托管主机自己批准设备、能力与可访问目录；接入飞书等任一消息渠道后，即可在同一对话中使用 /use 切换已安装 Agent，切回时原会话与记忆仍然保留。</p>
+          <h1 data-i18n="hero.title">让每个 Agent 在一个工作台协作，让每次工作持续积累。</h1>
+          <p data-i18n="hero.body">在本机或授权远程节点运行 AI CLI，用会话、任务、运行记录与多 Agent 对比审阅结果，再把有价值的工作沉淀为可召回记忆和可阅读知识。</p>
           <div class="hero-actions">
-            <a class="btn btn-primary" href="#product" data-i18n="hero.view">查看产品界面</a>
-            <a class="btn" href="#download" data-i18n="hero.download">下载 v0.3.9</a>
+            <a class="btn btn-primary" href="#download" data-i18n="hero.download">下载 v0.4.0</a>
+            <a class="btn" href="#demo" data-i18n="hero.view">观看 30 秒演示</a>
             <a class="btn" href="https://github.com/aiutil/agent-os" target="_blank" rel="noreferrer" data-i18n="hero.source">GitHub 源码</a>
           </div>
         </div>
         <aside class="release-card" aria-label="当前版本信息" data-aria-key="aria.release">
-          <div class="release-head"><strong data-i18n="release.title">当前版本 v0.3.9</strong><span data-i18n="release.state">可下载</span></div>
+          <div class="release-head"><strong data-i18n="release.title">当前版本 v0.4.0</strong><span data-i18n="release.state">可下载</span></div>
           <div class="release-list">
-            <div class="release-fact"><b>8 × /use</b><span data-i18n="release.cli">消息内可切换 Agent</span></div>
+            <div class="release-fact"><b>8</b><span data-i18n="release.cli">内置 CLI 适配器</span></div>
             <div class="release-fact"><b>3</b><span data-i18n="release.platform">桌面平台</span></div>
             <div class="release-fact"><b>Local / Remote</b><span>Runtime Host</span></div>
-            <div class="release-fact"><b data-i18n="release.local">本机保存</b><span data-i18n="release.data">会话、任务与索引</span></div>
+            <div class="release-fact"><b data-i18n="release.local">本地优先</b><span data-i18n="release.data">会话、记忆与知识</span></div>
           </div>
         </aside>
       </div>
@@ -284,93 +305,107 @@
         </div>
         <div class="shot-grid">
           <button class="shot-card" type="button" data-src="task-board-review-v0.2.9.png" data-title-key="shot.board" aria-label="查看任务看板与验收界面">
-            <span class="shot-card-head"><span class="shot-index">01</span><span class="shot-title" data-i18n="shot.board">任务看板与验收</span></span>
+            <span class="shot-card-head"><span class="shot-index">03</span><span class="shot-title" data-i18n="shot.board">任务看板与验收</span></span>
             <span class="shot-media"><img src="task-board-review-v0.2.9.png" alt="Agent OS 任务看板与人工验收界面" width="2560" height="1664" loading="eager" decoding="sync" fetchpriority="high" /></span>
           </button>
           <button class="shot-card" type="button" data-src="task-run-timeline-v0.2.9.png" data-title-key="shot.timeline" aria-label="查看任务运行过程界面">
-            <span class="shot-card-head"><span class="shot-index">02</span><span class="shot-title" data-i18n="shot.timeline">任务运行过程</span></span>
+            <span class="shot-card-head"><span class="shot-index">04</span><span class="shot-title" data-i18n="shot.timeline">任务运行过程</span></span>
             <span class="shot-media"><img src="task-run-timeline-v0.2.9.png" alt="Agent OS 任务运行过程与运行记录界面" width="2082" height="1572" loading="eager" decoding="sync" fetchpriority="high" /></span>
           </button>
           <button class="shot-card" type="button" data-src="task-delivery-v0.2.9.png" data-title-key="shot.delivery" aria-label="查看结构化交付物界面">
-            <span class="shot-card-head"><span class="shot-index">03</span><span class="shot-title" data-i18n="shot.delivery">结构化交付物</span></span>
+            <span class="shot-card-head"><span class="shot-index">05</span><span class="shot-title" data-i18n="shot.delivery">交付物审阅</span></span>
             <span class="shot-media"><img src="task-delivery-v0.2.9.png" alt="Agent OS 任务结构化交付物界面" width="2096" height="1560" loading="eager" decoding="sync" fetchpriority="high" /></span>
           </button>
           <button class="shot-card" type="button" data-src="schedule-create-v0.2.9.png" data-title-key="shot.schedule" aria-label="查看计划与 Cron 界面">
-            <span class="shot-card-head"><span class="shot-index">04</span><span class="shot-title" data-i18n="shot.schedule">计划与 Cron</span></span>
+            <span class="shot-card-head"><span class="shot-index">06</span><span class="shot-title" data-i18n="shot.schedule">计划与 Cron</span></span>
             <span class="shot-media"><img src="schedule-create-v0.2.9.png" alt="Agent OS 一次性计划与 Cron 创建界面" width="1420" height="1574" loading="eager" decoding="sync" fetchpriority="high" /></span>
           </button>
           <button class="shot-card" type="button" data-src="message-channels-agent-switch-v0.3.3.png" data-title-key="shot.channels" aria-label="查看消息接入与 Agent 切换界面">
-            <span class="shot-card-head"><span class="shot-index">05</span><span class="shot-title" data-i18n="shot.channels">消息接入与 Agent 切换</span></span>
+            <span class="shot-card-head"><span class="shot-index">07</span><span class="shot-title" data-i18n="shot.channels">消息接入与 Agent 切换</span></span>
             <span class="shot-media"><img src="message-channels-agent-switch-v0.3.3.png" alt="Agent OS 消息接入与 Agent 切换界面" width="1706" height="1218" loading="eager" decoding="sync" fetchpriority="high" /></span>
           </button>
-          <button class="shot-card" type="button" data-src="remote-hosting-pairing-v0.3.3.png" data-title-key="shot.remote" aria-label="查看远程 Agent 安全配对与授权界面">
-            <span class="shot-card-head"><span class="shot-index">06</span><span class="shot-title" data-i18n="shot.remote">远程 Agent 安全配对</span></span>
-            <span class="shot-media"><img src="remote-hosting-pairing-v0.3.3.png" alt="Agent OS 远程 Agent 安全配对与授权界面" width="859" height="613" loading="eager" decoding="sync" fetchpriority="high" /></span>
-          </button>
           <button class="shot-card" type="button" data-src="mqoj247o-image.png" data-title-key="shot.session" aria-label="查看会话与 CLI 界面">
-            <span class="shot-card-head"><span class="shot-index">07</span><span class="shot-title" data-i18n="shot.session">会话与 CLI</span></span>
+            <span class="shot-card-head"><span class="shot-index">08</span><span class="shot-title" data-i18n="shot.session">会话与 CLI</span></span>
             <span class="shot-media"><img src="mqoj247o-image.png" alt="Agent OS 会话与原生 CLI 界面" width="2752" height="1702" loading="eager" decoding="sync" fetchpriority="high" /></span>
           </button>
           <button class="shot-card" type="button" data-src="mqoj247r-image.png" data-title-key="shot.compare" aria-label="查看多面板对比界面">
-            <span class="shot-card-head"><span class="shot-index">08</span><span class="shot-title" data-i18n="shot.compare">多面板对比</span></span>
+            <span class="shot-card-head"><span class="shot-index">09</span><span class="shot-title" data-i18n="shot.compare">多面板对比</span></span>
             <span class="shot-media"><img src="mqoj247r-image.png" alt="Agent OS Web、会话与 CLI 多面板对比界面" width="2752" height="1702" loading="eager" decoding="sync" fetchpriority="high" /></span>
+          </button>
+          <button class="shot-card" type="button" data-src="memory-atlas-v0.4.0.png" data-src-zh="memory-atlas-v0.4.0.png" data-src-en="memory-atlas-en-v0.4.0.png" data-title-key="shot.memory" aria-label="查看记忆图谱与列表界面">
+            <span class="shot-card-head"><span class="shot-index">01</span><span class="shot-title" data-i18n="shot.memory">分层记忆图谱</span></span>
+            <span class="shot-media"><img src="memory-atlas-v0.4.0.png" data-src-zh="memory-atlas-v0.4.0.png" data-src-en="memory-atlas-en-v0.4.0.png" alt="Agent OS 分层记忆图谱" width="2560" height="1600" loading="eager" decoding="sync" fetchpriority="high" /></span>
+          </button>
+          <button class="shot-card" type="button" data-src="knowledge-atlas-v0.4.0.png" data-src-zh="knowledge-atlas-v0.4.0.png" data-src-en="knowledge-atlas-en-v0.4.0.png" data-title-key="shot.knowledge" aria-label="查看知识图谱与文章界面">
+            <span class="shot-card-head"><span class="shot-index">02</span><span class="shot-title" data-i18n="shot.knowledge">知识图谱与文章</span></span>
+            <span class="shot-media"><img src="knowledge-atlas-v0.4.0.png" data-src-zh="knowledge-atlas-v0.4.0.png" data-src-en="knowledge-atlas-en-v0.4.0.png" alt="Agent OS 知识图谱与 Markdown 文章界面" width="2560" height="1600" loading="eager" decoding="sync" fetchpriority="high" /></span>
           </button>
         </div>
         <div class="overview-foot">
           <span data-i18n="product.hint">点击截图查看界面细节；按 Esc 关闭。</span>
           <div class="module-list" role="group" aria-label="主要模块" data-aria-key="aria.modules">
-            <span data-i18n="module.board">看板</span><span data-i18n="module.run">运行记录</span><span data-i18n="module.delivery">交付物</span><span data-i18n="module.schedule">定时</span><span data-i18n="module.channels">消息渠道</span><span data-i18n="module.remote">远程托管</span><span data-i18n="module.session">会话</span><span data-i18n="module.compare">对比</span>
+            <span data-i18n="module.board">看板</span><span data-i18n="module.run">运行记录</span><span data-i18n="module.delivery">交付物</span><span data-i18n="module.schedule">定时</span><span data-i18n="module.channels">消息渠道</span><span data-i18n="module.remote">远程托管</span><span data-i18n="module.session">会话</span><span data-i18n="module.compare">对比</span><span data-i18n="module.knowledge">记忆与知识</span>
           </div>
         </div>
       </div>
     </div>
   </section>
 
-  <section class="section alt" id="highlights">
+  <section class="section alt" id="demo">
+    <div class="wrap demo-shell">
+      <div class="demo-copy">
+        <span class="eyebrow" data-i18n="demo.eyebrow">30 秒产品演示</span>
+        <h2 data-i18n="demo.title">从派发任务，到把成果留下来</h2>
+        <p data-i18n="demo.body">用真实的 0.4.0 界面快速了解运行、审阅、分层记忆和 Markdown 知识如何连成一条工作链。</p>
+        <div class="demo-meta" aria-label="视频信息" data-aria-key="aria.demoMeta">
+          <span>29.5s</span><span>1080p</span><span data-i18n="demo.caption">中英文画面字幕</span><span data-i18n="demo.noAuto">不会自动播放</span>
+        </div>
+      </div>
+      <video class="demo-video" controls preload="metadata" poster="knowledge-atlas-v0.4.0.png" data-poster-zh="knowledge-atlas-v0.4.0.png" data-poster-en="knowledge-atlas-en-v0.4.0.png" aria-label="Agent OS 0.4.0 产品演示" data-aria-key="aria.demoVideo">
+        <source src="agent-os-v0.4.0-overview.mp4" type="video/mp4" />
+      </video>
+    </div>
+  </section>
+
+  <section class="section" id="highlights">
     <div class="wrap">
       <div class="section-intro">
-        <h2 data-i18n="highlights.title">两个入口，把分散的 Agent 变成一个工作系统</h2>
-        <p data-i18n="highlights.body">一端解决“让哪台机器执行、能访问什么”，另一端解决“从哪里发消息、交给哪个 Agent”。控制权、上下文与结果仍统一留在 Agent OS。</p>
+        <h2 data-i18n="highlights.title">让 Agent 工作从一次回答，变成可以延续的系统</h2>
+        <p data-i18n="highlights.body">运行位置、审阅证据和长期积累属于同一条工作链。Agent OS 把它们留在一个可追踪、可搜索、由人控制的工作台中。</p>
       </div>
       <div class="highlight-grid">
         <article class="highlight">
-          <span class="highlight-kicker">01 / SAFE REMOTE HOSTING</span>
-          <h3 data-i18n="highlight.remote.title">托管其他主机的 Agent，但边界由对方决定</h3>
-          <p data-i18n="highlight.remote.body">控制端只能使用受托管端明确批准的能力、Agent 与目录。配对、授权、暂停和撤销都在对方设备完成，不把“远程可用”变成“整机开放”。</p>
+          <span class="highlight-kicker">01 / RUN</span>
+          <h3 data-i18n="highlight.run.title">在正确的位置运行</h3>
+          <p data-i18n="highlight.run.body">为每项工作选择本机或授权远程 Runtime Host，并明确 CLI、模型、工作目录、权限和会话策略。</p>
           <ul class="feature-points">
-            <li data-i18n="highlight.remote.p1">对方核验配对码与设备指纹后主动批准</li>
-            <li data-i18n="highlight.remote.p2">文件访问限制在对方选择的目录，越界与符号链接逃逸会被拒绝</li>
-            <li data-i18n="highlight.remote.p3">授权可随时暂停或永久撤销，已有远程会话立即失效</li>
+            <li data-i18n="highlight.run.p1">结构化 Agent 会话与原生 CLI 终端共存</li>
+            <li data-i18n="highlight.run.p2">一次任务、计划任务与 Cron 使用相同运行配置</li>
+            <li data-i18n="highlight.run.p3">远程节点的能力与目录由受托管端批准并可撤销</li>
           </ul>
-          <div class="trust-grid" aria-label="远程授权安全机制" data-aria-key="aria.remoteTrust">
-            <div class="trust-fact"><b translate="no">Ed25519</b><span data-i18n="highlight.remote.identity">稳定设备身份</span></div>
-            <div class="trust-fact"><b translate="no">TLS</b><span data-i18n="highlight.remote.transport">加密传输与指纹核验</span></div>
-            <div class="trust-fact"><b translate="no">realpath scope</b><span data-i18n="highlight.remote.scope">真实目录边界</span></div>
-            <div class="trust-fact"><b translate="no">fail closed</b><span data-i18n="highlight.remote.failClosed">不确定即拒绝</span></div>
-          </div>
-          <figure class="feature-visual"><img src="remote-hosting-pairing-v0.3.3.png" alt="受托管设备核验配对码并设置方向性授权" width="859" height="613" loading="lazy" decoding="async" /></figure>
+          <figure class="feature-visual"><img src="task-board-review-v0.2.9.png" alt="任务看板中的运行环境与任务状态" data-alt-zh="任务看板中的运行环境与任务状态" data-alt-en="Runtime configuration and task state on the task board" width="2560" height="1664" loading="lazy" decoding="async" /></figure>
         </article>
         <article class="highlight">
-          <span class="highlight-kicker">02 / ONE CHANNEL, EVERY AGENT</span>
-          <h3 data-i18n="highlight.channels.title">接入一次消息渠道，获得所有 Agent 的消息入口</h3>
-          <p data-i18n="highlight.channels.body">连接飞书等消息渠道后，Agent OS 动态列出本机已安装且支持结构化聊天的 Agent。在同一对话中发送 /use 即可切换，不必为每个 Agent 重建机器人。</p>
-          <div class="agent-table-wrap">
-            <table class="agent-table">
-              <thead><tr><th data-i18n="highlight.table.agent">Agent</th><th data-i18n="highlight.table.command">切换命令</th></tr></thead>
-              <tbody>
-                <tr><td translate="no">Claude</td><td><code translate="no">/use claude</code></td></tr>
-                <tr><td translate="no">Codex</td><td><code translate="no">/use codex</code></td></tr>
-                <tr><td translate="no">Cursor Agent</td><td><code translate="no">/use cursor-agent</code></td></tr>
-                <tr><td translate="no">Gemini</td><td><code translate="no">/use gemini</code></td></tr>
-                <tr><td translate="no">Hermes</td><td><code translate="no">/use hermes</code></td></tr>
-                <tr><td translate="no">OpenCode</td><td><code translate="no">/use opencode</code></td></tr>
-                <tr><td translate="no">Pi</td><td><code translate="no">/use pi</code></td></tr>
-                <tr><td translate="no">OpenClaw</td><td><code translate="no">/use openclaw</code></td></tr>
-              </tbody>
-            </table>
-          </div>
-          <p class="feature-note" data-i18n="highlight.channels.note">每个 Agent 保留自己的持久会话；切回时继续原上下文，统一搜索与长期记忆仍由 Agent OS 管理。实际列表以本机发现结果为准。</p>
-          <figure class="feature-visual"><img src="message-channels-agent-switch-v0.3.3.png" alt="飞书消息渠道连接状态与 Agent OS 访问控制" width="1706" height="1218" loading="lazy" decoding="async" /></figure>
+          <span class="highlight-kicker">02 / REVIEW</span>
+          <h3 data-i18n="highlight.review.title">依据运行记录与证据审阅</h3>
+          <p data-i18n="highlight.review.body">不只接收最后一段答案。按运行批次查看执行事件、失败与重试、可用的交付物和关联会话，再由人确认 Done。</p>
+          <ul class="feature-points">
+            <li data-i18n="highlight.review.p1">Todo、In Progress、Review、Done 四阶段任务流</li>
+            <li data-i18n="highlight.review.p2">每次尝试保留独立运行记录；最终回复可用时进入交付物审阅</li>
+            <li data-i18n="highlight.review.p3">Web、CLI 与多个 Agent 可并排比较</li>
+          </ul>
+          <figure class="feature-visual"><img src="task-run-timeline-v0.2.9.png" alt="Agent OS 任务运行时间线与证据" data-alt-zh="Agent OS 任务运行时间线与证据" data-alt-en="Agent OS task run timeline and evidence" width="2082" height="1572" loading="lazy" decoding="async" /></figure>
+        </article>
+        <article class="highlight">
+          <span class="highlight-kicker">03 / CONTINUITY</span>
+          <h3 data-i18n="highlight.keep.title">把有价值的工作留下来</h3>
+          <p data-i18n="highlight.keep.body">短小信息进入分层记忆并按作用域召回；体系化成果成为带主题、标签和来源的 Markdown 知识文章。</p>
+          <ul class="feature-points">
+            <li data-i18n="highlight.keep.p1">记忆与知识职责分离，避免长文章污染 Agent 上下文</li>
+            <li data-i18n="highlight.keep.p2">知识支持草稿、发布、收藏、本机评论与全文搜索</li>
+            <li data-i18n="highlight.keep.p3">图谱与列表共享搜索、筛选和阅读脉络</li>
+          </ul>
+          <figure class="feature-visual"><img src="knowledge-atlas-v0.4.0.png" data-src-zh="knowledge-atlas-v0.4.0.png" data-src-en="knowledge-atlas-en-v0.4.0.png" alt="Agent OS 知识图谱与文章" data-alt-zh="Agent OS 知识图谱与文章" data-alt-en="Agent OS knowledge graph and Markdown articles" width="2560" height="1600" loading="lazy" decoding="async" /></figure>
         </article>
       </div>
     </div>
@@ -398,7 +433,7 @@
           <dl>
             <div><dt data-i18n="scenario.scene">场景</dt><dd data-i18n="scenario.lead.scene">把架构分析、重构建议、测试检查交给不同 Agent，再由自己做最终判断。</dd></div>
             <div><dt data-i18n="scenario.pain">原来的问题</dt><dd data-i18n="scenario.lead.pain">只有一段最终输出时，很难核对运行配置、执行批次和失败重试，也缺少明确的验收关口。</dd></div>
-            <div><dt data-i18n="scenario.solve">Agent OS</dt><dd data-i18n="scenario.lead.solve">每次运行保留过程事件和结构化交付物；结果统一进入 Review，检查关联会话后再确认 Done。</dd></div>
+            <div><dt data-i18n="scenario.solve">Agent OS</dt><dd data-i18n="scenario.lead.solve">每次运行保留过程事件；最终回复可用时进入交付物审阅。结果统一进入 Review，检查关联会话后再确认 Done。</dd></div>
           </dl>
         </article>
         <article class="scenario">
@@ -416,7 +451,7 @@
           <dl>
             <div><dt data-i18n="scenario.scene">场景</dt><dd data-i18n="scenario.remote.scene">笔记本负责控制，台式机或家中服务器负责运行；外出时从已授权的消息通道发起工作。</dd></div>
             <div><dt data-i18n="scenario.pain">原来的问题</dt><dd data-i18n="scenario.remote.pain">反复远程登录、复制提示词和确认环境；节点版本、CLI 状态与任务结果分散在不同机器。</dd></div>
-            <div><dt data-i18n="scenario.solve">Agent OS</dt><dd data-i18n="scenario.remote.solve">受托管主机自行批准能力与目录；连接任一消息渠道后，用 /use 把工作交给正确 Agent，切换时不覆盖原会话。</dd></div>
+            <div><dt data-i18n="scenario.solve">Agent OS</dt><dd data-i18n="scenario.remote.solve">受托管主机自行批准能力与目录；连接受支持的消息渠道后，用 /use 把工作交给正确 Agent，切换时不覆盖原会话。</dd></div>
           </dl>
         </article>
       </div>
@@ -432,9 +467,9 @@
       <div class="principle-grid">
         <article class="principle"><span class="principle-index">01 / COMPARE</span><h3 data-i18n="principle.compare.title">把 Web、CLI 与 Agent 放在同一张工作台</h3><p data-i18n="principle.compare.body">对比不只发生在模型回答之间。一个面板可以是真实网页，另一个是结构化 Agent 会话或原生 CLI；既能单独输入，也能向多个面板批量发送同一问题。</p><div class="principle-outcome"><span data-i18n="principle.outcome">解决的痛点</span><p data-i18n="principle.compare.outcome">减少在浏览器、终端和聊天窗口之间反复复制信息，也能同时观察资料、命令输出和 Agent 处理结果。</p></div></article>
         <article class="principle"><span class="principle-index">02 / STORAGE</span><h3 data-i18n="principle.storage.title">跨 Agent 会话搜索与记忆，属于同一存储层</h3><p data-i18n="principle.storage.body">会话历史不按单一厂商割裂。支持来源的会话在本机建立索引，搜索结果可以回到原上下文；经验、候选记忆和记忆策略也在同一存储区域管理。</p><div class="principle-outcome"><span data-i18n="principle.outcome">解决的痛点</span><p data-i18n="principle.storage.outcome">不再分别翻找 Claude、Codex、Pi 等工具的历史记录，也避免每次切换 Agent 都重新解释项目背景。</p></div></article>
-        <article class="principle"><span class="principle-index">03 / TASKS</span><h3 data-i18n="principle.tasks.title">把一次提示变成可追踪、可验收的工作</h3><p data-i18n="principle.tasks.body">任务经过 Todo、In Progress、Review、Done，保存执行环境、运行批次、过程事件和结构化交付物；计划任务还能按单次时间或 Cron 由 Runtime daemon 持续触发。</p><div class="principle-outcome"><span data-i18n="principle.outcome">解决的痛点</span><p data-i18n="principle.tasks.outcome">Agent 运行不再是终端里的一次性输出；重复工作有计划，失败和重试可追溯，最终结果由人确认后才完成。</p></div></article>
+        <article class="principle"><span class="principle-index">03 / TASKS</span><h3 data-i18n="principle.tasks.title">把一次提示变成可追踪、可验收的工作</h3><p data-i18n="principle.tasks.body">任务经过 Todo、In Progress、Review、Done，保存执行环境、运行批次和过程事件；最终回复可用时进入交付物审阅，计划任务还可按单次时间或 Cron 由 Runtime daemon 触发。</p><div class="principle-outcome"><span data-i18n="principle.outcome">解决的痛点</span><p data-i18n="principle.tasks.outcome">Agent 运行不再是终端里的一次性输出；重复工作有计划，失败和重试可追溯，最终结果由人确认后才完成。</p></div></article>
         <article class="principle"><span class="principle-index">04 / RUNTIME</span><h3 data-i18n="principle.runtime.title">跨主机运行，不跨越对方的授权边界</h3><p data-i18n="principle.runtime.body">受托管端核验设备并决定开放哪些能力、Agent 与目录；控制端只能看到和使用授权范围内的资源。暂停或撤销后，已有远程访问立即停止。</p><div class="principle-outcome"><span data-i18n="principle.outcome">解决的痛点</span><p data-i18n="principle.runtime.outcome">把任务交给台式机或服务器执行，同时不要求对方开放整机、根目录或无边界权限。</p></div></article>
-        <article class="principle"><span class="principle-index">05 / CHANNELS</span><h3 data-i18n="principle.channels.title">一个消息入口，切换所有已安装 Agent</h3><p data-i18n="principle.channels.body">飞书等渠道接入一次后，可用 /agents 查看实时可用列表，用 /use codex 等命令切换 Agent。每个 Agent 的会话独立保留，切回时继续原上下文。</p><div class="principle-outcome"><span data-i18n="principle.outcome">解决的痛点</span><p data-i18n="principle.channels.outcome">无需为 Claude、Codex、Gemini 等分别搭机器人，也不会因 Agent 切换丢掉上一段对话与记忆。</p></div></article>
+        <article class="principle"><span class="principle-index">05 / CHANNELS</span><h3 data-i18n="principle.channels.title">一个消息入口，切换已安装且支持结构化聊天的 Agent</h3><p data-i18n="principle.channels.body">飞书等渠道接入一次后，可用 /agents 查看实时可用列表，用 /use codex 等命令切换 Agent。每个 Agent 的会话独立保留，切回时继续原上下文。</p><div class="principle-outcome"><span data-i18n="principle.outcome">解决的痛点</span><p data-i18n="principle.channels.outcome">无需为 Claude、Codex、Gemini 等分别搭机器人，也不会因 Agent 切换丢掉上一段对话与记忆。</p></div></article>
         <article class="principle"><span class="principle-index">06 / CONTROL</span><h3 data-i18n="principle.control.title">保留 CLI 原生能力，也保留人的最终控制</h3><p data-i18n="principle.control.body">同一入口同时提供结构化会话和原生 PTY，不替代厂商 CLI 的登录与能力。任务明确记录权限和会话策略，结果先进入 Review，而不是自动宣告完成。</p><div class="principle-outcome"><span data-i18n="principle.outcome">解决的痛点</span><p data-i18n="principle.control.outcome">避免桌面封装牺牲 CLI 能力，也避免长时间自动化在没有权限边界和人工验收的情况下持续运行。</p></div></article>
       </div>
     </div>
@@ -444,13 +479,13 @@
     <div class="wrap">
       <div class="section-intro">
         <h2 data-i18n="workflow.title">从选择运行环境到完成验收</h2>
-        <p data-i18n="workflow.body">任务从看板或消息渠道进入，使用统一的 Runtime Host、CLI、模型与工作目录配置。每次运行都有过程记录和独立交付物，完成后进入 Review 等待人工确认。</p>
+        <p data-i18n="workflow.body">任务从看板或消息渠道进入，使用统一的 Runtime Host、CLI、模型与工作目录配置。每次运行保留独立过程记录，最终回复可用时进入交付物审阅，并在 Review 等待人工确认。</p>
       </div>
       <div class="workflow">
         <article class="workflow-step"><span class="step-num">01 / CONFIGURE</span><h3 data-i18n="workflow.s1.title">配置执行环境</h3><p data-i18n="workflow.s1.body">选择本机或远程 Runtime Host，并指定 Engineer、模型、工作目录、权限与会话策略。</p></article>
         <article class="workflow-step"><span class="step-num">02 / DISPATCH</span><h3 data-i18n="workflow.s2.title">派发或计划任务</h3><p data-i18n="workflow.s2.body">从看板创建任务，也可使用已授权消息通道转交工作；支持立即执行、单次计划和 Cron。</p></article>
         <article class="workflow-step"><span class="step-num">03 / OBSERVE</span><h3 data-i18n="workflow.s3.title">查看运行过程</h3><p data-i18n="workflow.s3.body">按运行批次查看触发方式、执行阶段与输出事件；多次运行保留在同一任务的历史记录中。</p></article>
-        <article class="workflow-step"><span class="step-num">04 / REVIEW</span><h3 data-i18n="workflow.s4.title">审阅交付物</h3><p data-i18n="workflow.s4.body">执行成功后进入 Review。检查结构化交付物或打开关联会话，确认后再标记 Done。</p></article>
+        <article class="workflow-step"><span class="step-num">04 / REVIEW</span><h3 data-i18n="workflow.s4.title">审阅结果</h3><p data-i18n="workflow.s4.body">执行结束后进入 Review。检查可用的最终回复或打开关联会话，确认后再标记 Done。</p></article>
       </div>
     </div>
   </section>
@@ -459,15 +494,15 @@
     <div class="wrap">
       <div class="section-intro">
         <h2 data-i18n="cap.title">当前版本包含的功能</h2>
-        <p data-i18n="cap.body">以下范围与 v0.3.9 桌面端界面对应。CLI 和消息渠道是否可用取决于本机安装、厂商账号与应用内接入状态。</p>
+        <p data-i18n="cap.body">以下范围与 v0.4.0 桌面端界面对应。CLI 和消息渠道是否可用取决于本机安装、厂商账号与应用内接入状态。</p>
       </div>
       <div class="cap-grid">
-        <article class="cap"><span class="cap-label">TASK LIFECYCLE</span><h3 data-i18n="cap.c1.title">看板、运行记录与交付</h3><p data-i18n="cap.c1.body">Todo、In Progress、Review、Done 四阶段管理任务；每次执行保留过程事件、运行历史和结构化交付物，最后由用户确认完成。</p><div class="tags"><span data-i18n="tag.board">任务看板</span><span data-i18n="tag.timeline">执行过程</span><span data-i18n="tag.delivery">交付物</span><span>Review</span></div></article>
+        <article class="cap"><span class="cap-label">TASK LIFECYCLE</span><h3 data-i18n="cap.c1.title">看板、运行记录与交付</h3><p data-i18n="cap.c1.body">Todo、In Progress、Review、Done 四阶段管理任务；每次执行保留过程事件和运行历史，最终回复可用时进入交付物审阅，最后由用户确认完成。</p><div class="tags"><span data-i18n="tag.board">任务看板</span><span data-i18n="tag.timeline">执行过程</span><span data-i18n="tag.delivery">交付物</span><span>Review</span></div></article>
         <article class="cap"><span class="cap-label">SCHEDULES</span><h3 data-i18n="cap.c2.title">单次计划与 Cron</h3><p data-i18n="cap.c2.body">计划任务沿用 Engineer、模型、工作目录、权限和会话策略，可设置单次时间或五段 Cron、时区与错过执行策略。</p><div class="tags"><span data-i18n="tag.once">单次计划</span><span>Cron</span><span data-i18n="tag.timezone">时区</span><span data-i18n="tag.misfire">错过策略</span></div></article>
-        <article class="cap"><span class="cap-label">MESSAGE CHANNELS</span><h3 data-i18n="cap.c3.title">一次接入，所有 Agent 都能收消息</h3><p data-i18n="cap.c3.body">飞书、个人微信、企业微信、Telegram 与 WhatsApp 作为统一消息入口；/agents 动态列出可用 Agent，/use 切换并复用各自持久会话。访问控制在消息进入 Agent 前生效。</p><div class="tags"><span data-i18n="tag.feishu">飞书</span><span>/agents</span><span>/use codex</span><span data-i18n="tag.status">渠道状态</span></div></article>
+        <article class="cap"><span class="cap-label">MESSAGE CHANNELS</span><h3 data-i18n="cap.c3.title">一次接入，切换受支持的 Agent</h3><p data-i18n="cap.c3.body">飞书、个人微信、企业微信、Telegram 与 WhatsApp 作为统一消息入口；/agents 动态列出可用 Agent，/use 切换并复用各自持久会话。访问控制在消息进入 Agent 前生效。</p><div class="tags"><span data-i18n="tag.feishu">飞书</span><span>/agents</span><span>/use codex</span><span data-i18n="tag.status">渠道状态</span></div></article>
         <article class="cap"><span class="cap-label">RUNTIME &amp; CLI</span><h3 data-i18n="cap.c4.title">由对方控制边界的远程 Agent 托管</h3><p data-i18n="cap.c4.body">受托管设备核验配对码和身份指纹，自行批准能力、Agent 与允许目录；控制端只获得方向性授权，越界访问、错误凭证和撤销后的请求全部拒绝。</p><div class="tags"><span data-i18n="tag.hosting">远程托管</span><span data-i18n="tag.authorization">方向性授权</span><span data-i18n="tag.fileBoundary">目录边界</span><span data-i18n="tag.revocable">可撤销</span></div></article>
         <article class="cap"><span class="cap-label">COMPARE &amp; WEB</span><h3 data-i18n="cap.c5.title">对比与内置 Web</h3><p data-i18n="cap.c5.body">并排放置 Web、结构化会话或 CLI 面板，支持单独发送和批量发送；Web 书签保留登录状态。</p><div class="tags"><span data-i18n="tag.panel">多面板</span><span data-i18n="tag.batch">批量发送</span><span data-i18n="tag.bookmark">书签</span><span data-i18n="tag.sessionState">登录状态</span></div></article>
-        <article class="cap"><span class="cap-label">MEMORY &amp; STATS</span><h3 data-i18n="cap.c6.title">记忆、搜索与统计</h3><p data-i18n="cap.c6.body">支持来源的会话在本机建立全文索引；记忆页管理经验、候选与策略；统计页显示使用趋势与成长 Cardex。</p><div class="tags"><span data-i18n="tag.search">全文搜索</span><span>SQLite</span><span data-i18n="tag.stats">使用统计</span><span>Cardex</span></div></article>
+        <article class="cap"><span class="cap-label">MEMORY &amp; KNOWLEDGE</span><h3 data-i18n="cap.c6.title">分层记忆与 Markdown 知识</h3><p data-i18n="cap.c6.body">记忆按人格、工作和项目语境管理；知识以 Markdown 文章沉淀，支持图谱、列表、主题、标签、草稿、发布、收藏、本机评论与搜索。</p><div class="tags"><span data-i18n="tag.search">全文搜索</span><span>Markdown</span><span data-i18n="tag.stats">图谱与列表</span><span>Sources</span></div></article>
       </div>
       <div class="adapters" role="group" aria-label="支持的 CLI 适配器" data-aria-key="aria.adapters">
         <span class="adapter">Claude</span><span class="adapter">Codex</span><span class="adapter">Gemini</span><span class="adapter">Cursor</span><span class="adapter">OpenCode</span><span class="adapter">Pi</span><span class="adapter">Hermes</span><span class="adapter">OpenClaw</span>
@@ -479,21 +514,22 @@
     <div class="wrap">
       <div class="download-shell">
         <div class="download-top">
-          <div><span class="eyebrow" data-i18n="download.eyebrow">Agent OS v0.3.9</span><h2 data-i18n="download.title">选择系统并下载安装</h2><p data-i18n="download.body">桌面端提供 macOS、Windows 与 Linux 制品。远程 Runtime 节点安装包和脚本位于同一 Release。</p></div>
+          <div><span class="eyebrow" data-i18n="download.eyebrow">Agent OS v0.4.0</span><h2 data-i18n="download.title">选择系统并下载安装</h2><p data-i18n="download.body">桌面端提供 macOS、Windows 与 Linux 制品。远程 Runtime 节点安装包和脚本位于同一 Release。</p></div>
           <div class="download-notes">
-            <div class="download-note" data-i18n="download.note1">macOS 制品使用自签名证书，未经过 Apple 公证。首次打开如被拦截，请前往“系统设置 → 隐私与安全”点击“仍要打开”。</div>
+            <div class="download-note" data-i18n="download.note1">macOS 制品未经过 Apple 公证。请从官方 Release 下载并核对 SHA256 与来源证明；首次打开如被拦截，可前往“系统设置 → 隐私与安全”点击“仍要打开”。</div>
+            <div class="download-note" data-i18n="download.note4">生产制品默认启用匿名分析；只发送白名单功能事件，交互录制会遮罩文本与输入，可在设置中随时关闭。</div>
             <div class="download-note"><span data-i18n="download.note2">安装与首次使用步骤见</span>&nbsp;<a href="guide.html" data-i18n="download.guide">完整使用指南</a></div>
-            <div class="download-note"><span data-i18n="download.note3">远程节点包与 install-node.sh 见</span>&nbsp;<a href="https://github.com/aiutil/agent-os/releases/tag/v0.3.9" target="_blank" rel="noreferrer">GitHub Release</a></div>
+            <div class="download-note"><span data-i18n="download.note3">远程节点包与 install-node.sh 见</span>&nbsp;<a href="https://github.com/aiutil/agent-os/releases/tag/v0.4.0" target="_blank" rel="noreferrer">GitHub Release</a></div>
           </div>
         </div>
         <div class="downloads">
-          <a class="download-row" href="https://github.com/aiutil/agent-os/releases/download/v0.3.9/Agent-Os-0.3.9-mac-arm64.dmg"><span class="platform"><b>macOS · Apple Silicon</b><span>Agent-Os-0.3.9-mac-arm64.dmg</span></span><span class="download-arrow">↓</span></a>
-          <a class="download-row" href="https://github.com/aiutil/agent-os/releases/download/v0.3.9/Agent-Os-0.3.9-mac-x64.dmg"><span class="platform"><b>macOS · Intel</b><span>Agent-Os-0.3.9-mac-x64.dmg</span></span><span class="download-arrow">↓</span></a>
-          <a class="download-row" href="https://github.com/aiutil/agent-os/releases/download/v0.3.9/Agent-Os-0.3.9-win-x64-setup.exe"><span class="platform"><b>Windows · x64</b><span>Agent-Os-0.3.9-win-x64-setup.exe</span></span><span class="download-arrow">↓</span></a>
-          <a class="download-row" href="https://github.com/aiutil/agent-os/releases/download/v0.3.9/Agent-Os-0.3.9-linux-amd64.deb"><span class="platform"><b>Linux · x64</b><span>Agent-Os-0.3.9-linux-amd64.deb</span></span><span class="download-arrow">↓</span></a>
-          <a class="download-row" href="https://github.com/aiutil/agent-os/releases/download/v0.3.9/Agent-Os-0.3.9-linux-x86_64.AppImage"><span class="platform"><b>Linux · x64 AppImage</b><span>Agent-Os-0.3.9-linux-x86_64.AppImage</span></span><span class="download-arrow">↓</span></a>
-          <a class="download-row" href="https://github.com/aiutil/agent-os/releases/download/v0.3.9/Agent-Os-0.3.9-linux-arm64.deb"><span class="platform"><b>Linux · arm64</b><span>Agent-Os-0.3.9-linux-arm64.deb</span></span><span class="download-arrow">↓</span></a>
-          <a class="download-row" href="https://github.com/aiutil/agent-os/releases/download/v0.3.9/Agent-Os-0.3.9-linux-arm64.AppImage"><span class="platform"><b>Linux · arm64 AppImage</b><span>Agent-Os-0.3.9-linux-arm64.AppImage</span></span><span class="download-arrow">↓</span></a>
+          <a class="download-row" href="https://github.com/aiutil/agent-os/releases/download/v0.4.0/Agent-Os-0.4.0-mac-arm64.dmg"><span class="platform"><b>macOS · Apple Silicon</b><span>Agent-Os-0.4.0-mac-arm64.dmg</span></span><span class="download-arrow">↓</span></a>
+          <a class="download-row" href="https://github.com/aiutil/agent-os/releases/download/v0.4.0/Agent-Os-0.4.0-mac-x64.dmg"><span class="platform"><b>macOS · Intel</b><span>Agent-Os-0.4.0-mac-x64.dmg</span></span><span class="download-arrow">↓</span></a>
+          <a class="download-row" href="https://github.com/aiutil/agent-os/releases/download/v0.4.0/Agent-Os-0.4.0-win-x64-setup.exe"><span class="platform"><b>Windows · x64</b><span>Agent-Os-0.4.0-win-x64-setup.exe</span></span><span class="download-arrow">↓</span></a>
+          <a class="download-row" href="https://github.com/aiutil/agent-os/releases/download/v0.4.0/Agent-Os-0.4.0-linux-amd64.deb"><span class="platform"><b>Linux · x64</b><span>Agent-Os-0.4.0-linux-amd64.deb</span></span><span class="download-arrow">↓</span></a>
+          <a class="download-row" href="https://github.com/aiutil/agent-os/releases/download/v0.4.0/Agent-Os-0.4.0-linux-x86_64.AppImage"><span class="platform"><b>Linux · x64 AppImage</b><span>Agent-Os-0.4.0-linux-x86_64.AppImage</span></span><span class="download-arrow">↓</span></a>
+          <a class="download-row" href="https://github.com/aiutil/agent-os/releases/download/v0.4.0/Agent-Os-0.4.0-linux-arm64.deb"><span class="platform"><b>Linux · arm64</b><span>Agent-Os-0.4.0-linux-arm64.deb</span></span><span class="download-arrow">↓</span></a>
+          <a class="download-row" href="https://github.com/aiutil/agent-os/releases/download/v0.4.0/Agent-Os-0.4.0-linux-arm64.AppImage"><span class="platform"><b>Linux · arm64 AppImage</b><span>Agent-Os-0.4.0-linux-arm64.AppImage</span></span><span class="download-arrow">↓</span></a>
         </div>
       </div>
     </div>
@@ -502,8 +538,8 @@
 
 <footer>
   <div class="wrap footer">
-    <div class="footer-brand"><img src="./agentos-icon.png" alt="" width="25" height="25" />Agent OS · v0.3.9</div>
-    <div class="footer-links"><a href="https://aiutil.com">AIUtil</a><a href="https://aiutil.com/about">关于</a><a href="https://agentos.aiutil.com">Agent OS</a><a href="https://radar.aiutil.com">前沿论文</a><a href="https://github-research.aiutil.com">GitHub 趋势</a><a href="https://nimbus.aiutil.com">Nimbus</a><a href="https://visionai.aiutil.com">VisionAI</a><a href="https://github.com/aiutil/agent-os" target="_blank" rel="noreferrer">源码</a><span data-i18n="footer.note">AIUtil 产品 · Apache-2.0 · 会话、任务与索引默认保存在本机</span></div>
+    <div class="footer-brand"><img src="./agentos-icon.png" alt="" width="25" height="25" />Agent OS · v0.4.0</div>
+    <div class="footer-links"><a href="https://aiutil.com">AIUtil</a><a href="https://aiutil.com/about" data-i18n="footer.about">关于</a><a href="https://agentos.aiutil.com">Agent OS</a><a href="https://radar.aiutil.com" data-i18n="footer.radar">前沿论文</a><a href="https://github-research.aiutil.com" data-i18n="footer.trends">GitHub 趋势</a><a href="https://nimbus.aiutil.com">Nimbus</a><a href="https://visionai.aiutil.com">VisionAI</a><a href="https://github.com/aiutil/agent-os" target="_blank" rel="noreferrer" data-i18n="footer.source">源码</a><span data-i18n="footer.note">AIUtil 产品 · Apache-2.0 · 会话、任务、记忆与知识默认保存在本机</span></div>
   </div>
 </footer>
 
@@ -518,45 +554,71 @@
   var strings={
     zh:{
       "skip":"跳到主要内容","nav.product":"产品界面","nav.scenarios":"使用场景","nav.principles":"设计理念","nav.capabilities":"功能范围","nav.guide":"使用指南","nav.download":"下载","aria.home":"Agent OS 首页","aria.nav":"主导航","aria.release":"当前版本信息","aria.modules":"主要模块","aria.adapters":"支持的 CLI 适配器","aria.close":"关闭截图",
-      "hero.eyebrow":"桌面端 Agent 工作台","hero.title":"会话、任务与运行节点，都在 Agent OS。","hero.body":"Agent OS 不只是聊天窗口：它把 Web、CLI 与 Agent 放在同一对比工作台，把跨 Agent 会话搜索和记忆放进同一存储层，再用任务、定时、远程节点与消息渠道承接长期工作。","hero.view":"查看产品界面","hero.download":"下载 v0.3.9","hero.source":"GitHub 源码",
-      "release.title":"当前版本 v0.3.9","release.state":"可下载","release.cli":"CLI 适配器","release.platform":"桌面平台","release.local":"本机保存","release.data":"会话、任务与索引",
+      "hero.eyebrow":"桌面端 Agent 工作台","hero.title":"会话、任务与运行节点，都在 Agent OS。","hero.body":"Agent OS 不只是聊天窗口：它把 Web、CLI 与 Agent 放在同一对比工作台，把跨 Agent 会话搜索和记忆放进同一存储层，再用任务、定时、远程节点与消息渠道承接长期工作。","hero.view":"观看 30 秒演示","hero.download":"下载 v0.4.0","hero.source":"GitHub 源码",
+      "release.title":"当前版本 v0.4.0","release.state":"可下载","release.cli":"AI 编程 CLI 集成","release.platform":"桌面平台","release.local":"本机保存","release.data":"会话、任务与索引",
       "product.title":"产品界面总览","product.body":"从任务派发、持续运行到结果验收，浏览 Agent OS 当前版本的核心工作界面。","product.hint":"点击截图查看界面细节；按 Esc 关闭。",
-      "shot.board":"任务看板与验收","shot.timeline":"任务运行过程","shot.delivery":"结构化交付物","shot.schedule":"计划与 Cron","shot.channels":"消息渠道","shot.remote":"远程托管","shot.session":"会话与 CLI","shot.compare":"多面板对比",
+      "shot.board":"任务看板与验收","shot.timeline":"任务运行过程","shot.delivery":"交付物审阅","shot.schedule":"计划与 Cron","shot.channels":"消息渠道","shot.remote":"远程托管","shot.session":"会话与 CLI","shot.compare":"多面板对比",
       "module.session":"会话","module.board":"看板","module.run":"运行记录","module.delivery":"交付物","module.schedule":"定时","module.channels":"消息渠道","module.remote":"远程托管","module.compare":"对比",
-      "scenarios.title":"四类重度 AI 用户，四种持续工作流","scenarios.body":"Agent OS 不替代模型或 CLI。它解决的是高频使用之后出现的管理问题：上下文分散、任务无法追踪、自动化不可靠，以及不同机器之间缺少统一入口。","scenario.scene":"场景","scenario.pain":"原来的问题","scenario.solve":"Agent OS","scenario.dev.label":"01 · 独立开发者 / 多仓库维护者","scenario.dev.title":"十几个终端，不应该承担项目管理","scenario.dev.scene":"一天内在多个仓库切换，用 Claude、Codex 或 Pi 分别处理开发、排障和文档。","scenario.dev.pain":"终端标题、工作目录和上下文散落；中断后很难找回“这个 Agent 当时做到哪一步”。","scenario.dev.solve":"把 Runtime Host、CLI、模型和工作目录绑定到会话与任务，并通过历史搜索、看板和运行记录继续工作。","scenario.lead.label":"02 · 技术负责人 / 架构与评审","scenario.lead.title":"不只看答案，还要知道它怎么交付","scenario.lead.scene":"把架构分析、重构建议、测试检查交给不同 Agent，再由自己做最终判断。","scenario.lead.pain":"只有一段最终输出时，很难核对运行配置、执行批次和失败重试，也缺少明确的验收关口。","scenario.lead.solve":"每次运行保留过程事件和结构化交付物；结果统一进入 Review，检查关联会话后再确认 Done。","scenario.ops.label":"03 · 自动化维护者 / 本地 DevOps","scenario.ops.title":"重复工作，不应依赖记得点一下","scenario.ops.scene":"每天检查异常、每周生成报告、定期扫描依赖或回顾未完成事项。","scenario.ops.pain":"零散脚本和系统 Cron 缺少 Agent 上下文、执行记录与人工审阅；桌面窗口关闭后也容易担心任务中断。","scenario.ops.solve":"使用单次计划或 Cron、时区与错过策略；Runtime daemon 持有计划，同一工作目录串行执行并保留结果。","scenario.remote.label":"04 · 多设备用户 / 个人工作室","scenario.remote.title":"离开主电脑，也能把工作交给正确机器","scenario.remote.scene":"笔记本负责控制，台式机或家中服务器负责运行；外出时从已授权的消息通道发起工作。","scenario.remote.pain":"反复远程登录、复制提示词和确认环境；节点版本、CLI 状态与任务结果分散在不同机器。","scenario.remote.solve":"远程托管统一接入节点并选择 Runtime Host；已授权消息通道把工作转给本机 Agent，再回到任务记录审阅。",
+      "scenarios.title":"四类重度 AI 用户，四种持续工作流","scenarios.body":"Agent OS 不替代模型或 CLI。它解决的是高频使用之后出现的管理问题：上下文分散、任务无法追踪、自动化不可靠，以及不同机器之间缺少统一入口。","scenario.scene":"场景","scenario.pain":"原来的问题","scenario.solve":"Agent OS","scenario.dev.label":"01 · 独立开发者 / 多仓库维护者","scenario.dev.title":"十几个终端，不应该承担项目管理","scenario.dev.scene":"一天内在多个仓库切换，用 Claude、Codex 或 Pi 分别处理开发、排障和文档。","scenario.dev.pain":"终端标题、工作目录和上下文散落；中断后很难找回“这个 Agent 当时做到哪一步”。","scenario.dev.solve":"把 Runtime Host、CLI、模型和工作目录绑定到会话与任务，并通过历史搜索、看板和运行记录继续工作。","scenario.lead.label":"02 · 技术负责人 / 架构与评审","scenario.lead.title":"不只看答案，还要知道它怎么交付","scenario.lead.scene":"把架构分析、重构建议、测试检查交给不同 Agent，再由自己做最终判断。","scenario.lead.pain":"只有一段最终输出时，很难核对运行配置、执行批次和失败重试，也缺少明确的验收关口。","scenario.lead.solve":"每次运行保留过程事件；最终回复可用时进入交付物审阅。结果统一进入 Review，检查关联会话后再确认 Done。","scenario.ops.label":"03 · 自动化维护者 / 本地 DevOps","scenario.ops.title":"重复工作，不应依赖记得点一下","scenario.ops.scene":"每天检查异常、每周生成报告、定期扫描依赖或回顾未完成事项。","scenario.ops.pain":"零散脚本和系统 Cron 缺少 Agent 上下文、执行记录与人工审阅；桌面窗口关闭后也容易担心任务中断。","scenario.ops.solve":"使用单次计划或 Cron、时区与错过策略；Runtime daemon 持有计划，同一工作目录串行执行并保留结果。","scenario.remote.label":"04 · 多设备用户 / 个人工作室","scenario.remote.title":"离开主电脑，也能把工作交给正确机器","scenario.remote.scene":"笔记本负责控制，台式机或家中服务器负责运行；外出时从已授权的消息通道发起工作。","scenario.remote.pain":"反复远程登录、复制提示词和确认环境；节点版本、CLI 状态与任务结果分散在不同机器。","scenario.remote.solve":"远程托管统一接入节点并选择 Runtime Host；已授权消息通道把工作转给本机 Agent，再回到任务记录审阅。",
       "principles.title":"不是再做一个聊天框，而是补齐 Agent 工作的操作系统层","principles.body":"重度使用的问题通常不在“能不能问一次”，而在如何同时观察不同界面、找回跨 Agent 上下文、持续执行任务，并对最终结果保留控制权。Agent OS 的功能围绕这条工作链设计。","principle.outcome":"解决的痛点","principle.compare.title":"把 Web、CLI 与 Agent 放在同一张工作台","principle.compare.body":"对比不只发生在模型回答之间。一个面板可以是真实网页，另一个是结构化 Agent 会话或原生 CLI；既能单独输入，也能向多个面板批量发送同一问题。","principle.compare.outcome":"减少在浏览器、终端和聊天窗口之间反复复制信息，也能同时观察资料、命令输出和 Agent 处理结果。","principle.storage.title":"跨 Agent 会话搜索与记忆，属于同一存储层","principle.storage.body":"会话历史不按单一厂商割裂。支持来源的会话在本机建立索引，搜索结果可以回到原上下文；经验、候选记忆和记忆策略也在同一存储区域管理。","principle.storage.outcome":"不再分别翻找 Claude、Codex、Pi 等工具的历史记录，也避免每次切换 Agent 都重新解释项目背景。","principle.tasks.title":"把一次提示变成可追踪、可验收的工作","principle.tasks.body":"任务经过 Todo、In Progress、Review、Done，保存执行环境、运行批次、过程事件和结构化交付物；计划任务还能按单次时间或 Cron 由 Runtime daemon 持续触发。","principle.tasks.outcome":"Agent 运行不再是终端里的一次性输出；重复工作有计划，失败和重试可追溯，最终结果由人确认后才完成。","principle.runtime.title":"本地优先，不等于只能在一台机器上运行","principle.runtime.body":"会话、任务和索引默认保存在本机；执行位置可以选择本机或远程 Runtime Host。本机作为主控发现和接入节点，并检查在线、版本兼容、CLI 与目录状态。","principle.runtime.outcome":"笔记本可以负责控制，把耗时任务交给台式机或服务器，同时保留统一的任务记录与审阅入口。","principle.channels.title":"消息渠道只是入口，不再形成新的信息孤岛","principle.channels.body":"飞书、个人微信、企业微信、Telegram 与 WhatsApp 按各自 transport 接收工作；执行仍进入统一的会话、任务、运行记录和交付流程，公网回调只在平台明确要求时启用。","principle.channels.outcome":"离开桌面也能发起工作，同时避免“聊天里一份结果、桌面里另一份历史”的分裂。","principle.control.title":"保留 CLI 原生能力，也保留人的最终控制","principle.control.body":"同一入口同时提供结构化会话和原生 PTY，不替代厂商 CLI 的登录与能力。任务明确记录权限和会话策略，结果先进入 Review，而不是自动宣告完成。","principle.control.outcome":"避免桌面封装牺牲 CLI 能力，也避免长时间自动化在没有权限边界和人工验收的情况下持续运行。",
-      "workflow.title":"从选择运行环境到完成验收","workflow.body":"任务从看板或消息渠道进入，使用统一的 Runtime Host、CLI、模型与工作目录配置。每次运行都有过程记录和独立交付物，完成后进入 Review 等待人工确认。","workflow.s1.title":"配置执行环境","workflow.s1.body":"选择本机或远程 Runtime Host，并指定 Engineer、模型、工作目录、权限与会话策略。","workflow.s2.title":"派发或计划任务","workflow.s2.body":"从看板创建任务，也可使用已授权消息通道转交工作；支持立即执行、单次计划和 Cron。","workflow.s3.title":"查看运行过程","workflow.s3.body":"按运行批次查看触发方式、执行阶段与输出事件；多次运行保留在同一任务的历史记录中。","workflow.s4.title":"审阅交付物","workflow.s4.body":"执行成功后进入 Review。检查结构化交付物或打开关联会话，确认后再标记 Done。",
-      "cap.title":"当前版本包含的功能","cap.body":"以下范围与 v0.3.9 桌面端界面对应。CLI 和消息渠道是否可用取决于本机安装、厂商账号与应用内接入状态。","cap.c1.title":"看板、运行记录与交付","cap.c1.body":"Todo、In Progress、Review、Done 四阶段管理任务；每次执行保留过程事件、运行历史和结构化交付物，最后由用户确认完成。","cap.c2.title":"单次计划与 Cron","cap.c2.body":"计划任务沿用 Engineer、模型、工作目录、权限和会话策略，可设置单次时间或五段 Cron、时区与错过执行策略。","cap.c3.title":"多平台消息通道","cap.c3.body":"飞书、个人微信、企业微信、Telegram 与 WhatsApp 通过独立 transport 把消息交给本机 Agent OS；设置页区分传输在线、回合可用、访问策略与平台前置条件。","cap.c4.title":"远程托管与节点管理","cap.c4.body":"本机可作为主控接收其他电脑的节点接入。选择可访问网卡并生成平台接入命令，随后查看节点在线、版本兼容与 CLI 状态。","cap.c5.title":"对比与内置 Web","cap.c5.body":"并排放置 Web、结构化会话或 CLI 面板，支持单独发送和批量发送；Web 书签保留登录状态。","cap.c6.title":"记忆、搜索与统计","cap.c6.body":"支持来源的会话在本机建立全文索引；记忆页管理经验、候选与策略；统计页显示使用趋势与成长 Cardex。",
+      "workflow.title":"从选择运行环境到完成验收","workflow.body":"任务从看板或消息渠道进入，使用统一的 Runtime Host、CLI、模型与工作目录配置。每次运行保留独立过程记录，最终回复可用时进入交付物审阅，并在 Review 等待人工确认。","workflow.s1.title":"配置执行环境","workflow.s1.body":"选择本机或远程 Runtime Host，并指定 Engineer、模型、工作目录、权限与会话策略。","workflow.s2.title":"派发或计划任务","workflow.s2.body":"从看板创建任务，也可使用已授权消息通道转交工作；支持立即执行、单次计划和 Cron。","workflow.s3.title":"查看运行过程","workflow.s3.body":"按运行批次查看触发方式、执行阶段与输出事件；多次运行保留在同一任务的历史记录中。","workflow.s4.title":"审阅结果","workflow.s4.body":"执行结束后进入 Review。检查可用的最终回复或打开关联会话，确认后再标记 Done。",
+      "cap.title":"当前版本包含的功能","cap.body":"以下范围与 v0.4.0 桌面端界面对应。CLI 和消息渠道是否可用取决于本机安装、厂商账号与应用内接入状态。","cap.c1.title":"看板、运行记录与交付","cap.c1.body":"Todo、In Progress、Review、Done 四阶段管理任务；每次执行保留过程事件和运行历史，最终回复可用时进入交付物审阅，最后由用户确认完成。","cap.c2.title":"单次计划与 Cron","cap.c2.body":"计划任务沿用 Engineer、模型、工作目录、权限和会话策略，可设置单次时间或五段 Cron、时区与错过执行策略。","cap.c3.title":"多平台消息通道","cap.c3.body":"飞书、个人微信、企业微信、Telegram 与 WhatsApp 通过独立 transport 把消息交给本机 Agent OS；设置页区分传输在线、回合可用、访问策略与平台前置条件。","cap.c4.title":"远程托管与节点管理","cap.c4.body":"本机可作为主控接收其他电脑的节点接入。选择可访问网卡并生成平台接入命令，随后查看节点在线、版本兼容与 CLI 状态。","cap.c5.title":"对比与内置 Web","cap.c5.body":"并排放置 Web、结构化会话或 CLI 面板，支持单独发送和批量发送；Web 书签保留登录状态。","cap.c6.title":"记忆、搜索与统计","cap.c6.body":"支持来源的会话在本机建立全文索引；记忆页管理经验、候选与策略；统计页显示使用趋势与成长 Cardex。",
       "tag.board":"任务看板","tag.timeline":"执行过程","tag.delivery":"交付物","tag.once":"单次计划","tag.timezone":"时区","tag.misfire":"错过策略","tag.feishu":"飞书","tag.longConnection":"长连接","tag.localAgent":"本机 Agent","tag.status":"渠道状态","tag.hosting":"远程托管","tag.remote":"远程节点","tag.compatibility":"版本兼容","tag.panel":"多面板","tag.batch":"批量发送","tag.bookmark":"书签","tag.sessionState":"登录状态","tag.search":"全文搜索","tag.stats":"使用统计",
-      "download.eyebrow":"Agent OS v0.3.9","download.title":"选择系统并下载安装","download.body":"桌面端提供 macOS、Windows 与 Linux 制品。远程 Runtime 节点安装包和脚本位于同一 Release。","download.note1":"macOS 制品使用自签名证书，未经过 Apple 公证。首次打开如被拦截，请前往“系统设置 → 隐私与安全”点击“仍要打开”。","download.note2":"安装与首次使用步骤见","download.guide":"完整使用指南","download.note3":"远程节点包与 install-node.sh 见","footer.changelog":"更新记录","footer.note":"AIUtil 产品 · Apache-2.0 · 会话、任务与索引默认保存在本机","lightbox.hint":"按 Esc 或点击背景关闭"
+      "download.eyebrow":"Agent OS v0.4.0","download.title":"选择系统并下载安装","download.body":"桌面端提供 macOS、Windows 与 Linux 制品。远程 Runtime 节点安装包和脚本位于同一 Release。","download.note1":"macOS 制品未经过 Apple 公证。请从官方 Release 下载并核对 SHA256 与来源证明；首次打开如被拦截，可前往“系统设置 → 隐私与安全”点击“仍要打开”。","download.note2":"安装与首次使用步骤见","download.guide":"完整使用指南","download.note3":"远程节点包与 install-node.sh 见","download.note4":"生产制品默认启用匿名分析；只发送白名单功能事件，交互录制会遮罩文本与输入，可在设置中随时关闭。","footer.changelog":"更新记录","footer.note":"AIUtil 产品 · Apache-2.0 · 会话、任务与索引默认保存在本机","lightbox.hint":"按 Esc 或点击背景关闭"
     },
     en:{
       "skip":"Skip to main content","nav.product":"Product screens","nav.scenarios":"Use cases","nav.principles":"Design principles","nav.capabilities":"Capabilities","nav.guide":"User guide","nav.download":"Download","aria.home":"Agent OS home","aria.nav":"Main navigation","aria.release":"Current release information","aria.modules":"Main modules","aria.adapters":"Supported CLI adapters","aria.close":"Close screenshot",
-      "hero.eyebrow":"Desktop agent workbench","hero.title":"Sessions, tasks, and Runtime Hosts in Agent OS.","hero.body":"Agent OS is more than a chat window: it compares Web, CLI, and Agent side by side, puts cross-Agent session search and memory in one storage layer, and carries long-running work through tasks, schedules, remote nodes, and message channels.","hero.view":"View product screens","hero.download":"Download v0.3.9","hero.source":"GitHub source",
-      "release.title":"Current release v0.3.9","release.state":"Available","release.cli":"CLI adapters","release.platform":"desktop platforms","release.local":"Stored locally","release.data":"sessions, tasks, and indexes",
+      "hero.eyebrow":"Desktop agent workbench","hero.title":"Sessions, tasks, and Runtime Hosts in Agent OS.","hero.body":"Agent OS is more than a chat window: it compares Web, CLI, and Agent side by side, puts cross-Agent session search and memory in one storage layer, and carries long-running work through tasks, schedules, remote nodes, and message channels.","hero.view":"Watch the 30-second overview","hero.download":"Download v0.4.0","hero.source":"GitHub source",
+      "release.title":"Current release v0.4.0","release.state":"Available","release.cli":"AI coding CLI integrations","release.platform":"desktop platforms","release.local":"Stored locally","release.data":"sessions, tasks, and indexes",
       "product.title":"Product screen overview","product.body":"Explore the core Agent OS workflow, from dispatch and continuous execution to delivery review.","product.hint":"Select a screenshot to inspect the interface; press Esc to close.",
-      "shot.board":"Task board & review","shot.timeline":"Task run timeline","shot.delivery":"Structured deliverable","shot.schedule":"Schedules & Cron","shot.channels":"Message channels","shot.remote":"Remote hosting","shot.session":"Sessions & CLI","shot.compare":"Multi-panel compare",
+      "shot.board":"Task board & review","shot.timeline":"Task run timeline","shot.delivery":"Deliverable review","shot.schedule":"Schedules & Cron","shot.channels":"Message channels","shot.remote":"Remote hosting","shot.session":"Sessions & CLI","shot.compare":"Multi-panel compare",
       "module.session":"Sessions","module.board":"Board","module.run":"Run history","module.delivery":"Deliverables","module.schedule":"Schedule","module.channels":"Channels","module.remote":"Remote hosting","module.compare":"Compare",
-      "scenarios.title":"Four heavy AI users, four continuous workflows","scenarios.body":"Agent OS does not replace a model or CLI. It addresses the management problems that emerge with frequent use: scattered context, untraceable tasks, fragile automation, and no shared entry point across machines.","scenario.scene":"Scenario","scenario.pain":"Previous pain","scenario.solve":"Agent OS","scenario.dev.label":"01 · Independent developer / multi-repo maintainer","scenario.dev.title":"A dozen terminals should not become project management","scenario.dev.scene":"Switch between several repositories in one day, using Claude, Codex, or Pi for development, debugging, and documentation.","scenario.dev.pain":"Terminal titles, workspaces, and context are scattered. After an interruption, it is hard to find where an Agent stopped.","scenario.dev.solve":"Bind Runtime Host, CLI, model, and workspace to sessions and tasks, then continue through history search, the board, and run records.","scenario.lead.label":"02 · Tech lead / architecture and review","scenario.lead.title":"Review the result and how it was delivered","scenario.lead.scene":"Delegate architecture analysis, refactoring advice, and test checks to different Agents, then make the final decision.","scenario.lead.pain":"A final answer alone does not show run settings, attempts, or retries, and there is no explicit acceptance gate.","scenario.lead.solve":"Keep execution events and a structured deliverable for each run. Results enter Review before the linked session is checked and Done is confirmed.","scenario.ops.label":"03 · Automation maintainer / local DevOps","scenario.ops.title":"Recurring work should not depend on remembering to click","scenario.ops.scene":"Check incidents daily, generate reports weekly, scan dependencies, or revisit unfinished work on a schedule.","scenario.ops.pain":"Loose scripts and system Cron lack Agent context, execution history, and user review. Closing the desktop also creates uncertainty about continuity.","scenario.ops.solve":"Use one-off or Cron schedules, timezone, and misfire policy. The Runtime daemon owns schedules, serializes a workspace, and keeps results.","scenario.remote.label":"04 · Multi-device user / solo studio","scenario.remote.title":"Hand work to the right machine while away from the main computer","scenario.remote.scene":"Use a laptop as controller and a desktop or home server as worker; dispatch work from an authorized message channel while away.","scenario.remote.pain":"Repeated remote login, prompt copying, and environment checks leave node versions, CLI state, and results split across machines.","scenario.remote.solve":"Remote hosting enrolls nodes behind selectable Runtime Hosts. Authorized message channels pass work to the local Agent, with review returning to the task record.",
+      "scenarios.title":"Four power-user profiles. Four continuous workflows.","scenarios.body":"Agent OS does not replace a model or CLI. It addresses the management problems that emerge with frequent use: scattered context, untraceable tasks, fragile automation, and no shared entry point across machines.","scenario.scene":"Scenario","scenario.pain":"Previous pain","scenario.solve":"Agent OS","scenario.dev.label":"01 · Independent developer / multi-repo maintainer","scenario.dev.title":"A dozen terminals should not become project management","scenario.dev.scene":"Switch between several repositories in one day, using Claude, Codex, or Pi for development, debugging, and documentation.","scenario.dev.pain":"Terminal titles, workspaces, and context are scattered. After an interruption, it is hard to find where an Agent stopped.","scenario.dev.solve":"Bind Runtime Host, CLI, model, and workspace to sessions and tasks, then continue through history search, the board, and run records.","scenario.lead.label":"02 · Tech lead / architecture and review","scenario.lead.title":"Review the result and how it was delivered","scenario.lead.scene":"Delegate architecture analysis, refactoring advice, and test checks to different Agents, then make the final decision.","scenario.lead.pain":"A final answer alone does not show run settings, attempts, or retries, and there is no explicit acceptance gate.","scenario.lead.solve":"Keep execution events and a final response when available. Results enter Review before the linked session is checked and Done is confirmed.","scenario.ops.label":"03 · Automation maintainer / local DevOps","scenario.ops.title":"Recurring work should not depend on remembering to click","scenario.ops.scene":"Check incidents daily, generate reports weekly, scan dependencies, or revisit unfinished work on a schedule.","scenario.ops.pain":"Loose scripts and system Cron lack Agent context, execution history, and user review. Closing the desktop also creates uncertainty about continuity.","scenario.ops.solve":"Use one-off or Cron schedules, timezone, and misfire policy. The Runtime daemon owns schedules, serializes a workspace, and keeps results.","scenario.remote.label":"04 · Multi-device user / solo studio","scenario.remote.title":"Hand work to the right machine while away from the main computer","scenario.remote.scene":"Use a laptop as controller and a desktop or home server as worker; dispatch work from an authorized message channel while away.","scenario.remote.pain":"Repeated remote login, prompt copying, and environment checks leave node versions, CLI state, and results split across machines.","scenario.remote.solve":"Remote hosting enrolls nodes behind selectable Runtime Hosts. Authorized message channels pass work to the local Agent, with review returning to the task record.",
       "principles.title":"Not another chat box: the operating layer for Agent work","principles.body":"Heavy-use problems are rarely about asking one question. They are about observing different surfaces together, recovering cross-Agent context, sustaining execution, and retaining control over the result. Agent OS is organized around that work chain.","principle.outcome":"Pain addressed","principle.compare.title":"Put Web, CLI, and Agent on the same workbench","principle.compare.body":"Comparison is not limited to model answers. One panel can be a real Web page while another is a structured Agent session or native CLI. Send input to one panel or batch the same question across several.","principle.compare.outcome":"Reduce copying between browsers, terminals, and chat windows while observing source material, command output, and Agent results together.","principle.storage.title":"Cross-Agent session search and memory share one storage layer","principle.storage.body":"History is not partitioned by one vendor. Supported session sources are indexed locally and search can return to the original context, while experience, memory candidates, and memory policy live in the same storage area.","principle.storage.outcome":"Stop searching Claude, Codex, and Pi histories separately or restating project context every time the active Agent changes.","principle.tasks.title":"Turn a prompt into traceable, reviewable work","principle.tasks.body":"Tasks move through Todo, In Progress, Review, and Done while keeping execution settings, attempts, events, and structured deliverables. One-off or Cron schedules continue through the Runtime daemon.","principle.tasks.outcome":"Agent runs are no longer disposable terminal output. Recurring work is scheduled, failures and retries stay traceable, and a person confirms completion.","principle.runtime.title":"Local-first does not mean single-machine execution","principle.runtime.body":"Sessions, tasks, and indexes stay local by default while execution can use a local or remote Runtime Host. The local controller discovers and enrolls nodes and checks presence, compatibility, CLIs, and directory access.","principle.runtime.outcome":"Use a laptop as controller and send heavy work to a desktop or server without splitting task records and review across machines.","principle.channels.title":"Message channels are inputs, not new information silos","principle.channels.body":"Feishu, personal WeChat, WeCom, Telegram, and WhatsApp receive work through platform-specific transports. Execution still enters the same sessions, tasks, run records, and delivery flow; a public callback is enabled only when the platform requires one.","principle.channels.outcome":"Start work away from the desktop without creating one history in chat and another in the desktop app.","principle.control.title":"Preserve native CLI power and final human control","principle.control.body":"The same entry point offers structured sessions and native PTY without replacing vendor authentication or CLI capability. Tasks record permissions and session policy, and results enter Review instead of declaring themselves complete.","principle.control.outcome":"Avoid losing CLI capability inside a wrapper or letting long-running automation continue without clear permission boundaries and user acceptance.",
       "workflow.title":"From runtime selection to review","workflow.body":"Tasks enter from the board or a message channel and share the same Runtime Host, CLI, model, and workspace settings. Each run keeps its timeline and deliverable before entering Review for user confirmation.","workflow.s1.title":"Configure execution","workflow.s1.body":"Choose a local or remote Runtime Host, then select the Engineer, model, workspace, permissions, and session policy.","workflow.s2.title":"Dispatch or schedule","workflow.s2.body":"Create work from the board or hand it off through an authorized message channel. Run immediately, once, or by Cron.","workflow.s3.title":"Inspect the run","workflow.s3.body":"Review the trigger, execution stages, and output events for each run. Multiple attempts stay in the same task history.","workflow.s4.title":"Review the deliverable","workflow.s4.body":"Successful runs enter Review. Inspect the structured deliverable or open the linked session, then confirm Done.",
-      "cap.title":"Included in the current release","cap.body":"This scope matches the v0.3.9 desktop interface. CLI and channel availability depends on local installation, vendor accounts, and the in-app connection state.","cap.c1.title":"Board, run history & delivery","cap.c1.body":"Manage work across Todo, In Progress, Review, and Done. Each attempt keeps execution events, run history, and a structured deliverable for final user confirmation.","cap.c2.title":"One-off schedules & Cron","cap.c2.body":"Scheduled work reuses the Engineer, model, workspace, permission, and session settings, with one-off time or five-field Cron, timezone, and misfire policy.","cap.c3.title":"Multi-platform message channels","cap.c3.body":"Feishu, personal WeChat, WeCom, Telegram, and WhatsApp use independent transports to reach the local Agent OS. Settings separates transport health, end-to-end turns, access policy, and platform prerequisites.","cap.c4.title":"Remote hosting & node management","cap.c4.body":"Use the local machine as a controller for other computers. Select a reachable network interface, generate a platform enrollment command, and inspect node presence, version compatibility, and CLI state.","cap.c5.title":"Compare & built-in Web","cap.c5.body":"Place Web, structured chat, or CLI panels side by side. Send to one panel or all panels; Web bookmarks retain sign-in state.","cap.c6.title":"Memory, search & statistics","cap.c6.body":"Supported session sources are indexed locally. Memory manages experience, candidates, and policy; Stats shows usage trends and Growth Cardex.",
+      "cap.title":"Included in the current release","cap.body":"This scope matches the v0.4.0 desktop interface. CLI and channel availability depends on local installation, vendor accounts, and the in-app connection state.","cap.c1.title":"Board, run history & delivery","cap.c1.body":"Manage work across Todo, In Progress, Review, and Done. Each attempt keeps execution events, run history, and a structured deliverable for final user confirmation.","cap.c2.title":"One-off schedules & Cron","cap.c2.body":"Scheduled work reuses the Engineer, model, workspace, permission, and session settings, with one-off time or five-field Cron, timezone, and misfire policy.","cap.c3.title":"Multi-platform message channels","cap.c3.body":"Feishu, personal WeChat, WeCom, Telegram, and WhatsApp use independent transports to reach the local Agent OS. Settings separates transport health, end-to-end turns, access policy, and platform prerequisites.","cap.c4.title":"Remote hosting & node management","cap.c4.body":"Use the local machine as a controller for other computers. Select a reachable network interface, generate a platform enrollment command, and inspect node presence, version compatibility, and CLI state.","cap.c5.title":"Compare & built-in Web","cap.c5.body":"Place Web, structured chat, or CLI panels side by side. Send to one panel or all panels; Web bookmarks retain sign-in state.","cap.c6.title":"Memory, search & statistics","cap.c6.body":"Supported session sources are indexed locally. Memory manages experience, candidates, and policy; Stats shows usage trends and Growth Cardex.",
       "tag.board":"Task board","tag.timeline":"Run timeline","tag.delivery":"Deliverable","tag.once":"One-off","tag.timezone":"Timezone","tag.misfire":"Misfire policy","tag.feishu":"Feishu","tag.longConnection":"Long connection","tag.localAgent":"Local Agent","tag.status":"Channel state","tag.hosting":"Remote hosting","tag.remote":"Remote nodes","tag.compatibility":"Version compatibility","tag.panel":"Multiple panels","tag.batch":"Batch send","tag.bookmark":"Bookmarks","tag.sessionState":"Sign-in state","tag.search":"Full-text search","tag.stats":"Usage stats",
-      "download.eyebrow":"Agent OS v0.3.9","download.title":"Choose a build for your system","download.body":"Desktop builds are available for macOS, Windows, and Linux. Remote Runtime node packages and scripts are included in the same Release.","download.note1":"The macOS build uses a self-signed certificate and is not notarized by Apple. If blocked, use System Settings → Privacy & Security → Open Anyway.","download.note2":"For installation and first use, read the","download.guide":"full user guide","download.note3":"For remote node packages and install-node.sh, open the","footer.changelog":"Changelog","footer.note":"A product by AIUtil · Apache-2.0 · sessions, tasks, and indexes stay local by default","lightbox.hint":"Press Esc or select the backdrop to close"
+      "download.eyebrow":"Agent OS v0.4.0","download.title":"Choose a build for your system","download.body":"Desktop builds are available for macOS, Windows, and Linux. Remote Runtime node packages and scripts are included in the same Release.","download.note1":"The macOS build is not notarized by Apple. Download it from the official Release and verify its SHA256 and provenance; if blocked, use System Settings → Privacy & Security → Open Anyway.","download.note2":"For installation and first use, read the","download.guide":"full user guide","download.note3":"For remote node packages and install-node.sh, open the","download.note4":"Production builds enable anonymous analytics by default. Only allowlisted feature events are sent; interaction recordings mask text and inputs, and analytics can be disabled in Settings.","footer.changelog":"Changelog","footer.note":"A product by AIUtil · Apache-2.0 · sessions, tasks, and indexes stay local by default","lightbox.hint":"Press Esc or select the backdrop to close"
     }
   };
   var featureCopy={
     zh:{
       "nav.highlights":"核心亮点",
       "aria.remoteTrust":"远程授权安全机制",
-      "hero.title":"安全托管远程 Agent，一条消息通道切换所有 Agent。",
-      "hero.body":"受托管主机自己批准设备、能力与可访问目录；接入飞书等任一消息渠道后，即可在同一对话中使用 /use 切换已安装 Agent，切回时原会话与记忆仍然保留。",
-      "release.cli":"消息内可切换 Agent",
-      "product.body":"从安全配对、消息接入到任务验收，查看 Agent OS 如何把分散的主机、Agent 与工作记录统一起来。",
+      "aria.demoMeta":"视频信息","aria.demoVideo":"Agent OS 0.4.0 产品演示",
+      "hero.title":"让每个 Agent 在一个工作台协作，让每次工作持续积累。",
+      "hero.body":"在本机或授权远程节点运行 AI CLI，用会话、任务、运行记录与多 Agent 对比审阅结果，再把有价值的工作沉淀为可召回记忆和可阅读知识。",
+      "hero.view":"观看 30 秒演示",
+      "release.cli":"AI 编程 CLI 集成",
+      "release.local":"本地优先",
+      "release.data":"会话、记忆与知识",
+      "product.body":"从任务派发、运行审阅到记忆与知识沉淀，查看 Agent OS 0.4.0 的核心工作界面。",
       "shot.channels":"消息接入与 Agent 切换",
       "shot.remote":"远程 Agent 安全配对",
-      "highlights.title":"两个入口，把分散的 Agent 变成一个工作系统",
-      "highlights.body":"一端解决“让哪台机器执行、能访问什么”，另一端解决“从哪里发消息、交给哪个 Agent”。控制权、上下文与结果仍统一留在 Agent OS。",
+      "shot.knowledge":"知识图谱与文章",
+      "shot.memory":"分层记忆图谱",
+      "module.knowledge":"记忆与知识",
+      "footer.note":"AIUtil 产品 · Apache-2.0 · 会话、任务、记忆与知识默认保存在本机",
+      "footer.about":"关于","footer.radar":"前沿论文","footer.trends":"GitHub 趋势","footer.source":"源码","tag.stats":"图谱与列表",
+      "demo.eyebrow":"30 秒产品演示","demo.title":"从派发任务，到把成果留下来","demo.body":"用真实的 0.4.0 界面快速了解运行、审阅、分层记忆和 Markdown 知识如何连成一条工作链。","demo.caption":"中英文画面字幕","demo.noAuto":"不会自动播放",
+      "highlights.title":"让 Agent 工作从一次回答，变成可以延续的系统",
+      "highlights.body":"运行位置、审阅证据和长期积累属于同一条工作链。Agent OS 把它们留在一个可追踪、可搜索、由人控制的工作台中。",
+      "highlight.run.title":"在正确的位置运行",
+      "highlight.run.body":"为每项工作选择本机或授权远程 Runtime Host，并明确 CLI、模型、工作目录、权限和会话策略。",
+      "highlight.run.p1":"结构化 Agent 会话与原生 CLI 终端共存",
+      "highlight.run.p2":"一次任务、计划任务与 Cron 使用相同运行配置",
+      "highlight.run.p3":"远程节点的能力与目录由受托管端批准并可撤销",
+      "highlight.review.title":"依据运行记录与证据审阅",
+      "highlight.review.body":"不只接收最后一段答案。按运行批次查看执行事件、失败与重试、可用的交付物和关联会话，再由人确认 Done。",
+      "highlight.review.p1":"Todo、In Progress、Review、Done 四阶段任务流",
+      "highlight.review.p2":"每次尝试保留独立运行记录；最终回复可用时进入交付物审阅",
+      "highlight.review.p3":"Web、CLI 与多个 Agent 可并排比较",
+      "scenario.lead.solve":"每次运行保留过程事件；最终回复可用时进入交付物审阅。结果统一进入 Review，检查关联会话后再确认 Done。",
+      "highlight.keep.title":"把有价值的工作留下来",
+      "highlight.keep.body":"短小信息进入分层记忆并按作用域召回；体系化成果成为带主题、标签和来源的 Markdown 知识文章。",
+      "highlight.keep.p1":"记忆与知识职责分离，避免长文章污染 Agent 上下文",
+      "highlight.keep.p2":"知识支持草稿、发布、收藏、本机评论与全文搜索",
+      "highlight.keep.p3":"图谱与列表共享搜索、筛选和阅读脉络",
       "highlight.remote.title":"托管其他主机的 Agent，但边界由对方决定",
       "highlight.remote.body":"控制端只能使用受托管端明确批准的能力、Agent 与目录。配对、授权、暂停和撤销都在对方设备完成，不把“远程可用”变成“整机开放”。",
       "highlight.remote.p1":"对方核验配对码与设备指纹后主动批准",
@@ -566,22 +628,32 @@
       "highlight.remote.transport":"加密传输与指纹核验",
       "highlight.remote.scope":"真实目录边界",
       "highlight.remote.failClosed":"不确定即拒绝",
-      "highlight.channels.title":"接入一次消息渠道，获得所有 Agent 的消息入口",
+      "highlight.channels.title":"一个消息入口，切换支持结构化聊天的 Agent",
       "highlight.channels.body":"连接飞书等消息渠道后，Agent OS 动态列出本机已安装且支持结构化聊天的 Agent。在同一对话中发送 /use 即可切换，不必为每个 Agent 重建机器人。",
       "highlight.channels.note":"每个 Agent 保留自己的持久会话；切回时继续原上下文，统一搜索与长期记忆仍由 Agent OS 管理。实际列表以本机发现结果为准。",
       "highlight.table.agent":"Agent",
       "highlight.table.command":"切换命令",
-      "scenario.remote.solve":"受托管主机自行批准能力与目录；连接任一消息渠道后，用 /use 把工作交给正确 Agent，切换时不覆盖原会话。",
+      "scenario.remote.solve":"受托管主机自行批准能力与目录；连接受支持的消息渠道后，用 /use 把工作交给正确 Agent，切换时不覆盖原会话。",
       "principle.runtime.title":"跨主机运行，不跨越对方的授权边界",
       "principle.runtime.body":"受托管端核验设备并决定开放哪些能力、Agent 与目录；控制端只能看到和使用授权范围内的资源。暂停或撤销后，已有远程访问立即停止。",
       "principle.runtime.outcome":"把任务交给台式机或服务器执行，同时不要求对方开放整机、根目录或无边界权限。",
-      "principle.channels.title":"一个消息入口，切换所有已安装 Agent",
+      "principle.tasks.body":"任务经过 Todo、In Progress、Review、Done，保存执行环境、运行批次和过程事件；最终回复可用时进入交付物审阅，计划任务还可按单次时间或 Cron 由 Runtime daemon 触发。",
+      "principle.channels.title":"一个消息入口，切换已安装且支持结构化聊天的 Agent",
       "principle.channels.body":"飞书等渠道接入一次后，可用 /agents 查看实时可用列表，用 /use codex 等命令切换 Agent。每个 Agent 的会话独立保留，切回时继续原上下文。",
       "principle.channels.outcome":"无需为 Claude、Codex、Gemini 等分别搭机器人，也不会因 Agent 切换丢掉上一段对话与记忆。",
-      "cap.c3.title":"一次接入，所有 Agent 都能收消息",
+      "cap.c3.title":"一次接入，切换受支持的 Agent",
       "cap.c3.body":"飞书、个人微信、企业微信、Telegram 与 WhatsApp 作为统一消息入口；/agents 动态列出可用 Agent，/use 切换并复用各自持久会话。访问控制在消息进入 Agent 前生效。",
       "cap.c4.title":"由对方控制边界的远程 Agent 托管",
       "cap.c4.body":"受托管设备核验配对码和身份指纹，自行批准能力、Agent 与允许目录；控制端只获得方向性授权，越界访问、错误凭证和撤销后的请求全部拒绝。",
+      "workflow.body":"任务从看板或消息渠道进入，使用统一的 Runtime Host、CLI、模型与工作目录配置。每次运行保留独立过程记录，最终回复可用时进入交付物审阅，并在 Review 等待人工确认。",
+      "workflow.s4.title":"审阅结果",
+      "workflow.s4.body":"执行结束后进入 Review。检查可用的最终回复或打开关联会话，确认后再标记 Done。",
+      "cap.c1.body":"Todo、In Progress、Review、Done 四阶段管理任务；每次执行保留过程事件和运行历史，最终回复可用时进入交付物审阅，最后由用户确认完成。",
+      "principle.storage.title":"让记忆负责召回，让知识负责阅读",
+      "principle.storage.body":"短小记忆按类别、作用域和衰减检索；长篇成果成为真实 Markdown 文章，保留主题、标签和来源证据。知识默认不进入 Agent 提示词。",
+      "principle.storage.outcome":"既减少重复解释项目背景，也避免把整篇文章反复塞进上下文；人可以沿图谱、列表和来源会话继续阅读。",
+      "cap.c6.title":"分层记忆与 Markdown 知识",
+      "cap.c6.body":"记忆按人格、工作和项目语境管理；知识以 Markdown 文章沉淀，支持图谱、列表、主题、标签、草稿、发布、收藏、本机评论与搜索。",
       "tag.authorization":"方向性授权",
       "tag.fileBoundary":"目录边界",
       "tag.revocable":"可撤销"
@@ -589,14 +661,40 @@
     en:{
       "nav.highlights":"Highlights",
       "aria.remoteTrust":"Remote authorization safeguards",
-      "hero.title":"Host remote Agents safely. Switch every Agent from one message channel.",
-      "hero.body":"The managed computer approves the device, capabilities, and accessible folders. Connect Feishu or another channel once, then use /use to switch installed Agents without losing their existing sessions or memory.",
-      "release.cli":"Agents switchable in chat",
-      "product.body":"See how Agent OS unifies machines, Agents, and work records—from secure pairing and message access to final task review.",
+      "aria.demoMeta":"Video details","aria.demoVideo":"Agent OS 0.4.0 product overview",
+      "hero.title":"One workbench for every agent. Continuity for every task.",
+      "hero.body":"Run AI CLIs locally or on an authorized remote node, review results through sessions, tasks, run history, and side-by-side comparison, then keep useful work as recallable memory and readable knowledge.",
+      "hero.view":"Watch the 30-second overview",
+      "release.cli":"AI coding CLI integrations",
+      "release.local":"Local-first",
+      "release.data":"sessions, memory & knowledge",
+      "product.body":"Explore the Agent OS 0.4.0 workflow—from dispatch and run review to memory and knowledge capture.",
       "shot.channels":"Channel access & Agent switching",
       "shot.remote":"Secure remote Agent pairing",
-      "highlights.title":"2 entry points turn scattered Agents into one work system",
-      "highlights.body":"One decides which machine executes and what it may access. The other decides where a message enters and which Agent receives it. Control, context, and results remain unified in Agent OS.",
+      "shot.knowledge":"Knowledge graph & articles",
+      "shot.memory":"Layered memory graph",
+      "module.knowledge":"Memory & knowledge",
+      "footer.note":"A product by AIUtil · Apache-2.0 · sessions, tasks, memory, and knowledge stay local by default",
+      "footer.about":"About","footer.radar":"Frontier papers","footer.trends":"GitHub trends","footer.source":"Source","tag.stats":"Graph & list",
+      "demo.eyebrow":"30-second product overview","demo.title":"From dispatching work to keeping the outcome","demo.body":"See the real 0.4.0 interface connect execution, evidence-backed review, layered memory, and Markdown knowledge in one continuous workflow.","demo.caption":"Bilingual on-screen captions","demo.noAuto":"No autoplay",
+      "highlights.title":"Turn one-off answers into a system that carries work forward",
+      "highlights.body":"Where work runs, how it is reviewed, and what survives belong to the same workflow. Agent OS keeps that workflow traceable, searchable, and under human control.",
+      "highlight.run.title":"Run in the right place",
+      "highlight.run.body":"Choose a local or authorized remote Runtime Host for each job, with an explicit CLI, model, workspace, permission level, and session policy.",
+      "highlight.run.p1":"Structured agent sessions and native CLI terminals coexist",
+      "highlight.run.p2":"Immediate tasks, one-off schedules, and Cron share one run configuration",
+      "highlight.run.p3":"The managed computer approves and can revoke remote capabilities and folders",
+      "highlight.review.title":"Review run records and evidence",
+      "highlight.review.body":"Do not stop at the final answer. Inspect execution events, failures and retries, available deliverables, and linked sessions for each attempt, then decide when the task is Done.",
+      "highlight.review.p1":"Todo, In Progress, Review, and Done task stages",
+      "highlight.review.p2":"Every attempt keeps its own run record; final responses enter deliverable review when available",
+      "highlight.review.p3":"Compare Web, CLI, and multiple agents side by side",
+      "scenario.lead.solve":"Each run keeps its execution events; final responses enter deliverable review when available. Results move to Review before the linked session is checked and Done is confirmed.",
+      "highlight.keep.title":"Keep the work that matters",
+      "highlight.keep.body":"Compact facts enter layered memory and are recalled by scope. Reusable long-form outcomes become Markdown knowledge with topics, tags, and sources.",
+      "highlight.keep.p1":"Memory and knowledge stay separate so long articles do not pollute agent context",
+      "highlight.keep.p2":"Knowledge supports drafts, publishing, favorites, local comments, and full-text search",
+      "highlight.keep.p3":"Graph and list views share search, filters, and reading context",
       "highlight.remote.title":"Host Agents on other machines while the other side controls the boundary",
       "highlight.remote.body":"A controller can use only the capabilities, Agents, and folders explicitly approved by the managed computer. Pairing, grants, pauses, and revocation happen on that computer—remote access never means opening the whole machine.",
       "highlight.remote.p1":"The other side verifies the pairing code and device fingerprint before approval",
@@ -606,22 +704,32 @@
       "highlight.remote.transport":"Encrypted transport & fingerprint verification",
       "highlight.remote.scope":"Canonical folder boundary",
       "highlight.remote.failClosed":"Uncertain means denied",
-      "highlight.channels.title":"Connect one message channel and reach every Agent",
+      "highlight.channels.title":"One message entry point for Agents that support structured chat",
       "highlight.channels.body":"After connecting Feishu or another channel, Agent OS dynamically lists installed Agents that support structured chat. Send /use in the same conversation to switch—no separate bot per Agent.",
       "highlight.channels.note":"Each Agent keeps its persistent session, so switching back resumes the original context. Unified search and durable memory remain managed by Agent OS. The actual list follows local discovery.",
       "highlight.table.agent":"Agent",
       "highlight.table.command":"Switch command",
-      "scenario.remote.solve":"The managed machine approves capabilities and folders. Connect any message channel, then use /use to route work to the right Agent without overwriting earlier sessions.",
+      "scenario.remote.solve":"The managed machine approves capabilities and folders. Connect a supported message channel, then use /use to route work to the right Agent without overwriting earlier sessions.",
       "principle.runtime.title":"Run across machines without crossing the other side’s authorization boundary",
       "principle.runtime.body":"The managed computer verifies the device and decides which capabilities, Agents, and folders to expose. A controller sees only authorized resources; pausing or revoking access stops existing remote use immediately.",
       "principle.runtime.outcome":"Send work to a desktop or server without asking its owner to expose the entire machine, filesystem root, or unlimited permissions.",
-      "principle.channels.title":"One message entry point for every installed Agent",
+      "principle.tasks.body":"Tasks move through Todo, In Progress, Review, and Done while keeping execution settings, attempts, and events. Final responses enter deliverable review when available, and one-off or Cron schedules continue through the Runtime daemon.",
+      "principle.channels.title":"One message entry point for installed Agents that support structured chat",
       "principle.channels.body":"Connect Feishu or another channel once. Use /agents for the live list and commands such as /use codex to switch. Each Agent keeps a separate session that resumes when selected again.",
       "principle.channels.outcome":"No separate bot for Claude, Codex, Gemini, and others—and no lost conversation or memory when switching Agents.",
-      "cap.c3.title":"One connection gives every Agent a message channel",
+      "cap.c3.title":"One connection, with switching among supported Agents",
       "cap.c3.body":"Feishu, personal WeChat, WeCom, Telegram, and WhatsApp act as unified entry points. /agents lists live availability, while /use switches and reuses persistent sessions. Access control runs before a message reaches an Agent.",
       "cap.c4.title":"Remote Agent hosting bounded by the managed computer",
       "cap.c4.body":"The managed device verifies the pairing code and identity fingerprint, then approves capabilities, Agents, and folders. Out-of-scope access, invalid credentials, and post-revocation requests fail closed.",
+      "workflow.body":"Tasks enter from the board or a message channel and share the same Runtime Host, CLI, model, and workspace settings. Every run keeps an independent record; final responses enter deliverable review when available before user confirmation in Review.",
+      "workflow.s4.title":"Review the result",
+      "workflow.s4.body":"Runs enter Review when execution ends. Inspect the final response when available or open the linked session, then confirm Done.",
+      "cap.c1.body":"Manage work across Todo, In Progress, Review, and Done. Every attempt keeps execution events and run history; final responses enter deliverable review when available before user confirmation.",
+      "principle.storage.title":"Let memory recall and knowledge explain",
+      "principle.storage.body":"Compact memories are retrieved by category, scope, and decay. Longer outcomes become real Markdown articles with topics, tags, and source evidence. Knowledge stays out of agent prompts by default.",
+      "principle.storage.outcome":"Avoid repeating project context without stuffing entire articles into every turn. People can continue through graph, list, and source-session views.",
+      "cap.c6.title":"Layered memory & Markdown knowledge",
+      "cap.c6.body":"Manage memory across identity, working, and project contexts. Publish knowledge as Markdown with graph and list views, topics, tags, drafts, favorites, local comments, and search.",
       "tag.authorization":"Directional grant",
       "tag.fileBoundary":"Folder boundary",
       "tag.revocable":"Revocable"
@@ -629,8 +737,10 @@
   };
   Object.assign(strings.zh,featureCopy.zh);
   Object.assign(strings.en,featureCopy.en);
-  var lang="zh";
-  try{lang=localStorage.getItem("agentos-lang")||"zh"}catch(e){}
+  var detected=(navigator.language||"").toLowerCase().indexOf("zh")===0?"zh":"en";
+  var requested=new URLSearchParams(location.search).get("lang");
+  var lang=requested==="zh"||requested==="en"?requested:detected;
+  try{if(requested!=="zh"&&requested!=="en")lang=localStorage.getItem("agentos-lang")||detected}catch(e){}
   var toggle=document.getElementById("langToggle");
   var lightbox=document.getElementById("lightbox");
   var lightboxImage=document.getElementById("lightboxImage");
@@ -654,12 +764,38 @@
       var title=table[card.getAttribute("data-title-key")]||"Agent OS";
       card.setAttribute("aria-label",lang==="zh"?"查看"+title+"界面":"View the "+title+" interface");
       var image=card.querySelector("img");
-      if(image)image.alt=lang==="zh"?"Agent OS "+title+"界面":"Agent OS "+title+" interface";
+      var localizedSource=card.getAttribute("data-src-"+lang);
+      if(localizedSource)card.setAttribute("data-src",localizedSource);
+      if(image){
+        var imageSource=image.getAttribute("data-src-"+lang);
+        if(imageSource)image.src=imageSource;
+        image.alt=lang==="zh"?"Agent OS "+title+"界面":"Agent OS "+title+" interface";
+      }
     });
-    document.title=lang==="zh"?"Agent OS — 安全托管远程 Agent，一条消息通道切换所有 Agent":"Agent OS — Secure Remote Agents, One Message Channel";
+    document.querySelectorAll("img[data-src-zh]").forEach(function(image){
+      var source=image.getAttribute("data-src-"+lang);if(source)image.src=source;
+    });
+    document.querySelectorAll("img[data-alt-zh]").forEach(function(image){
+      var alternative=image.getAttribute("data-alt-"+lang);if(alternative)image.alt=alternative;
+    });
+    document.querySelectorAll("video[data-poster-zh]").forEach(function(video){
+      var poster=video.getAttribute("data-poster-"+lang);if(poster)video.poster=poster;
+    });
+    var meta=lang==="zh"?{
+      title:"Agent OS — 让每个 Agent 协作，让每次工作持续积累",
+      description:"在本机或授权远程节点运行 AI CLI，用证据审阅每次执行，再把成果沉淀为可召回记忆与可阅读知识。"
+    }:{
+      title:"Agent OS — One workbench for every agent",
+      description:"Run AI CLIs locally or on authorized remote nodes, review every run with evidence, and keep useful work as memory and Markdown knowledge."
+    };
+    document.title=meta.title;
+    var description=document.querySelector('meta[name="description"]');if(description)description.content=meta.description;
+    var ogTitle=document.querySelector('meta[property="og:title"]');if(ogTitle)ogTitle.content=meta.title;
+    var ogDescription=document.querySelector('meta[property="og:description"]');if(ogDescription)ogDescription.content=meta.description;
     toggle.textContent=lang==="zh"?"EN":"中";
     toggle.setAttribute("aria-label",lang==="zh"?"切换为英文":"Switch to Chinese");
     try{localStorage.setItem("agentos-lang",lang)}catch(e){}
+    try{var url=new URL(location.href);url.searchParams.set("lang",lang);history.replaceState(null,"",url.pathname+url.search+url.hash)}catch(e){}
   }
 
   function openLightbox(card){

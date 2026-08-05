@@ -90,9 +90,9 @@ import type {
   AnalyticsConfig,
   AnalyticsEventEnvelope
 } from './types'
-import type { Lang } from './i18n'
+import type { Lang, LanguagePreference } from './i18n'
 
-export const IPC_CONTRACT_VERSION = 15
+export const IPC_CONTRACT_VERSION = 18
 
 /** 平台信息（用于 titlebar 安全区等）。 */
 export interface PlatformInfo {
@@ -103,6 +103,8 @@ export interface PlatformInfo {
   titlebarHeight: number
   /** 首次启动引导是否已完成。 */
   onboardingCompleted: boolean
+  /** Electron 读取的电脑系统语言；renderer 的 system 偏好据此解析。 */
+  systemLanguage: Lang
   ipcContractVersion: number
 }
 
@@ -119,7 +121,8 @@ export const CHANNELS = {
     selectDirectory: 'app:selectDirectory',
     selectFile: 'app:selectFile',
     openExternal: 'app:openExternal',
-    setLanguage: 'app:setLanguage'
+    setLanguage: 'app:setLanguage',
+    setLanguagePreference: 'app:setLanguagePreference'
   },
   discovery: {
     scan: 'discovery:scan',
@@ -271,6 +274,10 @@ export const CHANNELS = {
     forget: 'memory:forget',
     feedback: 'memory:feedback',
     context: 'memory:context',
+    graph: 'memory:graph',
+    working: 'memory:working',
+    updateWorking: 'memory:updateWorking',
+    clearWorking: 'memory:clearWorking',
     settings: 'memory:settings',
     updateSettings: 'memory:updateSettings',
     getPersona: 'memory:getPersona',
@@ -278,6 +285,24 @@ export const CHANNELS = {
     curatorCandidates: 'memory:curatorCandidates',
     gatewayCapabilities: 'memory:gatewayCapabilities',
     curate: 'memory:curate'
+  },
+  knowledge: {
+    list: 'knowledge:list',
+    get: 'knowledge:get',
+    saveDraft: 'knowledge:saveDraft',
+    publish: 'knowledge:publish',
+    archive: 'knowledge:archive',
+    restore: 'knowledge:restore',
+    remove: 'knowledge:remove',
+    topics: 'knowledge:topics',
+    setFavorite: 'knowledge:setFavorite',
+    comments: 'knowledge:comments',
+    addComment: 'knowledge:addComment',
+    updateComment: 'knowledge:updateComment',
+    removeComment: 'knowledge:removeComment',
+    graph: 'knowledge:graph',
+    extractDraft: 'knowledge:extractDraft',
+    openInObsidian: 'knowledge:openInObsidian'
   },
   stats: {
     summary: 'stats:summary',
@@ -377,6 +402,8 @@ export interface AgentOsApi {
     openExternal(url: string): Promise<void>
     /** SPEC-036：持久化界面语言到主进程并即时更新主进程 tr()。 */
     setLanguage(lang: Lang): Promise<void>
+    /** SPEC-047：保存 system/zh/en 偏好；system 在主进程按电脑 locale 解析。 */
+    setLanguagePreference(preference: LanguagePreference): Promise<void>
   }
   discovery: {
     scan(): Promise<DiscoveryResult[]>
@@ -597,6 +624,10 @@ export interface AgentOsApi {
     forget(id: string): Promise<void>
     feedback(input: MemoryFeedbackInput): Promise<void>
     context(input: MemoryContextInput): Promise<MemoryContextPack>
+    graph(input?: import('./types').MemoryGraphInput): Promise<import('./types').GraphSnapshot>
+    working(sessionId: string): Promise<import('./types').WorkingMemoryState | null>
+    updateWorking(input: import('./types').UpdateWorkingMemoryInput): Promise<import('./types').WorkingMemoryState>
+    clearWorking(sessionId: string): Promise<void>
     settings(): Promise<MemorySettings>
     updateSettings(patch: Partial<MemorySettings>): Promise<MemorySettings>
     getPersona(): Promise<string>
@@ -604,6 +635,9 @@ export interface AgentOsApi {
     curatorCandidates(): Promise<CuratorCandidate[]>
     gatewayCapabilities(): Promise<MemoryGatewayCapability[]>
     curate(input: CurateMemoryInput): Promise<DurableMemory[]>
+  }
+  knowledge: import('./types').KnowledgeApi & {
+    openInObsidian(id: string): Promise<void>
   }
   stats: {
     summary(input: StatsQuery): Promise<StatsSummary>

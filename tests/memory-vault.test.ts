@@ -2,8 +2,15 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
+import { setCurrentLang } from '../src/shared/i18n'
 import { MemoryVault } from '../src/main/domains/memory/vault'
 import { MemoryCurationService } from '../src/main/domains/memory/curation'
+import {
+  DEFAULT_KNOWLEDGE_CURATION_PROMPT,
+  DEFAULT_MEMORY_CURATION_PROMPT,
+  DEFAULT_MEMORY_CURATION_PROMPTS,
+  DEFAULT_KNOWLEDGE_CURATION_PROMPTS
+} from '../src/shared/curation-prompts'
 
 const directories: string[] = []
 
@@ -15,10 +22,33 @@ function createVault(): MemoryVault {
 
 afterEach(() => {
   for (const directory of directories.splice(0)) rmSync(directory, { recursive: true, force: true })
+  setCurrentLang('zh')
 })
 
 describe('MemoryVault', () => {
-  it('候选记忆确认前不能进入 Context Pack，确认后带 evidence 召回', () => {
+  it('默认填充两类提炼提示词，用户修改只更新后续提炼设置', () => {
+    setCurrentLang('zh')
+    const vault = createVault()
+    expect(vault.getSettings()).toMatchObject({
+      memoryCurationPrompt: DEFAULT_MEMORY_CURATION_PROMPT,
+      knowledgeCurationPrompt: DEFAULT_KNOWLEDGE_CURATION_PROMPT
+    })
+    expect(vault.updateSettings({ knowledgeCurationPrompt: '后续知识统一使用中文。' }).knowledgeCurationPrompt)
+      .toBe('后续知识统一使用中文。')
+    expect(vault.getSettings().knowledgeCurationPromptMode).toBe('custom')
+    setCurrentLang('en')
+    expect(vault.getSettings().memoryCurationPrompt).toBe(DEFAULT_MEMORY_CURATION_PROMPTS.en)
+    expect(vault.getSettings().knowledgeCurationPrompt).toBe('后续知识统一使用中文。')
+    vault.updateSettings({
+      knowledgeCurationPromptMode: 'default',
+      knowledgeCurationPrompt: DEFAULT_KNOWLEDGE_CURATION_PROMPTS.en
+    })
+    setCurrentLang('zh')
+    expect(vault.getSettings().knowledgeCurationPrompt).toBe(DEFAULT_KNOWLEDGE_CURATION_PROMPTS.zh)
+    vault.close()
+  })
+
+  it('候选记忆确认前不能进入 Context Pack，确认后按任务召回且不暴露证据元数据', () => {
     const vault = createVault()
     vault.updateSettings({ enabled: true })
     const candidate = vault.propose({
@@ -37,7 +67,8 @@ describe('MemoryVault', () => {
     const context = vault.context({ cwd: '/workspace/app/src', task: '准备发布' })
     expect(context.items).toHaveLength(1)
     expect(context.text).toContain('发布前必须跑完整 typecheck')
-    expect(context.text).toContain('session:codex:run-1')
+    expect(context.text).not.toContain('session:codex:run-1')
+    expect(context.referencedMemories).toContainEqual(expect.objectContaining({ id: active?.id }))
     vault.close()
   })
 
@@ -114,6 +145,25 @@ describe('MemoryVault', () => {
     vault.close()
   })
 
+  it('工作记忆属于会话、七天后自动失效，且不替代长期候选审批', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'agent-os-working-memory-'))
+    directories.push(directory)
+    let current = new Date(2026, 6, 19, 10, 0)
+    const vault = new MemoryVault(join(directory, 'vault.sqlite'), () => new Date(current.getTime()))
+    vault.updateWorking({
+      sessionId: 's-1',
+      goal: '完成知识图谱',
+      constraints: ['不覆盖现有 V3 改动'],
+      decisions: ['默认图谱视图']
+    })
+    expect(vault.getWorking('s-1')).toMatchObject({ goal: '完成知识图谱', decisions: ['默认图谱视图'] })
+    expect(vault.context({ cwd: '/workspace', task: '继续实现', sessionId: 's-1' }).text).toContain('完成知识图谱')
+    current = new Date(2026, 6, 27, 10, 0)
+    expect(vault.getWorking('s-1')).toBeNull()
+    expect(vault.list({ statuses: ['active'] })).toEqual([])
+    vault.close()
+  })
+
   it('提炼服务在开关、外部上下文和 curator 配置前安全拒绝', async () => {
     const vault = createVault()
     const service = new MemoryCurationService(vault, () => undefined)
@@ -123,6 +173,10 @@ describe('MemoryVault', () => {
     vault.updateSettings({ enabled: true, generateMemories: true })
     await expect(service.curate({ ...input, hasExternalContext: true })).rejects.toThrow('外部上下文')
     await expect(service.curate(input)).rejects.toThrow('未发现可用于提炼')
+    vault.updateSettings({ knowledgeCurationEnabled: false })
+    await expect(service.runRestricted('知识草稿', '/workspace/app')).rejects.toThrow('设置中关闭')
+    vault.updateSettings({ knowledgeCurationEnabled: true })
+    await expect(service.runRestricted('知识草稿', '/workspace/app', { hasExternalContext: true })).rejects.toThrow('外部上下文')
     vault.close()
   })
 
@@ -196,8 +250,8 @@ describe('MemoryVault', () => {
     // persona：context 头部含 preamble。
     vault.setPersona('用户偏好最小改动，不顺手重构。')
     const text = vault.context({ cwd: '/anywhere', task: '' }).text
-    expect(text.indexOf('# 用户画像')).toBeGreaterThanOrEqual(0)
-    expect(text.indexOf('用中文回复')).toBeGreaterThan(text.indexOf('# 用户画像'))
+    expect(text.indexOf('# 协作偏好')).toBeGreaterThanOrEqual(0)
+    expect(text.indexOf('用中文回复')).toBeGreaterThan(text.indexOf('# 协作偏好'))
     expect(vault.getPersona()).toBe('用户偏好最小改动，不顺手重构。')
     vault.close()
   })

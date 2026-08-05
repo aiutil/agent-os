@@ -12,8 +12,9 @@ import type { TerminalRunState, TerminalRunStatus, TerminalSessionInfo } from '.
 import type { CliHealth, ToolModelCatalog } from './discovery'
 import type { AgentEvent, ChatTurnState, PermissionDecision } from './agent-event'
 import type { AgentTask, CreateTaskInput, TaskChangedEvent, TaskRun, UpdateTaskPatch } from './task'
+import type { TurnContextPack } from './memory'
 
-export const RUNTIME_PROTOCOL_VERSION = 10
+export const RUNTIME_PROTOCOL_VERSION = 11
 
 export interface RuntimeAttachmentCapabilities {
   /** Agent/CLI 原生支持图片输入。 */
@@ -110,9 +111,9 @@ export interface RuntimeHost {
   state(sessionId: string): Promise<TerminalRunState | null>
   states(): Promise<TerminalRunState[]>
   kill(sessionId: string): Promise<boolean>
-  sendTurn(sessionId: string, text: string, files?: string[]): Promise<ChatTurnState>
+  sendTurn(sessionId: string, text: string, files?: string[], contextPack?: TurnContextPack): Promise<ChatTurnState>
   steerTurn(sessionId: string, text: string, files?: string[]): Promise<ChatTurnState>
-  queueTurn(sessionId: string, text: string, files?: string[]): Promise<ManagedQueuedTurn>
+  queueTurn(sessionId: string, text: string, files?: string[], contextPack?: TurnContextPack): Promise<ManagedQueuedTurn>
   listQueuedTurns(sessionId: string): Promise<ManagedQueuedTurn[]>
   cancelQueuedTurn(sessionId: string, queuedTurnId: string): Promise<boolean>
   interruptTurn(sessionId: string): Promise<boolean>

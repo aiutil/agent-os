@@ -13,7 +13,12 @@ export function localeFor(lang: Lang): 'zh-CN' | 'en-US' {
  */
 export function detectSystemLang(): Lang {
   if (typeof navigator === 'undefined' || !navigator.language) return 'zh'
-  return navigator.language.toLowerCase().startsWith('zh') ? 'zh' : 'en'
+  return langFromLocale(navigator.language)
+}
+
+/** Electron app.getLocale / navigator.language 共用的 locale 解析。 */
+export function langFromLocale(locale: string | null | undefined): Lang {
+  return locale?.trim().toLowerCase().startsWith('zh') ? 'zh' : 'en'
 }
 
 /** 由偏好解析出实际生效语言。 */

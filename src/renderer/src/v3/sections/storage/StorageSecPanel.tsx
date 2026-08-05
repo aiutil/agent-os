@@ -7,6 +7,7 @@ import type {
   AnnotationDisplayMeta,
   AnnotationTargetRef,
   DurableMemory,
+  KnowledgeArticle,
   MemoryIndexStatus,
   MemorySearchHit
 } from '@shared/types'
@@ -733,15 +734,12 @@ function MemoryList({
 
 // ─── 知识（Obsidian，延后） ───────────────────────────────────────────────────
 
-function KnowledgePlaceholder(): React.JSX.Element {
+function KnowledgePlaceholder({ onOpen }: { onOpen(article: KnowledgeArticle): void }): React.JSX.Element {
   const { t } = useT()
-  return (
-    <div className="mem-empty">
-      <div className="mem-empty__glyph">📚</div>
-      <div className="mem-empty__title">{t('memory.storage.knowledgeTitle')}</div>
-      <div className="mem-empty__desc">{t('memory.storage.knowledgeDesc')}</div>
-    </div>
-  )
+  const [articles, setArticles] = useState<KnowledgeArticle[]>([])
+  useEffect(() => { void window.agentOs.knowledge.list({ limit: 30 }).then(setArticles).catch(() => {}) }, [])
+  if (!articles.length) return <div className="mem-empty"><div className="mem-empty__glyph">📚</div><div className="mem-empty__title">{t('memory.atlas.common.library')}</div><div className="mem-empty__desc">{t('memory.atlas.knowledge.emptyLibraryHint')}</div></div>
+  return <>{articles.map((article) => <div key={article.id} className="session-item" onClick={() => onOpen(article)}><div><div className="session-item__name">{article.title}</div><div className="session-item__meta">{article.topic} · {article.status === 'published' ? t('memory.atlas.status.published') : article.status === 'archived' ? t('memory.atlas.status.archived') : t('memory.atlas.status.draft')}</div></div></div>)}</>
 }
 
 export function StorageSecPanel({
@@ -753,7 +751,8 @@ export function StorageSecPanel({
   activeMemoryId,
   onOpenMemoryNew,
   onOpenPersona,
-  personaActive
+  personaActive,
+  onOpenKnowledge
 }: {
   subView: 'history' | 'memory' | 'knowledge'
   onSubView(v: 'history' | 'memory' | 'knowledge'): void
@@ -764,6 +763,7 @@ export function StorageSecPanel({
   onOpenMemoryNew(): void
   onOpenPersona(): void
   personaActive: boolean
+  onOpenKnowledge(article: KnowledgeArticle): void
 }): React.JSX.Element {
   const { t } = useT()
   return (
@@ -789,7 +789,7 @@ export function StorageSecPanel({
             personaActive={personaActive}
           />
         )}
-        {subView === 'knowledge' && <KnowledgePlaceholder />}
+        {subView === 'knowledge' && <KnowledgePlaceholder onOpen={onOpenKnowledge} />}
       </div>
     </>
   )

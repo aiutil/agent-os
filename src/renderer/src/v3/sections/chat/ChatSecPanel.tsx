@@ -69,8 +69,8 @@ const IcRename = (): React.JSX.Element => (
   </svg>
 )
 
-function basename(path: string): string {
-  if (!path) return '~ 主目录'
+function basename(path: string, home: string): string {
+  if (!path) return `~ ${home}`
   const parts = path.split(/[/\\]/).filter(Boolean)
   return parts[parts.length - 1] || path
 }
@@ -226,7 +226,7 @@ export function ChatSecPanel({
                   <IcFolder />
                 </span>
                 <span className="chat-folder__name">
-                  {g.path ? basename(g.path) : t('chat.folder.home')}
+                  {g.path ? basename(g.path, t('chat.folder.home')) : t('chat.folder.home')}
                 </span>
                 {nodeLabel ? (
                   <span

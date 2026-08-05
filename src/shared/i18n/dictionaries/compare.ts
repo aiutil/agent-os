@@ -27,6 +27,10 @@ export const zh = {
     sending: '发送中…',
     sendAll: '全部发送'
   },
+  scenario: {
+    unnamed: '未命名对比',
+    sessionName: '对比 · {{name}}'
+  },
   secPanel: {
     newCompare: '新对比',
     emptyHint: '输入一次任务，发送后会自动保存为方案。',
@@ -93,6 +97,10 @@ export const en: typeof zh = {
     placeholder: 'Send to {{count}} panes at once  ↵ to send',
     sending: 'Sending…',
     sendAll: 'Send all'
+  },
+  scenario: {
+    unnamed: 'Untitled compare',
+    sessionName: 'Compare · {{name}}'
   },
   secPanel: {
     newCompare: 'New compare',

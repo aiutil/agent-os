@@ -365,8 +365,8 @@ export function ChatPane({ view }: { view: WorkbenchSessionView }): React.JSX.El
         <div className="chat-thread__inner">
           {view.relaySource && (
             <div className="chat-relay-card">
-              <strong>从 {view.relaySource.toolId} 接力而来</strong>
-              <span>来源：{view.relaySource.title}</span>
+              <strong>{t('workbench.relay.from', { tool: view.relaySource.toolId })}</strong>
+              <span>{t('workbench.relay.source', { title: view.relaySource.title })}</span>
               <div className="chat-relay-card__actions">
                 <button
                   type="button"
@@ -374,7 +374,7 @@ export function ChatPane({ view }: { view: WorkbenchSessionView }): React.JSX.El
                     void navigator.clipboard.writeText(view.relaySource?.contextPackPath ?? '')
                   }}
                 >
-                  复制上下文路径
+                  {t('workbench.relay.copyContext')}
                 </button>
               </div>
             </div>
@@ -453,8 +453,8 @@ export function ChatPane({ view }: { view: WorkbenchSessionView }): React.JSX.El
           })}
           {view.relayTarget && (
             <div className="chat-relay-card">
-              <strong>已接力给 {view.relayTarget.toolId}</strong>
-              <span>新会话：{view.relayTarget.title}</span>
+              <strong>{t('workbench.relay.relayedTo', { tool: view.relayTarget.toolId })}</strong>
+              <span>{t('workbench.relay.newSession', { title: view.relayTarget.title })}</span>
             </div>
           )}
           {loadError && (

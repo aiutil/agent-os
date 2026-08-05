@@ -42,7 +42,9 @@ const api: AgentOsApi = {
     selectDirectory: (options) => ipcRenderer.invoke(CHANNELS.app.selectDirectory, options),
     selectFile: (options) => ipcRenderer.invoke(CHANNELS.app.selectFile, options),
     openExternal: (url) => ipcRenderer.invoke(CHANNELS.app.openExternal, url),
-    setLanguage: (lang) => ipcRenderer.invoke(CHANNELS.app.setLanguage, lang)
+    setLanguage: (lang) => ipcRenderer.invoke(CHANNELS.app.setLanguage, lang),
+    setLanguagePreference: (preference) =>
+      ipcRenderer.invoke(CHANNELS.app.setLanguagePreference, preference)
   },
   discovery: {
     scan: () => ipcRenderer.invoke(CHANNELS.discovery.scan),
@@ -224,6 +226,10 @@ const api: AgentOsApi = {
     forget: (id) => ipcRenderer.invoke(CHANNELS.memory.forget, id),
     feedback: (input) => ipcRenderer.invoke(CHANNELS.memory.feedback, input),
     context: (input) => ipcRenderer.invoke(CHANNELS.memory.context, input),
+    graph: (input) => ipcRenderer.invoke(CHANNELS.memory.graph, input),
+    working: (sessionId) => ipcRenderer.invoke(CHANNELS.memory.working, sessionId),
+    updateWorking: (input) => ipcRenderer.invoke(CHANNELS.memory.updateWorking, input),
+    clearWorking: (sessionId) => ipcRenderer.invoke(CHANNELS.memory.clearWorking, sessionId),
     settings: () => ipcRenderer.invoke(CHANNELS.memory.settings),
     updateSettings: (patch) => ipcRenderer.invoke(CHANNELS.memory.updateSettings, patch),
     getPersona: () => ipcRenderer.invoke(CHANNELS.memory.getPersona),
@@ -231,6 +237,24 @@ const api: AgentOsApi = {
     curatorCandidates: () => ipcRenderer.invoke(CHANNELS.memory.curatorCandidates),
     gatewayCapabilities: () => ipcRenderer.invoke(CHANNELS.memory.gatewayCapabilities),
     curate: (input) => ipcRenderer.invoke(CHANNELS.memory.curate, input)
+  },
+  knowledge: {
+    list: (input) => ipcRenderer.invoke(CHANNELS.knowledge.list, input),
+    get: (id) => ipcRenderer.invoke(CHANNELS.knowledge.get, id),
+    saveDraft: (input) => ipcRenderer.invoke(CHANNELS.knowledge.saveDraft, input),
+    publish: (id) => ipcRenderer.invoke(CHANNELS.knowledge.publish, id),
+    archive: (id) => ipcRenderer.invoke(CHANNELS.knowledge.archive, id),
+    restore: (id) => ipcRenderer.invoke(CHANNELS.knowledge.restore, id),
+    remove: (id) => ipcRenderer.invoke(CHANNELS.knowledge.remove, id),
+    topics: () => ipcRenderer.invoke(CHANNELS.knowledge.topics),
+    setFavorite: (id, favorite) => ipcRenderer.invoke(CHANNELS.knowledge.setFavorite, id, favorite),
+    comments: (articleId) => ipcRenderer.invoke(CHANNELS.knowledge.comments, articleId),
+    addComment: (articleId, input) => ipcRenderer.invoke(CHANNELS.knowledge.addComment, articleId, input),
+    updateComment: (id, input) => ipcRenderer.invoke(CHANNELS.knowledge.updateComment, id, input),
+    removeComment: (id) => ipcRenderer.invoke(CHANNELS.knowledge.removeComment, id),
+    graph: (input) => ipcRenderer.invoke(CHANNELS.knowledge.graph, input),
+    extractDraft: (input) => ipcRenderer.invoke(CHANNELS.knowledge.extractDraft, input),
+    openInObsidian: (id) => ipcRenderer.invoke(CHANNELS.knowledge.openInObsidian, id)
   },
   stats: {
     summary: (input) => ipcRenderer.invoke(CHANNELS.stats.summary, input),

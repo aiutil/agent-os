@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       publish:
-        description: Publish verified assets to aiutil/agent-os and the v0.3.9 legacy migration bridge
+        description: Publish verified v0.4+ assets to the canonical aiutil/agent-os repository
         required: true
         default: false
         type: boolean
@@ -33,16 +33,17 @@ jobs:
     env:
       MIXPANEL_PRODUCTION_TOKEN: ${{ secrets.MIXPANEL_PRODUCTION_TOKEN }}
       MIXPANEL_DEV_TOKEN: ${{ secrets.MIXPANEL_DEV_TOKEN }}
+      MACOS_SELF_SIGNED_AVAILABLE: ${{ secrets.MACOS_CSC_LINK != '' && secrets.MACOS_CSC_KEY_PASSWORD != '' }}
     strategy:
       fail-fast: false
       matrix:
         include:
           - platform: mac-arm64
             runner: macos-14
-            desktop_command: npx electron-builder --mac dmg --arm64 --publish never -c.forceCodeSigning=true
+            desktop_command: npx electron-builder --mac dmg --arm64 --publish never
           - platform: mac-x64
             runner: macos-15-intel
-            desktop_command: npx electron-builder --mac dmg --x64 --publish never -c.forceCodeSigning=true
+            desktop_command: npx electron-builder --mac dmg --x64 --publish never
           - platform: linux-arm64
             runner: ubuntu-24.04-arm
             desktop_command: npx electron-builder --linux AppImage --arm64 --publish never
@@ -69,17 +70,11 @@ jobs:
       - run: npm run build
       - run: node scripts/build-node-dist.cjs
       - name: Prepare fixed self-signed macOS code-signing credentials
-        if: ${{ startsWith(matrix.platform, 'mac-') }}
+        if: ${{ startsWith(matrix.platform, 'mac-') && env.MACOS_SELF_SIGNED_AVAILABLE == 'true' }}
         env:
           CSC_LINK: ${{ secrets.MACOS_CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.MACOS_CSC_KEY_PASSWORD }}
         run: |
-          for key in CSC_LINK CSC_KEY_PASSWORD; do
-            if [ -z "${!key}" ]; then
-              echo "Missing required macOS release secret: $key" >&2
-              exit 1
-            fi
-          done
           signing_keychain="$RUNNER_TEMP/agentos-self-signing.keychain-db"
           signing_p12="$RUNNER_TEMP/agentos-self-signing.p12"
           signing_cert="$RUNNER_TEMP/agentos-self-signing.pem"
@@ -90,8 +85,12 @@ jobs:
           echo "CSC_KEYCHAIN_PASSWORD=$keychain_password" >> "$GITHUB_ENV"
           printf '%s' "$CSC_LINK" | base64 -D > "$signing_p12"
           echo "CSC_NAME=Agent OS Self-Signed" >> "$GITHUB_ENV"
+      - name: Record macOS signing fallback
+        if: ${{ startsWith(matrix.platform, 'mac-') && env.MACOS_SELF_SIGNED_AVAILABLE != 'true' }}
+        shell: bash
+        run: echo "Fixed self-signed credentials are unavailable; building with the existing unsigned/ad-hoc fallback and public first-launch guidance."
       - name: Create isolated macOS signing keychain
-        if: ${{ startsWith(matrix.platform, 'mac-') }}
+        if: ${{ startsWith(matrix.platform, 'mac-') && env.MACOS_SELF_SIGNED_AVAILABLE == 'true' }}
         shell: bash
         run: |
           security create-keychain -p "$CSC_KEYCHAIN_PASSWORD" "$CSC_KEYCHAIN"
@@ -99,7 +98,7 @@ jobs:
           security set-keychain-settings -lut 21600 "$CSC_KEYCHAIN"
           security list-keychains -d user -s "$CSC_KEYCHAIN"
       - name: Import fixed self-signed macOS identity
-        if: ${{ startsWith(matrix.platform, 'mac-') }}
+        if: ${{ startsWith(matrix.platform, 'mac-') && env.MACOS_SELF_SIGNED_AVAILABLE == 'true' }}
         shell: bash
         env:
           CSC_KEY_PASSWORD: ${{ secrets.MACOS_CSC_KEY_PASSWORD }}
@@ -107,7 +106,7 @@ jobs:
           security import "$CSC_P12_PATH" -k "$CSC_KEYCHAIN" -P "$CSC_KEY_PASSWORD" -T /usr/bin/codesign
           security find-certificate -c "Agent OS Self-Signed" -p "$CSC_KEYCHAIN" > "$CSC_CERT_PATH"
       - name: Trust fixed identity in macOS system keychain
-        if: ${{ startsWith(matrix.platform, 'mac-') }}
+        if: ${{ startsWith(matrix.platform, 'mac-') && env.MACOS_SELF_SIGNED_AVAILABLE == 'true' }}
         shell: bash
         run: |
           system_keychain=/Library/Keychains/System.keychain
@@ -121,21 +120,21 @@ jobs:
           fi
           echo "CSC_SYSTEM_CERT_SHA1=$system_cert_sha1" >> "$GITHUB_ENV"
       - name: Grant macOS codesign key partition access
-        if: ${{ startsWith(matrix.platform, 'mac-') }}
+        if: ${{ startsWith(matrix.platform, 'mac-') && env.MACOS_SELF_SIGNED_AVAILABLE == 'true' }}
         shell: bash
         run: |
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$CSC_KEYCHAIN_PASSWORD" "$CSC_KEYCHAIN"
       - name: Validate fixed macOS signing identity
-        if: ${{ startsWith(matrix.platform, 'mac-') }}
+        if: ${{ startsWith(matrix.platform, 'mac-') && env.MACOS_SELF_SIGNED_AVAILABLE == 'true' }}
         shell: bash
         run: |
           security find-identity -v -p codesigning "$CSC_KEYCHAIN" | grep '"Agent OS Self-Signed"'
       - name: Build native desktop installer
         env:
-          CSC_IDENTITY_AUTO_DISCOVERY: ${{ startsWith(matrix.platform, 'mac-') && 'true' || 'false' }}
+          CSC_IDENTITY_AUTO_DISCOVERY: ${{ startsWith(matrix.platform, 'mac-') && env.MACOS_SELF_SIGNED_AVAILABLE == 'true' && 'true' || 'false' }}
         run: ${{ matrix.desktop_command }}
       - name: Verify fixed macOS self-signature and reject ad-hoc output
-        if: ${{ startsWith(matrix.platform, 'mac-') }}
+        if: ${{ startsWith(matrix.platform, 'mac-') && env.MACOS_SELF_SIGNED_AVAILABLE == 'true' }}
         shell: bash
         run: |
           shopt -s nullglob
@@ -145,6 +144,17 @@ jobs:
             exit 1
           fi
           node build/verify-macos-release.cjs "${dmg[0]}"
+      - name: Verify fallback macOS disk image
+        if: ${{ startsWith(matrix.platform, 'mac-') && env.MACOS_SELF_SIGNED_AVAILABLE != 'true' }}
+        shell: bash
+        run: |
+          shopt -s nullglob
+          dmg=(release/Agent-Os-*-mac-*.dmg)
+          if [ "${#dmg[@]}" -ne 1 ]; then
+            echo "Expected exactly one macOS DMG, found ${#dmg[@]}" >&2
+            exit 1
+          fi
+          hdiutil verify "${dmg[0]}"
       - name: Build native Linux ARM64 deb
         if: ${{ matrix.platform == 'linux-arm64' }}
         run: node scripts/build-linux-deb.cjs
@@ -230,29 +240,12 @@ jobs:
         run: node scripts/generate-node-release-manifest.cjs
       - name: Enforce runtime and release gates
         run: node scripts/release-gh.cjs --dry-run
-      - name: Require legacy migration release credential
-        if: ${{ inputs.publish }}
-        env:
-          LEGACY_RELEASE_TOKEN: ${{ secrets.LEGACY_RELEASE_TOKEN }}
-        run: test -n "$LEGACY_RELEASE_TOKEN"
       - name: Stage verified canonical private Release draft
         if: ${{ inputs.publish }}
         env:
           GH_TOKEN: ${{ secrets.CANONICAL_RELEASE_TOKEN }}
         run: |
           node scripts/release-gh.cjs --repo aiutil/agent-os --stage-only
-      - name: Stage byte-identical legacy migration draft
-        if: ${{ inputs.publish }}
-        env:
-          GH_TOKEN: ${{ secrets.LEGACY_RELEASE_TOKEN }}
-          AGENTOS_REUSE_EXISTING_NODE_MANIFEST: 'true'
-        run: node scripts/release-gh.cjs --repo lohasle/agent-life --stage-only
-      - name: Verify canonical and legacy drafts are byte-identical
-        if: ${{ inputs.publish }}
-        env:
-          CANONICAL_GH_TOKEN: ${{ secrets.CANONICAL_RELEASE_TOKEN }}
-          LEGACY_GH_TOKEN: ${{ secrets.LEGACY_RELEASE_TOKEN }}
-        run: node scripts/verify-release-mirror.cjs --draft
       - uses: actions/cache/save@v4
         with:
           path: |
@@ -260,10 +253,21 @@ jobs:
             release/agentos-release-*-provenance.json
             scripts/install-node.sh
           key: node-runtime-release-bundle-${{ github.run_id }}
-      - name: Verify Agent OS Page and README are synchronized
+      - name: Verify local release surfaces and public media
         if: ${{ inputs.publish }}
         run: |
-          node scripts/sync-agent-life-site.cjs --repo-dir "$GITHUB_WORKSPACE" --site-dir "$GITHUB_WORKSPACE/site" --check
+          version="$(node -p "require('./package.json').version")"
+          test -f "docs/releases/$version.json"
+          grep -F "releases/tag/v$version" README.md
+          grep -F "releases/tag/v$version" README.zh-CN.md
+          grep -F "<span class=\"version\">v$version</span>" site/index.html
+          grep -F "v$version" site/guide.html
+          grep -F "v$version" site/changelog.html
+          test -s site/agent-os-v0.4.0-overview.mp4
+          test -s site/memory-atlas-v0.4.0.png
+          test -s site/memory-atlas-en-v0.4.0.png
+          test -s site/knowledge-atlas-v0.4.0.png
+          test -s site/knowledge-atlas-en-v0.4.0.png
       - name: Wait for public Page and README
         if: ${{ inputs.publish }}
         run: |
@@ -291,14 +295,3 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.CANONICAL_RELEASE_TOKEN }}
         run: npm run verify:node-release-public
-      - name: Promote legacy migration bridge after canonical verification
-        if: ${{ inputs.publish }}
-        env:
-          GH_TOKEN: ${{ secrets.LEGACY_RELEASE_TOKEN }}
-        run: node scripts/release-gh.cjs --repo lohasle/agent-life --promote-only
-      - name: Verify public canonical and legacy releases are byte-identical
-        if: ${{ inputs.publish }}
-        env:
-          CANONICAL_GH_TOKEN: ${{ secrets.CANONICAL_RELEASE_TOKEN }}
-          LEGACY_GH_TOKEN: ${{ secrets.LEGACY_RELEASE_TOKEN }}
-        run: node scripts/verify-release-mirror.cjs

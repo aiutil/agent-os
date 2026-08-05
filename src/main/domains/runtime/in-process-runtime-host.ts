@@ -392,8 +392,8 @@ export class InProcessRuntimeHost implements RuntimeHost {
     return this.options.terminal.close(sessionId)
   }
 
-  async sendTurn(sessionId: string, text: string, files?: string[]): Promise<ChatTurnState> {
-    const turn = await this.options.chat.sendTurn(sessionId, text, files)
+  async sendTurn(sessionId: string, text: string, files?: string[], contextPack?: import('@shared/types').TurnContextPack): Promise<ChatTurnState> {
+    const turn = await this.options.chat.sendTurn(sessionId, text, files, contextPack)
     this.finalizeChatTitle(sessionId, text)
     return turn
   }
@@ -404,8 +404,8 @@ export class InProcessRuntimeHost implements RuntimeHost {
     return turn
   }
 
-  async queueTurn(sessionId: string, text: string, files?: string[]): Promise<ManagedQueuedTurn> {
-    const turn = await this.options.chat.queueTurn(sessionId, text, files)
+  async queueTurn(sessionId: string, text: string, files?: string[], contextPack?: import('@shared/types').TurnContextPack): Promise<ManagedQueuedTurn> {
+    const turn = await this.options.chat.queueTurn(sessionId, text, files, contextPack)
     this.finalizeChatTitle(sessionId, text)
     return turn
   }

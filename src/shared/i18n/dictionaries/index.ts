@@ -12,6 +12,7 @@ import { zh as compareZh, en as compareEn } from './compare'
 import { zh as webZh, en as webEn } from './web'
 import { zh as channelsZh, en as channelsEn } from './channels'
 import { zh as systemZh, en as systemEn } from './system'
+import { zh as tasksZh, en as tasksEn } from './tasks'
 
 export const ZH = {
   common: commonZh,
@@ -23,7 +24,8 @@ export const ZH = {
   compare: compareZh,
   web: webZh,
   channels: channelsZh,
-  system: systemZh
+  system: systemZh,
+  tasks: tasksZh
 }
 
 export type Dictionary = typeof ZH
@@ -38,7 +40,8 @@ export const EN: Dictionary = {
   compare: compareEn,
   web: webEn,
   channels: channelsEn,
-  system: systemEn
+  system: systemEn,
+  tasks: tasksEn
 }
 
 export const DICTS: Record<Lang, Dictionary> = { zh: ZH, en: EN }

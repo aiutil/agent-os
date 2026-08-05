@@ -2,45 +2,66 @@ import { randomUUID } from 'node:crypto'
 import { chmodSync, mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve, sep } from 'node:path'
 import Database from 'better-sqlite3'
-import { tr } from '@shared/i18n'
+import { getCurrentLang, tr } from '@shared/i18n'
+import {
+  defaultCurationPrompt,
+  DEFAULT_KNOWLEDGE_CURATION_PROMPT,
+  DEFAULT_MEMORY_CURATION_PROMPT,
+  isBundledCurationPrompt,
+  type CurationPromptKind
+} from '@shared/curation-prompts'
 import type {
   CurationWatermark,
   DurableMemory,
   ExperienceEntry,
+  GraphSnapshot,
   ListDurableMemoriesInput,
+  MemoryClass,
   MemoryContextInput,
   MemoryContextPack,
   MemoryEvidence,
   MemoryFeedbackInput,
   MemoryGatewayCapability,
+  MemoryGraphInput,
   MemoryScope,
   MemorySettings,
   MemoryStatus,
   ProposeMemoryInput,
+  UpdateWorkingMemoryInput,
   UpdateDurableMemoryPatch
+  ,WorkingMemoryState
 } from '@shared/types'
 
 const DEFAULT_SETTINGS: MemorySettings = {
   enabled: true,
   useMemories: true,
   generateMemories: true,
+  knowledgeCurationEnabled: true,
   allowExternalContext: false,
-  contextTokenBudget: 1200
+  contextTokenBudget: 800,
+  memoryCurationPromptMode: 'default',
+  memoryCurationPrompt: DEFAULT_MEMORY_CURATION_PROMPT,
+  knowledgeCurationPromptMode: 'default',
+  knowledgeCurationPrompt: DEFAULT_KNOWLEDGE_CURATION_PROMPT
 }
 
-/**
- * 用户可编辑提炼偏好的内置默认值。仅描述"提什么、不提什么"；机器约束（JSON schema、
- * 数量上限、隔离运行）由 curation 服务的系统模板固定，不在此暴露。
- */
-export const DEFAULT_CURATION_INSTRUCTIONS = [
-  '只沉淀稳定、可复用、跨会话仍成立的信息：',
-  '- 用户的长期偏好与协作习惯（preference）',
-  '- 项目/仓库的约定与工程规范（convention）',
-  '- 已确定的技术决策与其理由（decision）',
-  '- 可复用的操作步骤与排错经验（procedure / pitfall）',
-  '- 稳定的事实性知识（fact / knowledge）',
-  '不要沉淀：一次性任务进度、临时调试细节、未经验证的猜测、能从代码/Git 直接得到的信息。'
-].join('\n')
+function promptMode(
+  kind: CurationPromptKind,
+  configured: 'default' | 'custom' | undefined,
+  value: string | undefined
+): 'default' | 'custom' {
+  if (configured === 'default' || configured === 'custom') return configured
+  return !value?.trim() || isBundledCurationPrompt(kind, value) ? 'default' : 'custom'
+}
+
+function resolvedPrompt(
+  kind: CurationPromptKind,
+  mode: 'default' | 'custom',
+  value: string | undefined
+): string {
+  if (mode === 'default') return defaultCurationPrompt(kind, getCurrentLang())
+  return value?.trim() || defaultCurationPrompt(kind, getCurrentLang())
+}
 
 const SENSITIVE_PATTERNS = [
   /(?:api[_-]?key|token|secret|password)\s*[:=]\s*['"]?[a-z0-9_-]{16,}/iu,
@@ -64,6 +85,24 @@ interface MemoryRow {
   updatedAt: string
   expiresAt: string | null
   rejectionReason: string | null
+  memoryClass: MemoryClass | null
+  lifetime: 'durable' | null
+  legacy: number | null
+  lastAccessedAt: string | null
+  accessCount: number | null
+  validFrom: string | null
+  validUntil: string | null
+}
+
+interface WorkingMemoryRow {
+  sessionId: string
+  goal: string | null
+  constraints: string
+  decisions: string
+  openQuestions: string
+  artifacts: string
+  updatedAt: string
+  expiresAt: string
 }
 
 function parseTags(value: string): string[] {
@@ -82,6 +121,24 @@ function parseTags(value: string): string[] {
 
 function cleanTags(tags: string[] | undefined): string[] {
   return [...new Set((tags ?? []).map((tag) => tag.trim()).filter(Boolean))]
+}
+
+function classForKind(kind: DurableMemory['kind']): MemoryClass {
+  if (kind === 'preference') return 'identity'
+  if (kind === 'convention' || kind === 'procedure' || kind === 'pitfall') return 'procedural'
+  return 'semantic'
+}
+
+function parseStringList(value: string | null): string[] {
+  if (!value) return []
+  try {
+    const parsed = JSON.parse(value) as unknown
+    return Array.isArray(parsed)
+      ? parsed.filter((item): item is string => typeof item === 'string').map((item) => item.trim()).filter(Boolean)
+      : []
+  } catch {
+    return []
+  }
 }
 
 function containsSensitiveContent(value: string): boolean {
@@ -135,6 +192,7 @@ export class MemoryVault {
     this.database = new Database(path)
     this.database.pragma('journal_mode = WAL')
     this.initialize()
+    this.migrateV2Schema()
     this.ensureSettingsSeed()
     this.exportPath = join(dirname(path), 'exports', 'active-memories.md')
     this.exportSnapshot()
@@ -148,26 +206,77 @@ export class MemoryVault {
     const row = this.database
       .prepare('SELECT value FROM memory_policies WHERE key = ?')
       .get('settings') as { value: string } | undefined
-    if (!row) return { ...DEFAULT_SETTINGS }
+    if (!row) {
+      return {
+        ...DEFAULT_SETTINGS,
+        memoryCurationPrompt: defaultCurationPrompt('memory', getCurrentLang()),
+        knowledgeCurationPrompt: defaultCurationPrompt('knowledge', getCurrentLang())
+      }
+    }
     try {
       const value = JSON.parse(row.value) as Partial<MemorySettings>
+      const memoryValue = value.memoryCurationPrompt || value.curationInstructions
+      const memoryCurationPromptMode = promptMode(
+        'memory',
+        value.memoryCurationPromptMode,
+        memoryValue
+      )
+      const knowledgeCurationPromptMode = promptMode(
+        'knowledge',
+        value.knowledgeCurationPromptMode,
+        value.knowledgeCurationPrompt
+      )
       return {
         ...DEFAULT_SETTINGS,
         ...value,
+        memoryCurationPromptMode,
+        memoryCurationPrompt: resolvedPrompt('memory', memoryCurationPromptMode, memoryValue),
+        knowledgeCurationPromptMode,
+        knowledgeCurationPrompt: resolvedPrompt(
+          'knowledge',
+          knowledgeCurationPromptMode,
+          value.knowledgeCurationPrompt
+        ),
         contextTokenBudget: clampBudget(
           value.contextTokenBudget ?? DEFAULT_SETTINGS.contextTokenBudget
         )
       }
     } catch {
-      return { ...DEFAULT_SETTINGS }
+      return {
+        ...DEFAULT_SETTINGS,
+        memoryCurationPrompt: defaultCurationPrompt('memory', getCurrentLang()),
+        knowledgeCurationPrompt: defaultCurationPrompt('knowledge', getCurrentLang())
+      }
     }
   }
 
   updateSettings(patch: Partial<MemorySettings>): MemorySettings {
     const current = this.getSettings()
+    const memoryCurationPromptMode =
+      patch.memoryCurationPromptMode ??
+      (patch.memoryCurationPrompt !== undefined
+        ? promptMode('memory', undefined, patch.memoryCurationPrompt)
+        : current.memoryCurationPromptMode ?? 'default')
+    const knowledgeCurationPromptMode =
+      patch.knowledgeCurationPromptMode ??
+      (patch.knowledgeCurationPrompt !== undefined
+        ? promptMode('knowledge', undefined, patch.knowledgeCurationPrompt)
+        : current.knowledgeCurationPromptMode ?? 'default')
     const next: MemorySettings = {
       ...current,
       ...patch,
+      memoryCurationPromptMode,
+      memoryCurationPrompt: resolvedPrompt(
+        'memory',
+        memoryCurationPromptMode,
+        patch.memoryCurationPrompt ?? current.memoryCurationPrompt
+      ),
+      knowledgeCurationPromptMode,
+      knowledgeCurationPrompt: resolvedPrompt(
+        'knowledge',
+        knowledgeCurationPromptMode,
+        patch.knowledgeCurationPrompt ?? current.knowledgeCurationPrompt
+      ),
       contextTokenBudget: clampBudget(patch.contextTokenBudget ?? current.contextTokenBudget)
     }
     // 自动提炼首次开启时打纪元；之后即便关闭再开也沿用旧纪元，避免回溯churn 历史。
@@ -247,6 +356,53 @@ export class MemoryVault {
     return value
   }
 
+  getWorking(sessionId: string): WorkingMemoryState | null {
+    this.expireWorking()
+    const row = this.database
+      .prepare('SELECT * FROM working_memories WHERE sessionId = ?')
+      .get(sessionId) as WorkingMemoryRow | undefined
+    return row ? this.hydrateWorking(row) : null
+  }
+
+  updateWorking(input: UpdateWorkingMemoryInput): WorkingMemoryState {
+    const current = this.getWorking(input.sessionId)
+    const now = this.now()
+    const expiresAt = new Date(this.clock().getTime() + 7 * 24 * 60 * 60 * 1000).toISOString()
+    const next: WorkingMemoryState = {
+      sessionId: input.sessionId,
+      ...(input.goal === null ? {} : input.goal?.trim() ? { goal: input.goal.trim() } : current?.goal ? { goal: current.goal } : {}),
+      constraints: cleanWorkingItems(input.constraints ?? current?.constraints ?? []),
+      decisions: cleanWorkingItems(input.decisions ?? current?.decisions ?? []),
+      openQuestions: cleanWorkingItems(input.openQuestions ?? current?.openQuestions ?? []),
+      artifacts: cleanWorkingItems(input.artifacts ?? current?.artifacts ?? []),
+      updatedAt: now,
+      expiresAt
+    }
+    this.database
+      .prepare(
+        `INSERT INTO working_memories (sessionId, goal, constraints, decisions, openQuestions, artifacts, updatedAt, expiresAt)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(sessionId) DO UPDATE SET goal=excluded.goal, constraints=excluded.constraints,
+           decisions=excluded.decisions, openQuestions=excluded.openQuestions, artifacts=excluded.artifacts,
+           updatedAt=excluded.updatedAt, expiresAt=excluded.expiresAt`
+      )
+      .run(
+        next.sessionId,
+        next.goal ?? null,
+        JSON.stringify(next.constraints),
+        JSON.stringify(next.decisions),
+        JSON.stringify(next.openQuestions),
+        JSON.stringify(next.artifacts),
+        next.updatedAt,
+        next.expiresAt
+      )
+    return next
+  }
+
+  clearWorking(sessionId: string): void {
+    this.database.prepare('DELETE FROM working_memories WHERE sessionId = ?').run(sessionId)
+  }
+
   portableState(): {
     persona: string
     settings: MemorySettings
@@ -319,7 +475,7 @@ export class MemoryVault {
         params.push(like, like, like)
       }
     }
-    const limit = Math.max(1, Math.min(input.limit ?? 200, 500))
+    const limit = Math.max(1, Math.min(input.limit ?? 200, 1_501))
     const where = filters.length ? `WHERE ${filters.join(' AND ')}` : ''
     const rows = this.database
       .prepare(
@@ -394,6 +550,9 @@ export class MemoryVault {
       tags: cleanTags(input.tags),
       evidence: input.evidence ?? [],
       pinned: false,
+      memoryClass: classForKind(input.kind),
+      lifetime: 'durable',
+      legacy: false,
       createdAt,
       updatedAt: createdAt,
       expiresAt: new Date(currentDate.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString()
@@ -442,6 +601,9 @@ export class MemoryVault {
       tags: cleanTags(input.tags),
       evidence: input.evidence ?? [],
       pinned: false,
+      memoryClass: classForKind(input.kind),
+      lifetime: 'durable',
+      legacy: false,
       createdAt,
       updatedAt: createdAt
     }
@@ -518,6 +680,16 @@ export class MemoryVault {
       ...(patch.sensitivity ? { sensitivity: patch.sensitivity } : {}),
       ...(patch.tags ? { tags: cleanTags(patch.tags) } : {}),
       ...(patch.pinned !== undefined ? { pinned: patch.pinned } : {}),
+      memoryClass: patch.memoryClass ?? current.memoryClass ?? classForKind(patch.kind ?? current.kind),
+      lifetime: 'durable',
+      legacy: current.legacy,
+      ...(patch.validUntil === null
+        ? {}
+        : patch.validUntil !== undefined
+          ? { validUntil: patch.validUntil }
+          : current.validUntil
+            ? { validUntil: current.validUntil }
+            : {}),
       // `current` 可能带有候选过期时间；确认传入 null 时必须显式覆盖，
       // 不能只省略字段，否则 object spread 会把旧 expiresAt 带回去。
       ...(expiresAt ? { expiresAt } : { expiresAt: undefined }),
@@ -538,7 +710,8 @@ export class MemoryVault {
     this.database
       .prepare(
         `UPDATE memories SET kind=?, title=?, content=?, scope=?, scopeRef=?, status=?, confidence=?,
-         sensitivity=?, tags=?, pinned=?, updatedAt=?, expiresAt=?, rejectionReason=? WHERE id=?`
+         sensitivity=?, tags=?, pinned=?, updatedAt=?, expiresAt=?, rejectionReason=?, memoryClass=?,
+         lifetime=?, legacy=?, validUntil=? WHERE id=?`
       )
       .run(
         next.kind,
@@ -554,6 +727,10 @@ export class MemoryVault {
         next.updatedAt,
         next.expiresAt ?? null,
         next.rejectionReason ?? null,
+        next.memoryClass ?? classForKind(next.kind),
+        'durable',
+        next.legacy ? 1 : 0,
+        next.validUntil ?? null,
         id
       )
     this.database.prepare('DELETE FROM memories_fts WHERE memoryId = ?').run(id)
@@ -589,47 +766,52 @@ export class MemoryVault {
     const settings = this.getSettings()
     const tokenBudget = clampBudget(input.tokenBudget ?? settings.contextTokenBudget)
     if (!settings.enabled || !settings.useMemories) return emptyContext(tokenBudget)
+    const now = this.now()
     const active = this.list({ statuses: ['active'], limit: 500 }).filter((memory) => {
-      if (memory.expiresAt && memory.expiresAt <= this.now()) return false
+      if ((memory.expiresAt && memory.expiresAt <= now) || (memory.validUntil && memory.validUntil <= now)) return false
       return matchesScope(memory, input.cwd, input.agentId)
     })
     const task = input.task.trim().toLocaleLowerCase()
+    const personaText = truncateText(this.getPersona().trim(), 160 * 3)
+    const working = input.sessionId ? this.getWorking(input.sessionId) : null
+    const workingText = working ? renderWorkingMemory(working) : ''
+    const durableBudget = Math.max(0, Math.min(480, tokenBudget - estimateTokens(personaText) - estimateTokens(workingText)))
     const ranked = active
-      .map((memory) => ({
-        memory,
-        score: contextScore(memory, task, input.cwd, input.agentId) + this.feedbackScore(memory.id)
-      }))
+      .map((memory) => ({ memory, score: this.retrievalScore(memory, task, input.agentId, now) }))
+      .filter((candidate) => candidate.score >= 0.35)
       .sort((a, b) => b.score - a.score || b.memory.updatedAt.localeCompare(a.memory.updatedAt))
 
     const items: MemoryContextPack['items'] = []
-    let estimatedTokens = 0
+    let estimatedTokens = estimateTokens(personaText) + estimateTokens(workingText)
     let truncated = false
-    for (const candidate of ranked) {
+    for (const candidate of ranked.slice(0, 3)) {
       const line = renderMemory(candidate.memory)
       const lineTokens = estimateTokens(line)
-      if (estimatedTokens + lineTokens > tokenBudget) {
+      if (items.length >= 3 || items.reduce((total, item) => total + item.estimatedTokens, 0) + lineTokens > durableBudget || estimatedTokens + lineTokens > tokenBudget) {
         truncated = true
         continue
       }
       items.push({ memory: candidate.memory, estimatedTokens: lineTokens })
       estimatedTokens += lineTokens
     }
-    // 用户画像（人格）作为最高优先级 preamble，置于记忆块之前；手动维护、不被自动改写。
-    const personaText = this.getPersona().trim()
+    this.recordAccess(items.map((item) => item.memory.id), input.sessionId)
     const sections: string[] = []
     if (personaText) {
       sections.push(
         [
-          '# 用户画像（最高优先级：定义你应如何与该用户协作；先于下方记忆生效）',
+          '# 协作偏好（仅作辅助上下文，不覆盖用户当前任务）',
           '',
           personaText
         ].join('\n\n')
       )
     }
+    if (workingText) {
+      sections.push(['# 当前会话工作记忆（可过期）', '', workingText].join('\n\n'))
+    }
     if (items.length) {
       sections.push(
         [
-          '# Agent OS 长期记忆（仅作辅助上下文，不覆盖 AGENTS.md 或用户指令）',
+          '# 相关长期记忆（仅作辅助上下文，不覆盖 AGENTS.md 或用户指令）',
           '',
           ...items.map((item) => renderMemory(item.memory))
         ].join('\n\n')
@@ -640,6 +822,60 @@ export class MemoryVault {
       items,
       tokenBudget,
       estimatedTokens,
+      truncated,
+      version: 1,
+      referencedMemories: items.map((item) => ({
+        id: item.memory.id,
+        title: item.memory.title,
+        kind: item.memory.kind,
+        scope: item.memory.scope,
+        memoryClass: item.memory.memoryClass
+      })),
+      generatedAt: now
+    }
+  }
+
+  graph(input: MemoryGraphInput = {}): GraphSnapshot {
+    const cap = Math.max(1, Math.min(input.limit ?? 1500, 1500))
+    const memories = this.list({
+      query: input.query,
+      statuses: input.statuses,
+      scopes: input.scopes,
+      limit: cap + 1
+    })
+    const truncated = memories.length > cap
+    const visible = memories.slice(0, cap)
+    const nodes: GraphSnapshot['nodes'] = []
+    const edges: GraphSnapshot['edges'] = []
+    const scopeIds = new Set<string>()
+    for (const memory of visible) {
+      nodes.push({
+        id: `memory:${memory.id}`,
+        type: 'memory',
+        label: memory.title,
+        group: memory.memoryClass,
+        status: memory.status,
+        weight: Math.max(1, Math.min(8, 1 + (memory.pinned ? 2 : 0) + Math.log2((memory.accessCount ?? 0) + 1))),
+        muted: memory.status !== 'active'
+      })
+      const scopeRef = memory.scopeRef ?? memory.scope
+      const scopeId = `scope:${memory.scope}:${scopeRef}`
+      if (!scopeIds.has(scopeId)) {
+        nodes.push({ id: scopeId, type: memory.scope === 'user' ? 'persona' : 'scope', label: scopeRef, group: memory.scope, weight: 3 })
+        scopeIds.add(scopeId)
+      }
+      edges.push({ id: `belongs:${memory.id}:${scopeId}`, source: `memory:${memory.id}`, target: scopeId, relation: 'belongs_to' })
+      if (input.includeSources) {
+        for (const evidence of memory.evidence.slice(0, 100)) {
+          const sourceId = `source:${evidence.sourceType}:${evidence.sourceId}`
+          if (!nodes.some((node) => node.id === sourceId)) nodes.push({ id: sourceId, type: 'source-session', label: evidence.sourceId, group: evidence.sourceType, weight: 1 })
+          edges.push({ id: `evidence:${memory.id}:${sourceId}`, source: `memory:${memory.id}`, target: sourceId, relation: 'evidenced_by' })
+        }
+      }
+    }
+    return {
+      nodes,
+      edges: input.relations?.length ? edges.filter((edge) => input.relations!.includes(edge.relation)) : edges,
       truncated
     }
   }
@@ -668,6 +904,9 @@ export class MemoryVault {
             ? [{ sourceType: 'session', sourceId: entry.sourceSessionId }]
             : [],
           pinned: false,
+          memoryClass: 'semantic',
+          lifetime: 'durable',
+          legacy: true,
           createdAt: entry.createdAt,
           updatedAt: entry.updatedAt
         }
@@ -735,7 +974,14 @@ export class MemoryVault {
         createdAt TEXT NOT NULL,
         updatedAt TEXT NOT NULL,
         expiresAt TEXT,
-        rejectionReason TEXT
+        rejectionReason TEXT,
+        memoryClass TEXT,
+        lifetime TEXT,
+        legacy INTEGER NOT NULL DEFAULT 0,
+        lastAccessedAt TEXT,
+        accessCount INTEGER NOT NULL DEFAULT 0,
+        validFrom TEXT,
+        validUntil TEXT
       );
       CREATE TABLE IF NOT EXISTS memory_evidence (
         memoryId TEXT NOT NULL,
@@ -749,6 +995,22 @@ export class MemoryVault {
         outcome TEXT NOT NULL,
         agentId TEXT,
         createdAt TEXT NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS memory_access (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        memoryId TEXT NOT NULL,
+        sessionId TEXT,
+        accessedAt TEXT NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS working_memories (
+        sessionId TEXT PRIMARY KEY,
+        goal TEXT,
+        constraints TEXT NOT NULL DEFAULT '[]',
+        decisions TEXT NOT NULL DEFAULT '[]',
+        openQuestions TEXT NOT NULL DEFAULT '[]',
+        artifacts TEXT NOT NULL DEFAULT '[]',
+        updatedAt TEXT NOT NULL,
+        expiresAt TEXT NOT NULL
       );
       CREATE TABLE IF NOT EXISTS memory_policies (
         key TEXT PRIMARY KEY,
@@ -771,7 +1033,46 @@ export class MemoryVault {
       CREATE INDEX IF NOT EXISTS idx_memories_status_scope ON memories(status, scope, updatedAt DESC);
       CREATE INDEX IF NOT EXISTS idx_memory_evidence_memory ON memory_evidence(memoryId);
       CREATE INDEX IF NOT EXISTS idx_memory_feedback_memory ON memory_feedback(memoryId, createdAt DESC);
+      CREATE INDEX IF NOT EXISTS idx_memory_access_memory ON memory_access(memoryId, accessedAt DESC);
+      CREATE INDEX IF NOT EXISTS idx_working_memories_expiry ON working_memories(expiresAt);
     `)
+  }
+
+  /** SPEC-045：旧 Vault 就地扩展，原文和 evidence 均不改写。 */
+  private migrateV2Schema(): void {
+    const columns = [
+      ['memoryClass', 'TEXT'],
+      ['lifetime', 'TEXT'],
+      ['legacy', 'INTEGER NOT NULL DEFAULT 0'],
+      ['lastAccessedAt', 'TEXT'],
+      ['accessCount', 'INTEGER NOT NULL DEFAULT 0'],
+      ['validFrom', 'TEXT'],
+      ['validUntil', 'TEXT']
+    ] as const
+    for (const [name, definition] of columns) {
+      try {
+        this.database.exec(`ALTER TABLE memories ADD COLUMN ${name} ${definition}`)
+      } catch {
+        // 已升级的库或全新库均无需处理。
+      }
+    }
+    this.database.transaction(() => {
+      this.database
+        .prepare(
+          `UPDATE memories SET memoryClass = CASE kind
+            WHEN 'preference' THEN 'identity'
+            WHEN 'convention' THEN 'procedural'
+            WHEN 'procedure' THEN 'procedural'
+            WHEN 'pitfall' THEN 'procedural'
+            ELSE 'semantic' END,
+            lifetime = 'durable', legacy = 1
+           WHERE memoryClass IS NULL OR lifetime IS NULL`
+        )
+        .run()
+      this.database
+        .prepare('UPDATE memories SET accessCount = COALESCE(accessCount, 0)')
+        .run()
+    })()
   }
 
   private archiveExpiredCandidates(): void {
@@ -847,8 +1148,9 @@ export class MemoryVault {
       .prepare(
         `INSERT INTO memories (
           id, kind, title, content, scope, scopeRef, status, confidence, sensitivity,
-          tags, pinned, createdAt, updatedAt, expiresAt, rejectionReason
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          tags, pinned, createdAt, updatedAt, expiresAt, rejectionReason, memoryClass, lifetime,
+          legacy, lastAccessedAt, accessCount, validFrom, validUntil
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .run(
         memory.id,
@@ -865,7 +1167,14 @@ export class MemoryVault {
         memory.createdAt,
         memory.updatedAt,
         memory.expiresAt ?? null,
-        memory.rejectionReason ?? null
+        memory.rejectionReason ?? null,
+        memory.memoryClass ?? classForKind(memory.kind),
+        'durable',
+        memory.legacy ? 1 : 0,
+        memory.lastAccessedAt ?? null,
+        memory.accessCount ?? 0,
+        memory.validFrom ?? null,
+        memory.validUntil ?? null
       )
     this.database
       .prepare('INSERT INTO memories_fts (memoryId, title, content, tags) VALUES (?, ?, ?, ?)')
@@ -899,6 +1208,13 @@ export class MemoryVault {
       pinned: Boolean(row.pinned),
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
+      memoryClass: row.memoryClass ?? classForKind(row.kind),
+      lifetime: 'durable',
+      legacy: Boolean(row.legacy),
+      ...(row.lastAccessedAt ? { lastAccessedAt: row.lastAccessedAt } : {}),
+      ...(row.accessCount ? { accessCount: row.accessCount } : {}),
+      ...(row.validFrom ? { validFrom: row.validFrom } : {}),
+      ...(row.validUntil ? { validUntil: row.validUntil } : {}),
       ...(row.expiresAt ? { expiresAt: row.expiresAt } : {}),
       ...(row.rejectionReason ? { rejectionReason: row.rejectionReason } : {})
     }
@@ -927,27 +1243,115 @@ export class MemoryVault {
     writeFileSync(this.exportPath, markdown, { encoding: 'utf8', mode: 0o600 })
   }
 
-  private feedbackScore(memoryId: string): number {
+  private retrievalScore(
+    memory: DurableMemory,
+    task: string,
+    agentId: string | undefined,
+    now: string
+  ): number {
     const rows = this.database
       .prepare(
         `SELECT outcome, COUNT(*) AS count FROM memory_feedback
          WHERE memoryId = ? GROUP BY outcome`
       )
-      .all(memoryId) as Array<{ outcome: string; count: number }>
-    return rows.reduce((score, row) => {
-      if (row.outcome === 'useful') return score + row.count * 8
-      if (row.outcome === 'stale') return score - row.count * 15
-      return row.outcome === 'wrong' ? score - row.count * 30 : score
-    }, 0)
+      .all(memory.id) as Array<{ outcome: string; count: number }>
+    const feedback = new Map(rows.map((row) => [row.outcome, row.count]))
+    if ((feedback.get('wrong') ?? 0) > 0) return 0
+    const terms = queryTerms(task)
+    const haystack = `${memory.title}\n${memory.content}\n${memory.tags.join(' ')}`.toLocaleLowerCase()
+    const matching = terms.filter((term) => haystack.includes(term)).length
+    // 始终应用的人格块可在没有任务关键词时进入；其余条目必须与任务有词面关联。
+    // 中文任务通常只有一个长词串；只按「命中词数/片段数」会把“准备发布”→“发布”
+    // 这种明确的局部命中压得过低。任一片段命中应具备最低相关度，仍由作用域、反馈和
+    // 衰减继续收敛，避免置顶或泛化记忆绕过相关性门槛。
+    const lexical = terms.length
+      ? matching > 0 ? Math.max(matching / terms.length, 0.6) : 0
+      : memory.memoryClass === 'identity' ? 0.5 : 0
+    if (terms.length && matching === 0) return 0
+    const scopeFactor: Record<MemoryScope, number> = {
+      path: 1,
+      repo: 1,
+      project: 0.9,
+      user: 0.75,
+      agent: memory.scopeRef === agentId ? 0.65 : 0
+    }
+    const ageDays = Math.max(0, (Date.parse(now) - Date.parse(memory.lastAccessedAt ?? memory.updatedAt)) / 86_400_000)
+    const memoryClass = memory.memoryClass ?? classForKind(memory.kind)
+    const decayConfig: Record<MemoryClass, { halfLife: number; floor: number }> = {
+      identity: { halfLife: 365, floor: 0.9 },
+      procedural: { halfLife: 180, floor: 0.7 },
+      semantic: { halfLife: 60, floor: 0.5 },
+      episodic: { halfLife: 14, floor: 0.3 }
+    }
+    const decay = decayConfig[memoryClass]
+    const freshness = decay.floor + (1 - decay.floor) * 2 ** (-ageDays / decay.halfLife)
+    const recentAccess = this.database
+      .prepare('SELECT COUNT(*) AS count FROM memory_access WHERE memoryId = ? AND accessedAt >= ?')
+      .get(memory.id, new Date(Date.parse(now) - 30 * 86_400_000).toISOString()) as { count: number }
+    const accessBoost = Math.min(1.5, 1 + Math.min(5, recentAccess.count) * 0.1)
+    const feedbackFactor = (feedback.get('stale') ?? 0) > 0 ? 0.5 : (feedback.get('useful') ?? 0) > 0 ? 1.1 : 1
+    const confidence = memory.confidence === 'confirmed' ? 1 : 0.85
+    const pinned = memory.pinned ? 1.15 : 1
+    return Math.min(1, lexical * scopeFactor[memory.scope] * freshness * accessBoost * feedbackFactor * confidence * pinned)
+  }
+
+  private recordAccess(ids: string[], sessionId: string | undefined): void {
+    if (!ids.length) return
+    const now = this.now()
+    const write = this.database.transaction(() => {
+      const access = this.database.prepare(
+        'INSERT INTO memory_access (memoryId, sessionId, accessedAt) VALUES (?, ?, ?)'
+      )
+      const update = this.database.prepare(
+        'UPDATE memories SET lastAccessedAt = ?, accessCount = COALESCE(accessCount, 0) + 1 WHERE id = ?'
+      )
+      const prune = this.database.prepare(
+        `DELETE FROM memory_access WHERE memoryId = ? AND id NOT IN (
+          SELECT id FROM memory_access WHERE memoryId = ? ORDER BY accessedAt DESC, id DESC LIMIT 20
+        )`
+      )
+      for (const id of ids) {
+        access.run(id, sessionId ?? null, now)
+        update.run(now, id)
+        prune.run(id, id)
+      }
+    })
+    write.immediate()
+  }
+
+  private expireWorking(): void {
+    this.database.prepare('DELETE FROM working_memories WHERE expiresAt <= ?').run(this.now())
+  }
+
+  private hydrateWorking(row: WorkingMemoryRow): WorkingMemoryState {
+    return {
+      sessionId: row.sessionId,
+      ...(row.goal?.trim() ? { goal: row.goal.trim() } : {}),
+      constraints: parseStringList(row.constraints),
+      decisions: parseStringList(row.decisions),
+      openQuestions: parseStringList(row.openQuestions),
+      artifacts: parseStringList(row.artifacts),
+      updatedAt: row.updatedAt,
+      expiresAt: row.expiresAt
+    }
   }
 }
 
 function clampBudget(value: number): number {
-  return Math.max(200, Math.min(Math.round(value), 8_000))
+  return Math.max(200, Math.min(Math.round(value), 2_000))
 }
 
 function emptyContext(tokenBudget: number): MemoryContextPack {
-  return { text: '', items: [], tokenBudget, estimatedTokens: 0, truncated: false }
+  return {
+    version: 1,
+    text: '',
+    referencedMemories: [],
+    generatedAt: new Date().toISOString(),
+    items: [],
+    tokenBudget,
+    estimatedTokens: 0,
+    truncated: false
+  }
 }
 
 function matchesScope(memory: DurableMemory, cwd: string, agentId: string | undefined): boolean {
@@ -959,34 +1363,35 @@ function matchesScope(memory: DurableMemory, cwd: string, agentId: string | unde
   return memory.scope === 'path' && safePathStartsWith(cwd, memory.scopeRef)
 }
 
-function contextScore(
-  memory: DurableMemory,
-  task: string,
-  cwd: string,
-  agentId: string | undefined
-): number {
-  const scopeWeight: Record<DurableMemory['scope'], number> = {
-    repo: 80,
-    project: 70,
-    path: 65,
-    user: 50,
-    agent: memory.scopeRef === agentId ? 40 : 0
-  }
-  const haystack =
-    `${memory.title}\n${memory.content}\n${memory.tags.join(' ')}`.toLocaleLowerCase()
-  const lexical = task
-    ? task
-        .split(/\s+/u)
-        .filter(Boolean)
-        .reduce((score, term) => score + (haystack.includes(term) ? 10 : 0), 0)
-    : 0
-  const pathBonus = memory.scopeRef && safePathStartsWith(cwd, memory.scopeRef) ? 5 : 0
-  return scopeWeight[memory.scope] + lexical + pathBonus + (memory.pinned ? 100 : 0)
+function renderMemory(memory: DurableMemory): string {
+  return `- [${memory.memoryClass ?? classForKind(memory.kind)} · ${memory.scope}] ${memory.title}\n  ${memory.content}`
 }
 
-function renderMemory(memory: DurableMemory): string {
-  const evidence = memory.evidence.length
-    ? `证据：${memory.evidence.map((item) => `${item.sourceType}:${item.sourceId}`).join(', ')}`
-    : '证据：人工确认'
-  return `- [${memory.kind} · ${memory.scope} · ${memory.id}] ${memory.title}\n  ${memory.content}\n  ${evidence}`
+function queryTerms(task: string): string[] {
+  const words = task.toLocaleLowerCase().split(/\s+/u).map((term) => term.trim()).filter(Boolean)
+  // 连续中文无空格时按 2–4 字片段补充候选，避免只依赖整句精确命中。
+  if (words.length === 1 && Array.from(words[0] ?? '').length >= 4) {
+    const chars = Array.from(words[0] ?? '')
+    for (let index = 0; index < chars.length - 1; index += 2) words.push(chars.slice(index, index + 3).join(''))
+  }
+  return [...new Set(words)].filter(Boolean)
+}
+
+function truncateText(value: string, maxChars: number): string {
+  return Array.from(value).slice(0, maxChars).join('')
+}
+
+function cleanWorkingItems(items: string[]): string[] {
+  return [...new Set(items.map((item) => item.trim()).filter(Boolean))].slice(0, 12)
+}
+
+function renderWorkingMemory(memory: WorkingMemoryState): string {
+  const sections = [
+    memory.goal ? `目标：${memory.goal}` : '',
+    memory.constraints.length ? `约束：${memory.constraints.join('；')}` : '',
+    memory.decisions.length ? `已决定：${memory.decisions.join('；')}` : '',
+    memory.openQuestions.length ? `待确认：${memory.openQuestions.join('；')}` : '',
+    memory.artifacts.length ? `产物：${memory.artifacts.join('；')}` : ''
+  ].filter(Boolean)
+  return truncateText(sections.join('\n'), 320 * 3)
 }

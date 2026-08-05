@@ -4,9 +4,15 @@ import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import type { AgentTask, PortableBackupV1, RuntimeHost } from '../src/shared/types'
 import type { MemoryVault } from '../src/main/domains/memory/vault'
+import type { KnowledgeVault } from '../src/main/domains/knowledge/vault'
+import {
+  DEFAULT_KNOWLEDGE_CURATION_PROMPT,
+  DEFAULT_MEMORY_CURATION_PROMPT
+} from '../src/shared/curation-prompts'
 
 const store = vi.hoisted(() => ({
   language: 'zh' as 'zh' | 'en',
+  languagePreference: 'system' as 'system' | 'zh' | 'en',
   gamification: true,
   mirror: { npmRegistry: 'https://registry.npmjs.org' } as {
     npmRegistry?: string
@@ -26,6 +32,10 @@ vi.mock('../src/main/store/app-store', () => ({
   getLanguage: () => store.language,
   setLanguage: (value: 'zh' | 'en') => {
     store.language = value
+  },
+  getLanguagePreference: () => store.languagePreference,
+  setLanguagePreference: (value: 'system' | 'zh' | 'en') => {
+    store.languagePreference = value
   },
   getGamificationEnabled: () => store.gamification,
   setGamificationEnabled: (value: boolean) => {
@@ -53,8 +63,11 @@ const memoryState = {
     enabled: true,
     useMemories: true,
     generateMemories: false,
+    knowledgeCurationEnabled: true,
     allowExternalContext: false,
-    contextTokenBudget: 1200
+    contextTokenBudget: 1200,
+    memoryCurationPrompt: DEFAULT_MEMORY_CURATION_PROMPT,
+    knowledgeCurationPrompt: DEFAULT_KNOWLEDGE_CURATION_PROMPT
   },
   items: []
 }
@@ -118,6 +131,7 @@ describe('SPEC-042 安全配置迁移', () => {
     expect(raw).not.toContain('session-secret')
     expect(raw).not.toContain('private failure detail')
     expect(backup.preferences.providers).toEqual([{ toolId: 'codex', model: 'native' }])
+    expect(backup.preferences.languagePreference).toBe('system')
     expect(backup.preferences.mirrorSettings.httpsProxy).toBeUndefined()
     expect(backup.tasks).toHaveLength(1)
     expect(backup.tasks[0].prompt).toBe('第一行\n第二行')
@@ -148,6 +162,7 @@ describe('SPEC-042 安全配置迁移', () => {
     const service = new PortableBackupService(runtime, vault, '0.3.6')
     const file = join(mkdtempSync(join(tmpdir(), 'agentos-import-')), 'input.json')
     const backup = await service.build()
+    backup.preferences.languagePreference = 'en'
     backup.tasks = [task('imported')]
     const providerWithAttack = {
       ...backup.preferences.providers[0],
@@ -163,6 +178,7 @@ describe('SPEC-042 安全配置迁移', () => {
     expect(created[0].schedule?.nextRunAt).toBeUndefined()
     expect(created[0].id).toBe('imported')
     expect(store.providers.codex.apiKey).toBe('production-secret-must-never-export')
+    expect(store.languagePreference).toBe('en')
   })
 
   it('预览指纹变化或 schema 无效时零写入', async () => {
@@ -198,5 +214,28 @@ describe('SPEC-042 安全配置迁移', () => {
     expect(vault.replacePortableState).not.toHaveBeenCalled()
     expect(runtime.createTask).not.toHaveBeenCalled()
     expect(runtime.updateTask).not.toHaveBeenCalled()
+  })
+
+  it('便携备份携带知识 Markdown 正文及本机评论、收藏状态，并在导入时交给知识库重建', async () => {
+    const runtime = { listTasks: vi.fn(async () => []) } as unknown as RuntimeHost
+    const vault = { portableState: () => structuredClone(memoryState), replacePortableState: vi.fn() } as unknown as MemoryVault
+    const knowledgeState = {
+      articles: [{
+        id: 'article-1', title: '发布复盘', summary: '摘要', body: '# 正文', status: 'published' as const,
+        topic: '工程', tags: ['发布'], sources: [{ sourceType: 'session' as const, sourceId: 'codex:s1' }],
+        createdAt: '2026-07-23T00:00:00.000Z', updatedAt: '2026-07-23T00:00:00.000Z', publishedAt: '2026-07-23T00:00:00.000Z',
+        favorite: true, favoriteAt: '2026-07-23T00:00:00.000Z', wordCount: 3
+      }],
+      comments: [{ id: 'comment-1', articleId: 'article-1', body: '本机批注', createdAt: '2026-07-23T00:00:00.000Z', updatedAt: '2026-07-23T00:00:00.000Z' }]
+    }
+    const knowledge = { portableState: () => structuredClone(knowledgeState), replacePortableState: vi.fn() } as unknown as KnowledgeVault
+    const service = new PortableBackupService(runtime, vault, '0.3.6', knowledge)
+    const file = join(mkdtempSync(join(tmpdir(), 'agentos-knowledge-backup-')), 'knowledge.json')
+
+    await service.exportTo(file)
+    expect(JSON.parse(readFileSync(file, 'utf8')) as PortableBackupV1).toMatchObject({ knowledge: knowledgeState })
+    const result = await service.importFrom(file)
+    expect(result.importedKnowledgeArticles).toBe(1)
+    expect(knowledge.replacePortableState).toHaveBeenCalledWith(knowledgeState)
   })
 })

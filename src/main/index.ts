@@ -15,6 +15,9 @@ import { createExperienceStore } from './domains/memory/experience-persistence'
 import { MemoryVault } from './domains/memory/vault'
 import { VaultExperienceStore } from './domains/memory/vault-experience-store'
 import { memoryVaultPath } from './domains/memory/paths'
+import { KnowledgeVault } from './domains/knowledge/vault'
+import { knowledgeRootPath } from './domains/knowledge/paths'
+import { KnowledgeCurationService } from './domains/knowledge/curation'
 import { MemoryCurationService } from './domains/memory/curation'
 import { MemoryCurationScheduler } from './domains/memory/curation-scheduler'
 import { MemoryBackgroundCurator } from './domains/memory/background-curator'
@@ -128,6 +131,7 @@ let memoryService: MemoryWorkerClient | null = null
 let fallbackChat: ChatManager | null = null
 let channelManager: ChannelManager | null = null
 let memoryVault: MemoryVault | null = null
+let knowledgeVault: KnowledgeVault | null = null
 let memoryCurationScheduler: MemoryCurationScheduler | null = null
 let memoryBackgroundCurator: MemoryBackgroundCurator | null = null
 let fallbackTasks: TaskService | null = null
@@ -401,6 +405,7 @@ async function startDesktopApp(): Promise<void> {
   memoryService = memory
   const legacyExperiences = createExperienceStore(app.getPath('userData'))
   memoryVault = new MemoryVault(memoryVaultPath())
+  knowledgeVault = new KnowledgeVault(knowledgeRootPath())
   memoryVault.migrateExperiences(legacyExperiences.list())
   const experiences = new VaultExperienceStore(memoryVault)
   const refreshInstalledCurators = (results: { toolId: string; health: string }[]): void => {
@@ -431,6 +436,7 @@ async function startDesktopApp(): Promise<void> {
     (toolId) => lifecycle.providerModel(toolId),
     () => listAdapters().filter((adapter) => installedCuratorIds.has(adapter.id))
   )
+  const knowledgeCuration = new KnowledgeCurationService(knowledgeVault, memoryCuration)
   memoryCurationScheduler = new MemoryCurationScheduler(memoryCuration)
   memoryBackgroundCurator = new MemoryBackgroundCurator(memory, memoryCuration, memoryVault)
   memoryBackgroundCurator.start()
@@ -489,7 +495,8 @@ async function startDesktopApp(): Promise<void> {
       const pack = memoryVault?.context({
         cwd: session.workspacePath,
         task: prompt,
-        agentId: session.toolId
+        agentId: session.toolId,
+        sessionId: session.id
       })
       return {
         text: pack?.text ?? '',
@@ -497,7 +504,8 @@ async function startDesktopApp(): Promise<void> {
           id: item.memory.id,
           title: item.memory.title,
           kind: item.memory.kind,
-          scope: item.memory.scope
+          scope: item.memory.scope,
+          memoryClass: item.memory.memoryClass
         }))
       }
     },
@@ -554,6 +562,20 @@ async function startDesktopApp(): Promise<void> {
   const federation = new FederatedRuntimeHost(runtime, 'local', {
     sessionCreated: (input) => analyticsEventBus.publish(sessionCreatedAnalyticsEvent(input)),
     taskCreated: (input, task) => analyticsEventBus.publish(taskCreatedAnalyticsEvent(input, task))
+  }, {
+    create: (session, task) =>
+      memoryVault?.context({
+        cwd: session.workspacePath,
+        task,
+        agentId: session.toolId,
+        sessionId: session.id
+      }),
+    recordCompleted: (session, task) => {
+      // 不用模型猜测事实：成功回合只确定性刷新「当前目标」，其他约束/决定由用户或
+      // 后续受限提炼补充。七天未活动的工作态由 Vault 自动过期。
+      const goal = task.trim()
+      if (goal) memoryVault?.updateWorking({ sessionId: session.id, goal })
+    }
   })
   const gatewayMaterial = loadGatewayMaterial(join(app.getPath('userData'), 'node-gateway-tls'))
   const deviceAuthorizations = new DeviceAuthorizationRegistry(
@@ -714,7 +736,9 @@ async function startDesktopApp(): Promise<void> {
     federation,
     memoryService,
     memoryVault,
+    knowledgeVault,
     memoryCuration,
+    knowledgeCuration,
     experiences,
     lifecycle,
     () => runtime.restartDaemon(),
@@ -775,6 +799,7 @@ const cleanupBeforeQuit = async (): Promise<void> => {
     () => memoryService?.close(),
     () => memoryBackgroundCurator?.close(),
     () => memoryVault?.close(),
+    () => knowledgeVault?.close(),
     () => memoryCurationScheduler?.close(),
     () => fallbackTasks?.close(),
     () => fallbackChat?.close(),

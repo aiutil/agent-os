@@ -167,14 +167,14 @@ export class SupervisedRuntimeHost implements RuntimeHost {
   kill(sessionId: string): Promise<boolean> {
     return this.delegate.kill(sessionId)
   }
-  sendTurn(sessionId: string, text: string, files?: string[]): Promise<ChatTurnState> {
-    return this.delegate.sendTurn(sessionId, text, files)
+  sendTurn(sessionId: string, text: string, files?: string[], contextPack?: import('@shared/types').TurnContextPack): Promise<ChatTurnState> {
+    return this.delegate.sendTurn(sessionId, text, files, contextPack)
   }
   steerTurn(sessionId: string, text: string, files?: string[]): Promise<ChatTurnState> {
     return this.delegate.steerTurn(sessionId, text, files)
   }
-  queueTurn(sessionId: string, text: string, files?: string[]): Promise<ManagedQueuedTurn> {
-    return this.delegate.queueTurn(sessionId, text, files)
+  queueTurn(sessionId: string, text: string, files?: string[], contextPack?: import('@shared/types').TurnContextPack): Promise<ManagedQueuedTurn> {
+    return this.delegate.queueTurn(sessionId, text, files, contextPack)
   }
   listQueuedTurns(sessionId: string): Promise<ManagedQueuedTurn[]> {
     return this.delegate.listQueuedTurns(sessionId)
