@@ -35,4 +35,11 @@ describe('task status presentation', () => {
     expect(status('review', 'failed').label).toBe('执行失败 · 待处理')
     expect(status('review', 'interrupted').label).toBe('已中断 · 待处理')
   })
+
+  it('projects the same workflow states with English labels', () => {
+    expect(presentTaskStatus({ boardStatus: 'review', executionStatus: 'succeeded' }, 'en'))
+      .toEqual({ label: 'Succeeded · Awaiting confirmation', state: 'succeeded' })
+    expect(presentTaskStatus({ boardStatus: 'done', executionStatus: 'succeeded' }, 'en'))
+      .toEqual({ label: 'Confirmed complete', state: 'confirmed' })
+  })
 })

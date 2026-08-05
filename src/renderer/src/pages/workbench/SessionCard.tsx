@@ -52,13 +52,13 @@ export function SessionCard({ view }: SessionCardProps): React.JSX.Element {
           <span className="session-card__meta">
             <ToolIcon toolId={view.toolId} size={11} brandColor className="session-card__tool-icon" />
             <span className="session-card__tool-name">{view.toolId}</span>
-            {view.relaySource && <span className="session-card__relay-chip">接力</span>}
-            {view.relayTarget && <span className="session-card__relay-chip">来源</span>}
+            {view.relaySource && <span className="session-card__relay-chip">{t('workbench.relay.short')}</span>}
+            {view.relayTarget && <span className="session-card__relay-chip">{t('workbench.relay.sourceShort')}</span>}
             <span className="session-card__meta-sep">·</span>
             {view.relayTarget
-              ? `可继续 · 已接力给 ${view.relayTarget.toolId}`
+              ? t('workbench.relay.resumableRelayed', { tool: view.relayTarget.toolId })
               : view.relaySource
-                ? `进行中 · 接力自 ${view.relaySource.toolId}`
+                ? t('workbench.relay.runningFrom', { tool: view.relaySource.toolId })
                 : sessionStatusLabel(view.status)}
             <span className="session-card__meta-sep">·</span>
             {relativeTime(view.lastActivityAt, lang)}

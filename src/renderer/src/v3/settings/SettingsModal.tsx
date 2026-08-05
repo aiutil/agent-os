@@ -3694,7 +3694,7 @@ function SettingsChannels(): React.JSX.Element {
     void window.agentOs.channels
       .addAccount({
         platform: selected,
-        alias: alias.trim() || '机器人',
+        alias: alias.trim() || t('settings.channels.botAliasFallback'),
         credentials
       })
       .then(async (account) => {

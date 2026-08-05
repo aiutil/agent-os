@@ -225,7 +225,7 @@ export function MemoryPage(): React.JSX.Element {
       setRelayTargets(await window.agentOs.relay.listTargets(selectedSessionId))
       setShowRelayTargets(true)
     } catch (error) {
-      notify(`读取接力目标失败：${String((error as Error).message ?? error)}`, 'error')
+      notify(t('workbench.chat.loadError', { error: String((error as Error).message ?? error) }), 'error')
     } finally {
       setRelayLoading(false)
     }
@@ -234,7 +234,10 @@ export function MemoryPage(): React.JSX.Element {
   const startHistoryRelay = async (target: RelayTarget): Promise<void> => {
     if (!selectedSessionId) return
     if (target.availability !== 'available') {
-      notify(`${target.displayName} 暂不可接力：${target.reason ?? '请先检查 CLI 状态'}`, 'warning')
+      notify(t('workbench.relay.unavailableNotice', {
+        name: target.displayName,
+        reason: target.reason ?? t('workbench.relay.checkCli')
+      }), 'warning')
       await window.agentOs.relay.openRepair(target.toolId).catch(() => undefined)
       return
     }
@@ -613,7 +616,7 @@ export function MemoryPage(): React.JSX.Element {
                         disabled={relayLoading}
                         onClick={() => void toggleRelayTargets()}
                       >
-                        {relayLoading ? '读取接力目标…' : '接力给...'}
+                        {relayLoading ? t('workbench.relay.loading') : t('workbench.relay.to')}
                       </button>
                       {showRelayTargets && (
                         <div className="memory-relay-targets">
@@ -625,7 +628,7 @@ export function MemoryPage(): React.JSX.Element {
                               onClick={() => void startHistoryRelay(target)}
                             >
                               <span>{target.displayName}</span>
-                              <span>{target.availability === 'available' ? '可用' : target.reason ?? '不可用'}</span>
+                              <span>{target.availability === 'available' ? t('workbench.relay.available') : target.reason ?? t('workbench.relay.unavailable')}</span>
                             </button>
                           ))}
                         </div>

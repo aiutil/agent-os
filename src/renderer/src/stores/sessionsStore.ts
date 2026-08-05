@@ -182,7 +182,7 @@ export const useSessionsStore = create<SessionsState>((set, get) => ({
           ? { ...state.relayUi, step: 'failed', error: message, cancelable: false }
           : null
       }))
-      get().setNotice(`接力失败：${message}`, 'error')
+      get().setNotice(tr('workbench.relay.failedWithError', { error: message }), 'error')
       await get().refresh()
       return null
     }

@@ -1689,10 +1689,10 @@ function ChatSurface({
             onRelayed={onOpenSession}
           />
           {view.relaySource && (
-            <span className="relay-inline-chip">接力自 {view.relaySource.toolId}</span>
+            <span className="relay-inline-chip">{t('workbench.relay.from', { tool: view.relaySource.toolId })}</span>
           )}
           {view.relayTarget && (
-            <span className="relay-inline-chip">已接力给 {view.relayTarget.toolId}</span>
+            <span className="relay-inline-chip">{t('workbench.relay.relayedTo', { tool: view.relayTarget.toolId })}</span>
           )}
           <span>{basename(view.workspacePath)}/</span>
           {view.nativeSessionId && (
@@ -2261,10 +2261,10 @@ function TerminalSurface({
             />
           </div>
           {view.relaySource && (
-            <span className="relay-inline-chip">接力自 {view.relaySource.toolId}</span>
+            <span className="relay-inline-chip">{t('workbench.relay.from', { tool: view.relaySource.toolId })}</span>
           )}
           {view.relayTarget && (
-            <span className="relay-inline-chip">已接力给 {view.relayTarget.toolId}</span>
+            <span className="relay-inline-chip">{t('workbench.relay.relayedTo', { tool: view.relayTarget.toolId })}</span>
           )}
           <button
             className="terminal-header__disc"
@@ -2315,10 +2315,10 @@ function TerminalSurface({
           />
         </div>
         {view.relaySource && (
-          <span className="relay-inline-chip">接力自 {view.relaySource.toolId}</span>
+          <span className="relay-inline-chip">{t('workbench.relay.from', { tool: view.relaySource.toolId })}</span>
         )}
         {view.relayTarget && (
-          <span className="relay-inline-chip">已接力给 {view.relayTarget.toolId}</span>
+          <span className="relay-inline-chip">{t('workbench.relay.relayedTo', { tool: view.relayTarget.toolId })}</span>
         )}
         <button
           className="terminal-header__disc"

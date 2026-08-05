@@ -431,6 +431,7 @@ function RelayMenu({
   view: WorkbenchSessionView
   onClose(): void
 }): React.JSX.Element {
+  const { t } = useT()
   const relay = useSessionsStore((s) => s.relay)
   const setNotice = useSessionsStore((s) => s.setNotice)
   const [targets, setTargets] = useState<RelayTarget[]>([])
@@ -463,7 +464,10 @@ function RelayMenu({
 
   const startRelay = async (target: RelayTarget): Promise<void> => {
     if (target.availability !== 'available') {
-      setNotice(`${target.displayName} 暂不可接力：${target.reason ?? '请先检查 CLI 状态'}`, 'warning')
+      setNotice(t('workbench.relay.unavailableNotice', {
+        name: target.displayName,
+        reason: target.reason ?? t('workbench.relay.checkCli')
+      }), 'warning')
       await window.agentOs.relay.openRepair(target.toolId).catch(() => undefined)
       return
     }
@@ -487,12 +491,12 @@ function RelayMenu({
 
   return (
     <div className="relay-menu" ref={menuRef}>
-      <div className="relay-menu__title">接力给</div>
-      <div className="relay-menu__current">当前：{view.toolId}</div>
+      <div className="relay-menu__title">{t('workbench.relay.to')}</div>
+      <div className="relay-menu__current">{t('workbench.relay.current', { value: view.toolId })}</div>
       {loading ? (
-        <div className="relay-menu__empty">正在读取 Agent…</div>
+        <div className="relay-menu__empty">{t('workbench.relay.loading')}</div>
       ) : targets.length === 0 ? (
-        <div className="relay-menu__empty">没有可接力的 Agent</div>
+        <div className="relay-menu__empty">{t('workbench.relay.empty')}</div>
       ) : (
         targets.map((target) => (
           <button
@@ -504,7 +508,7 @@ function RelayMenu({
             <ToolIcon toolId={target.toolId} size={13} brandColor />
             <span className="relay-menu__name">{target.displayName}</span>
             <span className="relay-menu__status">
-              {target.availability === 'available' ? '可用' : target.reason ?? '不可用'}
+              {target.availability === 'available' ? t('workbench.relay.available') : target.reason ?? t('workbench.relay.unavailable')}
             </span>
           </button>
         ))
@@ -514,6 +518,7 @@ function RelayMenu({
 }
 
 function RelayOverlay(): React.JSX.Element | null {
+  const { t } = useT()
   const relayUi = useSessionsStore((s) => s.relayUi)
   const clearRelayUi = useSessionsStore((s) => s.clearRelayUi)
   if (!relayUi) return null
@@ -521,12 +526,12 @@ function RelayOverlay(): React.JSX.Element | null {
     return (
       <div className="relay-overlay">
         <section className="relay-overlay__panel">
-          <h2>接力失败</h2>
-          <p>未能创建 {relayUi.targetName} 会话。原会话没有变化。</p>
+          <h2>{t('workbench.relay.failed')}</h2>
+          <p>{t('workbench.relay.failedHint', { name: relayUi.targetName })}</p>
           <p className="relay-overlay__error">{relayUi.error}</p>
           <div className="relay-overlay__actions">
             <button type="button" className="btn" onClick={clearRelayUi}>
-              关闭
+              {t('workbench.relay.close')}
             </button>
           </div>
         </section>
@@ -536,16 +541,16 @@ function RelayOverlay(): React.JSX.Element | null {
   return (
     <div className="relay-overlay">
       <section className="relay-overlay__panel">
-        <h2>正在接力给 {relayUi.targetName}</h2>
+        <h2>{t('workbench.relay.running', { name: relayUi.targetName })}</h2>
         <ol className="relay-overlay__steps">
-          <li>准备标准上下文包</li>
-          <li>创建目标 Agent 会话</li>
-          <li>注入上下文</li>
-          <li>等待接手摘要</li>
-          <li>打开新会话</li>
+          <li>{t('workbench.relay.prepare')}</li>
+          <li>{t('workbench.relay.create')}</li>
+          <li>{t('workbench.relay.inject')}</li>
+          <li>{t('workbench.relay.wait')}</li>
+          <li>{t('workbench.relay.open')}</li>
         </ol>
         <button type="button" className="btn" disabled={!relayUi.cancelable} onClick={clearRelayUi}>
-          取消
+          {t('workbench.relay.cancel')}
         </button>
       </section>
     </div>
@@ -632,7 +637,7 @@ export function WorkbenchMain(): React.JSX.Element {
               toolId: view.relaySource!.toolId
             })
           }}>
-            接力自 {view.relaySource.toolId}
+            {t('workbench.relay.from', { tool: view.relaySource.toolId })}
           </button>
         )}
         {view.relayTarget && (
@@ -644,7 +649,7 @@ export function WorkbenchMain(): React.JSX.Element {
               toolId: view.relayTarget!.toolId
             })
           }}>
-            已接力给 {view.relayTarget.toolId}
+            {t('workbench.relay.relayedTo', { tool: view.relayTarget.toolId })}
           </button>
         )}
 

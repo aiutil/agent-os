@@ -8,6 +8,7 @@ import { useSessionsStore } from '../../stores/sessionsStore'
 import { ToolIcon } from '../../lib/toolIcons'
 import { PortalMenu } from './PortalMenu'
 import { ModelPicker } from './ModelPicker'
+import { useT } from '../../lib/i18n'
 
 const TRIGGER_ICON_SIZE = 20
 
@@ -42,6 +43,7 @@ export function RelayTrigger({
   menuAlign,
   onRelayed
 }: RelayTriggerProps): React.JSX.Element {
+  const { t } = useT()
   const relay = useSessionsStore((s) => s.relay)
   const setNotice = useSessionsStore((s) => s.setNotice)
   const [remoteStatuses, setRemoteStatuses] = useState<RemoteNodeStatus[]>([])
@@ -66,7 +68,7 @@ export function RelayTrigger({
   const targetKey = (target: RelayTarget): string => `${target.runtimeHostId ?? 'local'}/${target.toolId}`
   const selectedTarget = targets.find((target) => targetKey(target) === selectedKey) ?? null
   const hostLabel = (hostId?: string): string => {
-    if (!hostId || hostId === 'local') return '本机'
+    if (!hostId || hostId === 'local') return t('tasks.local')
     return remoteStatuses.find((status) => status.id === hostId)?.label ?? hostId
   }
   const groupedTargets = useMemo(() => {
@@ -104,7 +106,10 @@ export function RelayTrigger({
     const target = selectedTarget
     if (!target) return
     if (target.availability !== 'available') {
-      setNotice(`${target.displayName} 暂不可接力：${target.reason ?? '请先检查 CLI 状态'}`, 'warning')
+      setNotice(t('workbench.relay.unavailableNotice', {
+        name: target.displayName,
+        reason: target.reason ?? t('workbench.relay.checkCli')
+      }), 'warning')
       await window.agentOs.relay.openRepair(target.toolId).catch(() => undefined)
       return
     }
@@ -141,12 +146,12 @@ export function RelayTrigger({
         animateEnter
       >
         <div className="relay-trigger__menu-panel">
-          <div className="relay-trigger__title">接力给</div>
-          <div className="relay-trigger__current">当前：{hostLabel(sourceRuntimeHostId)} / {sourceDisplayName}</div>
+          <div className="relay-trigger__title">{t('workbench.relay.to')}</div>
+          <div className="relay-trigger__current">{t('workbench.relay.current', { value: `${hostLabel(sourceRuntimeHostId)} / ${sourceDisplayName}` })}</div>
           {loading ? (
-            <div className="relay-trigger__empty">正在读取 Agent…</div>
+            <div className="relay-trigger__empty">{t('workbench.relay.loading')}</div>
           ) : targets.length === 0 ? (
-            <div className="relay-trigger__empty">没有可接力的 Agent</div>
+            <div className="relay-trigger__empty">{t('workbench.relay.empty')}</div>
           ) : (
             <>
               <div className="relay-trigger__list">
@@ -170,7 +175,7 @@ export function RelayTrigger({
                             <strong>{target.displayName}</strong>
                             <small>{target.version ? `v${target.version}` : target.toolId}</small>
                           </span>
-                          <em>{target.availability === 'available' ? '可用' : target.reason ?? '不可用'}</em>
+                          <em>{target.availability === 'available' ? t('workbench.relay.available') : target.reason ?? t('workbench.relay.unavailable')}</em>
                         </button>
                       )
                     })}
@@ -180,7 +185,7 @@ export function RelayTrigger({
               {selectedTarget && (
                 <div className="relay-trigger__footer">
                   <div className="relay-trigger__model">
-                    <span>模型</span>
+                    <span>{t('workbench.relay.model')}</span>
                     <ModelPicker
                       toolId={selectedTarget.toolId}
                       hostId={selectedTarget.runtimeHostId}
@@ -195,7 +200,7 @@ export function RelayTrigger({
                     disabled={selectedTarget.availability !== 'available'}
                     onClick={() => void startRelay()}
                   >
-                    开始接力
+                    {t('workbench.relay.start')}
                   </button>
                 </div>
               )}

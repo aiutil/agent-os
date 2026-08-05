@@ -45,9 +45,9 @@ const WEB_SERVICES = [
   { key: 'grok', label: 'Grok', color: '#1d1d1f', sub: 'Grok-3', url: 'https://x.com/i/grok' }
 ]
 
-function scenarioTitle(prompt: string): string {
+function scenarioTitle(prompt: string, fallback: string): string {
   const compact = prompt.replace(/\s+/g, ' ').trim()
-  return compact.length > 18 ? `${compact.slice(0, 18)}…` : compact || '未命名对比'
+  return compact.length > 18 ? `${compact.slice(0, 18)}…` : compact || fallback
 }
 
 const IcCompare = (): React.JSX.Element => (
@@ -318,7 +318,7 @@ const ComparePane = forwardRef<
   const ensureSession = async (): Promise<string> => {
     if (sessionId) return sessionId
     const { session } = await window.agentOs.session.create({
-      name: `对比 · ${displayName}`,
+      name: t('compare.scenario.sessionName', { name: displayName }),
       // SPEC-035：广播模板名是占位，首回合后由真实意图覆盖。
       nameProvisional: true,
       toolId: pane.toolId,
@@ -495,6 +495,7 @@ export function CompareView({
   compareId: string
   onScenarioSaved?(scenario: CompareScenario): void
 }): React.JSX.Element {
+  const { t } = useT()
   const tools = useToolsStore((s) => s.results)
   const runtimes = useToolsStore((s) => s.runtimes)
   const scan = useToolsStore((s) => s.scan)
@@ -631,7 +632,7 @@ export function CompareView({
     }))
     const saved = await window.agentOs.compare.saveScenario({
       id: layoutDirty ? undefined : scenarioId ?? compareId,
-      title: scenarioTitle(text),
+      title: scenarioTitle(text, t('compare.scenario.unnamed')),
       workspacePath,
       prompt: text,
       paneCount: nextPanes.length,

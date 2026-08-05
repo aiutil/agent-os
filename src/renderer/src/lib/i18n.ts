@@ -10,6 +10,7 @@ import {
   type Vars
 } from '@shared/i18n'
 import { useUiStore } from '../stores/uiStore'
+import { useCallback } from 'react'
 
 type TFunction = (key: KeyPath<Dictionary>, vars?: Vars) => string
 
@@ -21,7 +22,7 @@ export function useT(): { lang: Lang; t: TFunction } {
   const pref = useUiStore((s) => s.languagePreference)
   const systemLanguage = useUiStore((s) => s.platform?.systemLanguage)
   const lang = resolveLang(pref, systemLanguage)
-  const t: TFunction = (key, vars) => translate(lang, key, vars)
+  const t = useCallback<TFunction>((key, vars) => translate(lang, key, vars), [lang])
   return { lang, t }
 }
 
