@@ -37,7 +37,12 @@ export const zh = {
   },
   language: {
     title: '语言',
-    desc: '界面显示语言；跟随系统会按操作系统语言'
+    desc: '界面与默认提炼提示词的语言；跟随系统会按电脑语言',
+    options: {
+      system: '跟随系统',
+      zh: '中文',
+      en: 'English'
+    }
   },
   general: {
     subtitle: '基础偏好与功能开关',
@@ -120,6 +125,8 @@ export const zh = {
     memoryPrompt: '记忆提取提示词',
     knowledgePrompt: '知识提取提示词',
     promptFutureOnly: '保存后只影响后续提炼，已经生成的记忆和文章不会改变。',
+    promptDefaultMode: '当前使用系统默认提示词',
+    promptCustomMode: '当前使用自定义提示词',
     promptSave: '保存提示词',
     promptSaving: '正在保存…',
     promptSaved: '已保存，将从下一次提炼开始生效。',
@@ -562,7 +569,12 @@ export const en: typeof zh = {
   },
   language: {
     title: 'Language',
-    desc: 'UI display language; Follow system follows the OS language'
+    desc: 'Language for the interface and built-in curation prompts; Follow system uses your computer language',
+    options: {
+      system: 'Follow system',
+      zh: '中文',
+      en: 'English'
+    }
   },
   general: {
     subtitle: 'Basic preferences and feature toggles',
@@ -654,6 +666,8 @@ export const en: typeof zh = {
     memoryPrompt: 'Memory extraction prompt',
     knowledgePrompt: 'Knowledge extraction prompt',
     promptFutureOnly: 'Saving affects future curation only. Existing memories and articles stay unchanged.',
+    promptDefaultMode: 'Using the built-in prompt for the current language',
+    promptCustomMode: 'Using your custom prompt',
     promptSave: 'Save prompt',
     promptSaving: 'Saving…',
     promptSaved: 'Saved. It will apply to the next curation run.',

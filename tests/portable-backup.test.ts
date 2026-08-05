@@ -12,6 +12,7 @@ import {
 
 const store = vi.hoisted(() => ({
   language: 'zh' as 'zh' | 'en',
+  languagePreference: 'system' as 'system' | 'zh' | 'en',
   gamification: true,
   mirror: { npmRegistry: 'https://registry.npmjs.org' } as {
     npmRegistry?: string
@@ -31,6 +32,10 @@ vi.mock('../src/main/store/app-store', () => ({
   getLanguage: () => store.language,
   setLanguage: (value: 'zh' | 'en') => {
     store.language = value
+  },
+  getLanguagePreference: () => store.languagePreference,
+  setLanguagePreference: (value: 'system' | 'zh' | 'en') => {
+    store.languagePreference = value
   },
   getGamificationEnabled: () => store.gamification,
   setGamificationEnabled: (value: boolean) => {
@@ -126,6 +131,7 @@ describe('SPEC-042 安全配置迁移', () => {
     expect(raw).not.toContain('session-secret')
     expect(raw).not.toContain('private failure detail')
     expect(backup.preferences.providers).toEqual([{ toolId: 'codex', model: 'native' }])
+    expect(backup.preferences.languagePreference).toBe('system')
     expect(backup.preferences.mirrorSettings.httpsProxy).toBeUndefined()
     expect(backup.tasks).toHaveLength(1)
     expect(backup.tasks[0].prompt).toBe('第一行\n第二行')
@@ -156,6 +162,7 @@ describe('SPEC-042 安全配置迁移', () => {
     const service = new PortableBackupService(runtime, vault, '0.3.6')
     const file = join(mkdtempSync(join(tmpdir(), 'agentos-import-')), 'input.json')
     const backup = await service.build()
+    backup.preferences.languagePreference = 'en'
     backup.tasks = [task('imported')]
     const providerWithAttack = {
       ...backup.preferences.providers[0],
@@ -171,6 +178,7 @@ describe('SPEC-042 安全配置迁移', () => {
     expect(created[0].schedule?.nextRunAt).toBeUndefined()
     expect(created[0].id).toBe('imported')
     expect(store.providers.codex.apiKey).toBe('production-secret-must-never-export')
+    expect(store.languagePreference).toBe('en')
   })
 
   it('预览指纹变化或 schema 无效时零写入', async () => {

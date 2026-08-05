@@ -2,11 +2,14 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
+import { setCurrentLang } from '../src/shared/i18n'
 import { MemoryVault } from '../src/main/domains/memory/vault'
 import { MemoryCurationService } from '../src/main/domains/memory/curation'
 import {
   DEFAULT_KNOWLEDGE_CURATION_PROMPT,
-  DEFAULT_MEMORY_CURATION_PROMPT
+  DEFAULT_MEMORY_CURATION_PROMPT,
+  DEFAULT_MEMORY_CURATION_PROMPTS,
+  DEFAULT_KNOWLEDGE_CURATION_PROMPTS
 } from '../src/shared/curation-prompts'
 
 const directories: string[] = []
@@ -19,10 +22,12 @@ function createVault(): MemoryVault {
 
 afterEach(() => {
   for (const directory of directories.splice(0)) rmSync(directory, { recursive: true, force: true })
+  setCurrentLang('zh')
 })
 
 describe('MemoryVault', () => {
   it('默认填充两类提炼提示词，用户修改只更新后续提炼设置', () => {
+    setCurrentLang('zh')
     const vault = createVault()
     expect(vault.getSettings()).toMatchObject({
       memoryCurationPrompt: DEFAULT_MEMORY_CURATION_PROMPT,
@@ -30,6 +35,16 @@ describe('MemoryVault', () => {
     })
     expect(vault.updateSettings({ knowledgeCurationPrompt: '后续知识统一使用中文。' }).knowledgeCurationPrompt)
       .toBe('后续知识统一使用中文。')
+    expect(vault.getSettings().knowledgeCurationPromptMode).toBe('custom')
+    setCurrentLang('en')
+    expect(vault.getSettings().memoryCurationPrompt).toBe(DEFAULT_MEMORY_CURATION_PROMPTS.en)
+    expect(vault.getSettings().knowledgeCurationPrompt).toBe('后续知识统一使用中文。')
+    vault.updateSettings({
+      knowledgeCurationPromptMode: 'default',
+      knowledgeCurationPrompt: DEFAULT_KNOWLEDGE_CURATION_PROMPTS.en
+    })
+    setCurrentLang('zh')
+    expect(vault.getSettings().knowledgeCurationPrompt).toBe(DEFAULT_KNOWLEDGE_CURATION_PROMPTS.zh)
     vault.close()
   })
 

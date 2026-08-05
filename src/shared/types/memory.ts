@@ -237,8 +237,12 @@ export interface MemorySettings {
   contextTokenBudget: number
   /** 记忆候选的用户可编辑提炼策略；修改只影响后续提炼。 */
   memoryCurationPrompt: string
+  /** default 按当前界面语言解析内置提示词；custom 保留用户正文。 */
+  memoryCurationPromptMode?: 'default' | 'custom'
   /** Markdown 知识草稿的用户可编辑提炼策略；修改只影响后续提炼。 */
   knowledgeCurationPrompt: string
+  /** default 按当前界面语言解析内置提示词；custom 保留用户正文。 */
+  knowledgeCurationPromptMode?: 'default' | 'custom'
   /**
    * 旧版记忆提炼字段，仅用于备份和本机设置迁移。
    * @deprecated 使用 memoryCurationPrompt。

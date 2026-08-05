@@ -174,7 +174,7 @@ export function SearchModal(): React.JSX.Element {
               className={`search-tab ${tab === tk ? 'is-active' : ''}`}
               onClick={() => setTab(tk)}
             >
-              {tk === 'all' ? t('common.label.all') : tk === 'chat' ? `${t('channels.search.tabChat')}${chatViews.length > 0 ? ` ${chatViews.length}` : ''}` : tk === 'cli' ? `${t('channels.search.tabCli')}${cliViews.length > 0 ? ` ${cliViews.length}` : ''}` : `知识${knowledgeHits.length > 0 ? ` ${knowledgeHits.length}` : ''}`}
+              {tk === 'all' ? t('common.label.all') : tk === 'chat' ? `${t('channels.search.tabChat')}${chatViews.length > 0 ? ` ${chatViews.length}` : ''}` : tk === 'cli' ? `${t('channels.search.tabCli')}${cliViews.length > 0 ? ` ${cliViews.length}` : ''}` : `${t('memory.atlas.common.library')}${knowledgeHits.length > 0 ? ` ${knowledgeHits.length}` : ''}`}
             </button>
           ))}
         </div>
@@ -266,7 +266,7 @@ export function SearchModal(): React.JSX.Element {
           )}
           {showKnowledge && knowledgeHits.length > 0 && (
             <>
-              <div className="search-group-label">知识文章</div>
+              <div className="search-group-label">{t('memory.atlas.knowledge.listAria')}</div>
               {knowledgeHits.map((article) => (
                 <button key={article.id} type="button" className="search-item" onClick={() => handleSelectKnowledge(article)}>
                   <span className="search-item__dot" style={{ background: 'var(--tool-codex)' }} />

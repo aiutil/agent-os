@@ -38,10 +38,18 @@ import {
   setNodeGatewayEnabled,
   setNodeGatewayAdvertiseHost,
   setManagedDiscoveryEnabled,
-  getLanguage,
-  setLanguage
+  setLanguage,
+  getLanguagePreference,
+  setLanguagePreference
 } from '../store/app-store'
-import { setCurrentLang, tr, type Lang } from '@shared/i18n'
+import {
+  langFromLocale,
+  resolveLang,
+  setCurrentLang,
+  tr,
+  type Lang,
+  type LanguagePreference
+} from '@shared/i18n'
 import type { MemoryWorkerClient } from '../domains/memory/worker-client'
 import type { VaultExperienceStore } from '../domains/memory/vault-experience-store'
 import type { MemoryVault } from '../domains/memory/vault'
@@ -140,8 +148,9 @@ export function registerIpc(
     drain(): AnalyticsEventEnvelope[]
   }
 ): void {
-  // SPEC-036：启动时把持久化语言播种到运行时变量（主进程 tr() 用；默认 'zh'）。
-  setCurrentLang(getLanguage())
+  // SPEC-047：启动时按保存偏好和 Electron 系统 locale 播种主进程语言。
+  const systemLanguage = langFromLocale(app.getLocale())
+  setCurrentLang(resolveLang(getLanguagePreference(), systemLanguage))
 
   // SPEC-038：附件暂存根目录（粘贴/拖拽文件物化到此；session 删除时清理）。
   const attachmentsRoot = join(app.getPath('userData'), 'attachments')
@@ -159,6 +168,7 @@ export function registerIpc(
       userName: getLoginUserName(),
       titlebarHeight: process.platform === 'darwin' ? MAC_TITLEBAR_HEIGHT : 0,
       onboardingCompleted: getOnboardingCompleted(),
+      systemLanguage,
       ipcContractVersion: IPC_CONTRACT_VERSION
     }
   })
@@ -243,6 +253,17 @@ export function registerIpc(
     setCurrentLang(lang)
   })
 
+  ipcMain.handle(
+    CHANNELS.app.setLanguagePreference,
+    (_event, preference: LanguagePreference): void => {
+      if (preference !== 'system' && preference !== 'zh' && preference !== 'en') return
+      const resolved = resolveLang(preference, langFromLocale(app.getLocale()))
+      setLanguagePreference(preference)
+      setLanguage(resolved)
+      setCurrentLang(resolved)
+    }
+  )
+
   ipcMain.handle(CHANNELS.backup.export, async (event) => {
     const owner = BrowserWindow.fromWebContents(event.sender)
     const date = new Date().toISOString().slice(0, 10)
@@ -285,7 +306,7 @@ export function registerIpc(
       throw new Error('请先通过系统文件选择器预览备份')
     }
     const result = await portableBackup.importFrom(approval.filePath, approval.fingerprint)
-    setCurrentLang(getLanguage())
+    setCurrentLang(resolveLang(getLanguagePreference(), langFromLocale(app.getLocale())))
     return result
   })
 

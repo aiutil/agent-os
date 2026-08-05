@@ -24,6 +24,7 @@ import type {
   UpdateTaskPatch
 } from '@shared/types'
 import {
+  isBundledCurationPrompt,
   DEFAULT_KNOWLEDGE_CURATION_PROMPT,
   DEFAULT_MEMORY_CURATION_PROMPT
 } from '@shared/curation-prompts'
@@ -34,10 +35,12 @@ import type { KnowledgeVault } from '../knowledge/vault'
 import {
   getGamificationEnabled,
   getLanguage,
+  getLanguagePreference,
   getMirrorSettings,
   getProviderConfig,
   setGamificationEnabled,
   setLanguage,
+  setLanguagePreference,
   setMirrorSettings,
   setProviderConfig
 } from '../../store/app-store'
@@ -370,6 +373,19 @@ function parseMemorySettings(value: unknown): MemorySettings {
     'memory.settings.knowledgeCurationPrompt'
   )
   const curationEpoch = optionalString(row.curationEpoch, 'memory.settings.curationEpoch')
+  const memoryPrompt =
+    memoryCurationPrompt?.trim() ||
+    curationInstructions?.trim() ||
+    DEFAULT_MEMORY_CURATION_PROMPT
+  const knowledgePrompt = knowledgeCurationPrompt?.trim() || DEFAULT_KNOWLEDGE_CURATION_PROMPT
+  const promptMode = (
+    kind: 'memory' | 'knowledge',
+    configured: MemorySettings['memoryCurationPromptMode'],
+    prompt: string
+  ): 'default' | 'custom' => {
+    if (configured === 'default' || configured === 'custom') return configured
+    return isBundledCurationPrompt(kind, prompt) ? 'default' : 'custom'
+  }
   return {
     enabled: row.enabled,
     useMemories: row.useMemories,
@@ -377,12 +393,14 @@ function parseMemorySettings(value: unknown): MemorySettings {
     knowledgeCurationEnabled: row.knowledgeCurationEnabled ?? true,
     allowExternalContext: row.allowExternalContext,
     contextTokenBudget: row.contextTokenBudget,
-    memoryCurationPrompt:
-      memoryCurationPrompt?.trim() ||
-      curationInstructions?.trim() ||
-      DEFAULT_MEMORY_CURATION_PROMPT,
-    knowledgeCurationPrompt:
-      knowledgeCurationPrompt?.trim() || DEFAULT_KNOWLEDGE_CURATION_PROMPT,
+    memoryCurationPrompt: memoryPrompt,
+    memoryCurationPromptMode: promptMode('memory', row.memoryCurationPromptMode, memoryPrompt),
+    knowledgeCurationPrompt: knowledgePrompt,
+    knowledgeCurationPromptMode: promptMode(
+      'knowledge',
+      row.knowledgeCurationPromptMode,
+      knowledgePrompt
+    ),
     ...(curatorAgentId ? { curatorAgentId } : {}),
     ...(curatorModel ? { curatorModel } : {}),
     ...(curationEpoch ? { curationEpoch: validDate(curationEpoch, 'memory.settings.curationEpoch') } : {})
@@ -483,6 +501,7 @@ export class PortableBackupService {
       sourceVersion: this.appVersion,
       preferences: {
         language: getLanguage(),
+        languagePreference: getLanguagePreference(),
         gamificationEnabled: getGamificationEnabled(),
         mirrorSettings: {
           ...(npmRegistry ? { npmRegistry } : {}),
@@ -555,6 +574,12 @@ export class PortableBackupService {
     }
     const language = string(preferences.language, 'preferences.language')
     if (!['zh', 'en'].includes(language)) throw new Error('备份语言无效')
+    const languagePreference = preferences.languagePreference === undefined
+      ? language
+      : string(preferences.languagePreference, 'preferences.languagePreference')
+    if (!['system', 'zh', 'en'].includes(languagePreference)) {
+      throw new Error('备份语言偏好无效')
+    }
     if (
       typeof preferences.gamificationEnabled !== 'boolean' ||
       !preferences.mirrorSettings ||
@@ -588,6 +613,7 @@ export class PortableBackupService {
       sourceVersion: string(raw.sourceVersion, 'sourceVersion'),
       preferences: {
         language: language as PortableBackupV1['preferences']['language'],
+        languagePreference: languagePreference as NonNullable<PortableBackupV1['preferences']['languagePreference']>,
         gamificationEnabled: preferences.gamificationEnabled,
         mirrorSettings: {
           ...(npmRegistry ? { npmRegistry } : {}),
@@ -622,6 +648,7 @@ export class PortableBackupService {
     const previousKnowledge = this.knowledge?.portableState()
     const previousPreferences = {
       language: getLanguage(),
+      languagePreference: getLanguagePreference(),
       gamificationEnabled: getGamificationEnabled(),
       mirrorSettings: getMirrorSettings(),
       providers: new Map(
@@ -639,6 +666,7 @@ export class PortableBackupService {
     const touchedExisting: AgentTask[] = []
     try {
       setLanguage(backup.preferences.language)
+      setLanguagePreference(backup.preferences.languagePreference ?? backup.preferences.language)
       setGamificationEnabled(backup.preferences.gamificationEnabled)
       setMirrorSettings(backup.preferences.mirrorSettings)
       for (const provider of backup.preferences.providers) {
@@ -690,6 +718,7 @@ export class PortableBackupService {
       }
     } catch (error) {
       setLanguage(previousPreferences.language)
+      setLanguagePreference(previousPreferences.languagePreference)
       setGamificationEnabled(previousPreferences.gamificationEnabled)
       setMirrorSettings(previousPreferences.mirrorSettings)
       for (const previous of previousPreferences.providers.values()) setProviderConfig(previous)

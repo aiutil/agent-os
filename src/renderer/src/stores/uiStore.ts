@@ -62,7 +62,7 @@ export const useUiStore = create<UiState>()(
       ipcContractMismatch: false,
       workbenchMode: 'chat',
       themePreference: 'system',
-      languagePreference: 'zh',
+      languagePreference: 'system',
       searchModalOpen: false,
       settingsModalOpen: false,
       dockCollapsed: false,

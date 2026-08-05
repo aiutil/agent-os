@@ -1,4 +1,4 @@
-import type { Lang } from '../i18n'
+import type { Lang, LanguagePreference } from '../i18n'
 import type { MirrorSettings } from './lifecycle'
 import type { DurableMemory, MemorySettings } from './memory'
 import type { KnowledgeArticle, KnowledgeComment } from './knowledge'
@@ -25,6 +25,8 @@ export interface PortableBackupV1 {
   sourceVersion: string
   preferences: {
     language: Lang
+    /** 可选以兼容 0.4.0 前只保存生效语言的备份。 */
+    languagePreference?: LanguagePreference
     gamificationEnabled: boolean
     mirrorSettings: MirrorSettings
     providers: PortableProviderPreference[]

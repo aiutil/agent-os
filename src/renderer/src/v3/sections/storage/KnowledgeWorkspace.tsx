@@ -8,6 +8,7 @@ import type {
   KnowledgeComment
 } from '@shared/types'
 import { Markdown } from '../../../lib/markdown/Markdown'
+import { useT } from '../../../lib/i18n'
 import { MemoryDetailView } from './MemoryDetailView'
 import './knowledge.css'
 
@@ -75,6 +76,7 @@ function Graph({
   emptyTitle?: string
   emptyHint?: string
 }): React.JSX.Element {
+  const { t } = useT()
   const wrap = useRef<HTMLDivElement | null>(null)
   const canvas = useRef<HTMLCanvasElement | null>(null)
   const drag = useRef<{ x: number; y: number } | null>(null)
@@ -265,15 +267,15 @@ function Graph({
       className={`atlas-graph ${rendered.nodes.length ? 'is-orb' : ''}`}
     >
       <div className="atlas-graph__tools">
-        <button type="button" aria-expanded={finderOpen} onClick={() => setFinderOpen((value) => !value)}>查找节点</button>
-        <button type="button" onClick={fitCanvas}>适应画布</button>
+        <button type="button" aria-expanded={finderOpen} onClick={() => setFinderOpen((value) => !value)}>{t('memory.atlas.common.findNode')}</button>
+        <button type="button" onClick={fitCanvas}>{t('memory.atlas.common.fitCanvas')}</button>
         <button type="button" aria-pressed={includeSources} disabled={!selectedId} onClick={onToggleSources}>
-          {includeSources ? '隐藏当前来源' : '展开当前来源'}
+          {includeSources ? t('memory.atlas.common.hideSources') : t('memory.atlas.common.showSources')}
         </button>
       </div>
       {finderOpen && (
-        <div className="atlas-finder" aria-label="图谱节点导航">
-          <input autoFocus value={finderQuery} onChange={(event) => setFinderQuery(event.target.value)} placeholder="输入节点名称" />
+        <div className="atlas-finder" aria-label={t('memory.atlas.common.navigator')}>
+          <input autoFocus value={finderQuery} onChange={(event) => setFinderQuery(event.target.value)} placeholder={t('memory.atlas.common.nodePlaceholder')} />
           <div className="atlas-finder__list">
             {finderNodes.map((node) => (
               <button key={node.id} type="button" className={selectedId === node.id ? 'is-active' : ''} onClick={() => { onSelect(node); setFinderOpen(false) }}>
@@ -285,12 +287,12 @@ function Graph({
         </div>
       )}
       {snapshot.truncated && (
-        <div className="atlas-graph__limit" role="status">默认展示最近活跃的 {GRAPH_LIMIT} 条内容，搜索可定位其余条目。</div>
+        <div className="atlas-graph__limit" role="status">{t('memory.atlas.common.truncated', { count: GRAPH_LIMIT })}</div>
       )}
       <canvas
         ref={canvas}
         className="atlas-graph__canvas"
-        aria-label={`圆形${domain === 'memory' ? '记忆' : '知识'}图谱。单击节点在右侧查看详情，双击扩展阅读；拖动空白区域平移，滚轮缩放。`}
+        aria-label={t(domain === 'memory' ? 'memory.atlas.common.memoryGraphAria' : 'memory.atlas.common.knowledgeGraphAria')}
         onPointerDown={(event) => {
           if (!findHit(event)) drag.current = { x: event.clientX, y: event.clientY }
         }}
@@ -332,17 +334,17 @@ function Graph({
       {!rendered.nodes.length && (
         <div className="atlas-empty">
           <div className="atlas-empty__mark" aria-hidden="true">◇</div>
-          <strong>{emptyTitle ?? '没有可展示的节点'}</strong>
-          <span>{emptyHint ?? '调整搜索或筛选条件后再试。'}</span>
+          <strong>{emptyTitle ?? t('memory.atlas.common.emptyTitle')}</strong>
+          <span>{emptyHint ?? t('memory.atlas.common.emptyHint')}</span>
         </div>
       )}
-      <div className={`atlas-legend is-${domain}`} aria-label="图谱图例">
+      <div className={`atlas-legend is-${domain}`} aria-label={t('memory.atlas.common.legend')}>
         {(domain === 'memory'
-          ? [['identity', '人格'], ['semantic', '语义'], ['episodic', '情景'], ['procedural', '流程']]
-          : [['article', '文章'], ['topic', '主题'], ['tag', '标签']]
+          ? [['identity', t('memory.atlas.type.identity')], ['semantic', t('memory.atlas.type.semantic')], ['episodic', t('memory.atlas.type.episodic')], ['procedural', t('memory.atlas.type.procedural')]]
+          : [['article', t('memory.atlas.type.article')], ['topic', t('memory.atlas.type.topic')], ['tag', t('memory.atlas.type.tag')]]
         ).map(([type, label]) => <span key={type}><i className={`atlas-dot is-${type}`} />{label}</span>)}
       </div>
-      <div className="atlas-graph__hint">单击检查 · 双击扩展 · 滚轮缩放</div>
+      <div className="atlas-graph__hint">{t('memory.atlas.common.interactionHint')}</div>
     </div>
   )
 }
@@ -368,6 +370,7 @@ function AtlasHeader({
   onMode(value: ViewMode): void
   primaryAction?: { label: string; onClick(): void }
 }): React.JSX.Element {
+  const { t } = useT()
   return (
     <header className="atlas-header">
       <div className="atlas-header__identity">
@@ -379,11 +382,11 @@ function AtlasHeader({
         {primaryAction && <button type="button" className="is-primary" onClick={primaryAction.onClick}>{primaryAction.label}</button>}
         <label className="atlas-search">
           <span aria-hidden="true">⌕</span>
-          <input value={query} onChange={(event) => onQuery(event.target.value)} placeholder="搜索" />
+          <input value={query} onChange={(event) => onQuery(event.target.value)} placeholder={t('memory.atlas.common.search')} />
         </label>
-        <div className="atlas-view-switch" aria-label="首页展示方式">
-          <button type="button" className={mode === 'graph' ? 'is-active' : ''} aria-pressed={mode === 'graph'} onClick={() => onMode('graph')}>图谱</button>
-          <button type="button" className={mode === 'list' ? 'is-active' : ''} aria-pressed={mode === 'list'} onClick={() => onMode('list')}>列表</button>
+        <div className="atlas-view-switch" aria-label={t('memory.atlas.common.viewMode')}>
+          <button type="button" className={mode === 'graph' ? 'is-active' : ''} aria-pressed={mode === 'graph'} onClick={() => onMode('graph')}>{t('memory.atlas.common.graph')}</button>
+          <button type="button" className={mode === 'list' ? 'is-active' : ''} aria-pressed={mode === 'list'} onClick={() => onMode('list')}>{t('memory.atlas.common.list')}</button>
         </div>
       </div>
     </header>
@@ -403,17 +406,18 @@ function AtlasContext({
   onClose(): void
   children: React.ReactNode
 }): React.JSX.Element {
+  const { t } = useT()
   return (
-    <aside className={`atlas-context ${expanded ? 'is-expanded' : ''}`} aria-label="上下文详情">
+    <aside className={`atlas-context ${expanded ? 'is-expanded' : ''}`} aria-label={t('memory.atlas.common.context')}>
       <div className="atlas-context__bar">
-        <div className="atlas-context__trail" aria-label="知识脉络">
+        <div className="atlas-context__trail" aria-label={t('memory.atlas.common.trail')}>
           {breadcrumb.filter(Boolean).map((item, index) => (
             <span key={`${item}:${index}`}><i />{item}</span>
           ))}
         </div>
         <div className="atlas-context__actions">
-          <button type="button" onClick={onToggleExpanded}>{expanded ? '收窄' : '扩展阅读'}</button>
-          <button type="button" aria-label="关闭详情" onClick={onClose}>×</button>
+          <button type="button" onClick={onToggleExpanded}>{expanded ? t('memory.atlas.common.narrow') : t('memory.atlas.common.expandReading')}</button>
+          <button type="button" aria-label={t('memory.atlas.common.close')} onClick={onClose}>×</button>
         </div>
       </div>
       <div className="atlas-context__body">{children}</div>
@@ -422,16 +426,21 @@ function AtlasContext({
 }
 
 function EntityInspector({ node, domain }: { node: GraphNode; domain: AtlasDomain }): React.JSX.Element {
+  const { t } = useT()
   const typeLabels: Record<string, string> = {
-    persona: '人格中心', scope: '作用域', topic: '主题', tag: '标签', 'source-session': '来源会话'
+    persona: t('memory.atlas.type.persona'),
+    scope: t('memory.atlas.type.scope'),
+    topic: t('memory.atlas.type.topic'),
+    tag: t('memory.atlas.type.tag'),
+    'source-session': t('memory.atlas.type.sourceSession')
   }
   return (
     <div className="atlas-entity-inspector">
-      <p>{domain === 'memory' ? '记忆聚类' : '知识聚类'}</p>
+      <p>{domain === 'memory' ? t('memory.atlas.entity.memoryCluster') : t('memory.atlas.entity.knowledgeCluster')}</p>
       <h2>{node.label}</h2>
       <div className="atlas-entity-inspector__meta">{typeLabels[node.type] ?? node.type}{node.group ? ` · ${node.group}` : ''}</div>
       <div className="atlas-entity-inspector__note">
-        这是用于组织内容的关系节点。选择相连的{domain === 'memory' ? '记忆' : '文章'}即可在这里查看正文，主图谱会保持原位。
+        {t(domain === 'memory' ? 'memory.atlas.entity.noteMemory' : 'memory.atlas.entity.noteKnowledge')}
       </div>
     </div>
   )
@@ -450,11 +459,21 @@ function MemoryTable({
   onSelect(item: DurableMemory, expanded: boolean): void
   onLoadMore(): void
 }): React.JSX.Element {
+  const { t } = useT()
+  const statusLabel = (status: DurableMemory['status']): string => {
+    const labels: Record<DurableMemory['status'], string> = {
+      candidate: t('memory.atlas.status.candidate'),
+      active: t('memory.atlas.status.active'),
+      superseded: t('memory.atlas.status.superseded'),
+      archived: t('memory.atlas.status.archived')
+    }
+    return labels[status]
+  }
   return (
     <div className="atlas-list-wrap">
-      <div className="atlas-table atlas-table--memory" role="table" aria-label="记忆列表">
+      <div className="atlas-table atlas-table--memory" role="table" aria-label={t('memory.atlas.memory.listAria')}>
         <div role="row" className="atlas-table__head">
-          <span>标题</span><span>类别</span><span>作用域</span><span>状态</span><span>使用</span><span>最近使用</span><span>来源</span>
+          <span>{t('memory.atlas.memory.titleColumn')}</span><span>{t('memory.atlas.memory.classColumn')}</span><span>{t('memory.atlas.memory.scopeColumn')}</span><span>{t('memory.atlas.memory.statusColumn')}</span><span>{t('memory.atlas.memory.useColumn')}</span><span>{t('memory.atlas.memory.lastUsedColumn')}</span><span>{t('memory.atlas.memory.sourceColumn')}</span>
         </div>
         {items.slice(0, visible).map((item) => (
           <button
@@ -468,14 +487,14 @@ function MemoryTable({
             <strong>{item.title}</strong>
             <span>{item.memoryClass ?? item.kind}</span>
             <span>{item.scopeRef ?? item.scope}</span>
-            <span><i className={`atlas-status is-${item.status}`} />{item.status}</span>
-            <span>{item.accessCount ?? 0} 次</span>
-            <span>{item.lastAccessedAt?.slice(0, 10) ?? '从未'}</span>
+            <span><i className={`atlas-status is-${item.status}`} />{statusLabel(item.status)}</span>
+            <span>{t('memory.atlas.memory.accessCount', { count: item.accessCount ?? 0 })}</span>
+            <span>{item.lastAccessedAt?.slice(0, 10) ?? t('memory.atlas.memory.never')}</span>
             <span>{item.evidence.length}</span>
           </button>
         ))}
       </div>
-      {visible < items.length && <button type="button" className="atlas-more" onClick={onLoadMore}>再加载 100 条</button>}
+      {visible < items.length && <button type="button" className="atlas-more" onClick={onLoadMore}>{t('memory.atlas.memory.loadMore')}</button>}
     </div>
   )
 }
@@ -489,6 +508,7 @@ export function MemoryHomeView({
   onSelectMemory(memory: { id: string; title: string }): void
   onCloseSelection(): void
 }): React.JSX.Element {
+  const { t } = useT()
   const [items, setItems] = useState<DurableMemory[]>([])
   const [graph, setGraph] = useState<GraphSnapshot>({ nodes: [], edges: [], truncated: false })
   const [query, setQuery] = useState('')
@@ -557,9 +577,9 @@ export function MemoryHomeView({
   return (
     <section className={`atlas-workspace ${selectedNode ? 'has-context' : ''} ${expanded ? 'has-expanded-context' : ''}`}>
       <AtlasHeader
-        eyebrow="MEMORY ATLAS"
-        title="记忆脉络"
-        description="人格、工作与项目记忆，按关系聚合并保持可审阅。"
+        eyebrow={t('memory.atlas.memory.eyebrow')}
+        title={t('memory.atlas.memory.title')}
+        description={t('memory.atlas.memory.description')}
         count={items.length}
         query={query}
         onQuery={(value) => { setQuery(value); setVisible(100) }}
@@ -577,7 +597,7 @@ export function MemoryHomeView({
               onOpen={(node) => selectNode(node, true)}
               includeSources={includeSources}
               onToggleSources={() => setIncludeSources((value) => !value)}
-              emptyTitle={query ? '没有匹配的记忆' : '还没有长期记忆'}
+              emptyTitle={query ? t('memory.atlas.memory.noMatch') : t('memory.atlas.memory.empty')}
             />
           ) : (
             <MemoryTable
@@ -594,7 +614,7 @@ export function MemoryHomeView({
             expanded={expanded}
             breadcrumb={selectedMemory
               ? [selectedMemory.scopeRef ?? selectedMemory.scope, selectedMemory.memoryClass ?? selectedMemory.kind, selectedMemory.title]
-              : [selectedNode.group ?? '全局', selectedNode.label]}
+              : [selectedNode.group ?? t('memory.atlas.common.global'), selectedNode.label]}
             onToggleExpanded={() => setExpanded((value) => !value)}
             onClose={closeSelection}
           >
@@ -623,11 +643,17 @@ function KnowledgeTable({
   onSelect(item: KnowledgeArticle, expanded: boolean): void
   onLoadMore(): void
 }): React.JSX.Element {
+  const { t } = useT()
+  const statusLabel = (status: KnowledgeArticle['status']): string => ({
+    draft: t('memory.atlas.status.draft'),
+    published: t('memory.atlas.status.published'),
+    archived: t('memory.atlas.status.archived')
+  })[status]
   return (
     <div className="atlas-list-wrap">
-      <div className="atlas-table atlas-table--knowledge" role="table" aria-label="知识文章列表">
+      <div className="atlas-table atlas-table--knowledge" role="table" aria-label={t('memory.atlas.knowledge.listAria')}>
         <div role="row" className="atlas-table__head">
-          <span>标题</span><span>主题</span><span>状态</span><span>标签</span><span>发布时间</span><span>更新时间</span><span>收藏</span><span>来源</span>
+          <span>{t('memory.atlas.knowledge.titleColumn')}</span><span>{t('memory.atlas.knowledge.topicColumn')}</span><span>{t('memory.atlas.knowledge.statusColumn')}</span><span>{t('memory.atlas.knowledge.tagsColumn')}</span><span>{t('memory.atlas.knowledge.publishedColumn')}</span><span>{t('memory.atlas.knowledge.updatedColumn')}</span><span>{t('memory.atlas.knowledge.favoriteColumn')}</span><span>{t('memory.atlas.knowledge.sourceColumn')}</span>
         </div>
         {items.slice(0, visible).map((item) => (
           <button
@@ -640,7 +666,7 @@ function KnowledgeTable({
           >
             <strong>{item.title}</strong>
             <span>{item.topic}</span>
-            <span><i className={`atlas-status is-${item.status}`} />{item.status}</span>
+            <span><i className={`atlas-status is-${item.status}`} />{statusLabel(item.status)}</span>
             <span>{item.tags.map((tag) => `#${tag}`).join(' ') || '—'}</span>
             <span>{item.publishedAt?.slice(0, 10) ?? '—'}</span>
             <span>{item.updatedAt.slice(0, 10)}</span>
@@ -649,7 +675,7 @@ function KnowledgeTable({
           </button>
         ))}
       </div>
-      {visible < items.length && <button type="button" className="atlas-more" onClick={onLoadMore}>再加载 100 篇</button>}
+      {visible < items.length && <button type="button" className="atlas-more" onClick={onLoadMore}>{t('memory.atlas.knowledge.loadMore')}</button>}
     </div>
   )
 }
@@ -673,6 +699,7 @@ export function KnowledgeHomeView({
   onEdit(article: KnowledgeArticle): void
   onSave(article: KnowledgeArticle): void
 }): React.JSX.Element {
+  const { t } = useT()
   const [items, setItems] = useState<KnowledgeArticle[]>([])
   const [graph, setGraph] = useState<GraphSnapshot>({ nodes: [], edges: [], truncated: false })
   const [query, setQuery] = useState('')
@@ -753,15 +780,15 @@ export function KnowledgeHomeView({
   return (
     <section className={`atlas-workspace ${contextOpen ? 'has-context' : ''} ${expanded ? 'has-expanded-context' : ''}`}>
       <AtlasHeader
-        eyebrow="KNOWLEDGE ATLAS"
-        title="知识脉络"
-        description="主题连接文章与来源会话；草稿审核后再发布。"
+        eyebrow={t('memory.atlas.knowledge.eyebrow')}
+        title={t('memory.atlas.knowledge.title')}
+        description={t('memory.atlas.knowledge.description')}
         count={items.length}
         query={query}
         onQuery={(value) => { setQuery(value); setVisible(100) }}
         mode={mode}
         onMode={setMode}
-        primaryAction={{ label: '新建草稿', onClick: onCreate }}
+        primaryAction={{ label: t('memory.atlas.knowledge.newDraft'), onClick: onCreate }}
       />
       <div className="atlas-stage">
         <div className="atlas-stage__main">
@@ -774,8 +801,8 @@ export function KnowledgeHomeView({
               onOpen={(node) => selectNode(node, true)}
               includeSources={includeSources}
               onToggleSources={() => setIncludeSources((value) => !value)}
-              emptyTitle={query ? '没有匹配的知识文章' : '从会话中建立第一篇知识'}
-              emptyHint={query ? '换一个关键词，或切换到列表查看全部文章。' : '自动提炼只会生成草稿，你确认后再发布。'}
+              emptyTitle={query ? t('memory.atlas.knowledge.noMatch') : t('memory.atlas.knowledge.firstKnowledge')}
+              emptyHint={query ? t('memory.atlas.knowledge.noMatchHint') : t('memory.atlas.knowledge.firstHint')}
             />
           ) : items.length ? (
             <KnowledgeTable
@@ -788,9 +815,9 @@ export function KnowledgeHomeView({
           ) : (
             <div className="atlas-empty atlas-empty--list">
               <div className="atlas-empty__mark" aria-hidden="true">◇</div>
-              <strong>{query ? '没有匹配的文章' : '知识库还是空的'}</strong>
-              <span>{query ? '调整搜索关键词后再试。' : '可以手动新建草稿，也可以填写会话 ID 后让 Agent OS 提炼。'}</span>
-              {!query && <button type="button" className="is-primary" onClick={onCreate}>创建第一篇草稿</button>}
+              <strong>{query ? t('memory.atlas.knowledge.noArticle') : t('memory.atlas.knowledge.emptyLibrary')}</strong>
+              <span>{query ? t('memory.atlas.knowledge.retrySearch') : t('memory.atlas.knowledge.emptyLibraryHint')}</span>
+              {!query && <button type="button" className="is-primary" onClick={onCreate}>{t('memory.atlas.knowledge.createFirst')}</button>}
             </div>
           )}
         </div>
@@ -798,8 +825,8 @@ export function KnowledgeHomeView({
           <AtlasContext
             expanded={expanded}
             breadcrumb={currentArticle
-              ? [currentArticle.topic, currentArticle.title, currentArticle.sources.length ? `${currentArticle.sources.length} 个来源` : '待补充来源']
-              : [creating ? '收集箱' : selectedNode?.group ?? '知识库', creating ? '新草稿' : selectedNode?.label ?? '编辑']}
+              ? [currentArticle.topic, currentArticle.title, currentArticle.sources.length ? t('memory.atlas.common.sourceCount', { count: currentArticle.sources.length }) : t('memory.atlas.common.pendingSource')]
+              : [creating ? t('memory.atlas.common.inbox') : selectedNode?.group ?? t('memory.atlas.common.library'), creating ? t('memory.atlas.common.newDraft') : selectedNode?.label ?? t('memory.atlas.common.edit')]}
             onToggleExpanded={() => setExpanded((value) => !value)}
             onClose={closeSelection}
           >
@@ -841,6 +868,7 @@ export function KnowledgeArticleView({
   onChanged?(article: KnowledgeArticle | null): void
   embedded?: boolean
 }): React.JSX.Element {
+  const { t } = useT()
   const [current, setCurrent] = useState(article)
   const [comments, setComments] = useState<KnowledgeComment[]>([])
   const [comment, setComment] = useState('')
@@ -862,43 +890,43 @@ export function KnowledgeArticleView({
 
   return (
     <section className={`knowledge-article ${embedded ? 'is-embedded' : ''}`}>
-      {!embedded && <button type="button" onClick={onBack}>← 返回知识库</button>}
+      {!embedded && <button type="button" onClick={onBack}>{t('memory.atlas.reader.back')}</button>}
       <header>
-        <div className="knowledge-article__kicker"><span className={`atlas-status is-${current.status}`} />{current.topic} · {current.status}</div>
+        <div className="knowledge-article__kicker"><span className={`atlas-status is-${current.status}`} />{current.topic} · {current.status === 'published' ? t('memory.atlas.status.published') : current.status === 'archived' ? t('memory.atlas.status.archived') : t('memory.atlas.status.draft')}</div>
         <h1>{current.title}</h1>
         {current.summary && <p className="knowledge-article__summary">{current.summary}</p>}
         <div className="knowledge-article__tags">{current.tags.map((tag) => <span key={tag}>#{tag}</span>)}</div>
         <div className="knowledge-article__actions">
-          <button type="button" onClick={() => update(window.agentOs.knowledge.setFavorite(current.id, !current.favorite))}>{current.favorite ? '★ 已收藏' : '☆ 收藏'}</button>
-          {current.status === 'draft' && <button type="button" className="is-primary" onClick={() => update(window.agentOs.knowledge.publish(current.id))}>发布</button>}
-          <button type="button" onClick={() => update(current.status === 'archived' ? window.agentOs.knowledge.restore(current.id) : window.agentOs.knowledge.archive(current.id))}>{current.status === 'archived' ? '恢复草稿' : '归档'}</button>
-          <button type="button" onClick={onEdit}>编辑</button>
+          <button type="button" onClick={() => update(window.agentOs.knowledge.setFavorite(current.id, !current.favorite))}>{current.favorite ? t('memory.atlas.reader.favoriteOn') : t('memory.atlas.reader.favoriteOff')}</button>
+          {current.status === 'draft' && <button type="button" className="is-primary" onClick={() => update(window.agentOs.knowledge.publish(current.id))}>{t('memory.atlas.reader.publish')}</button>}
+          <button type="button" onClick={() => update(current.status === 'archived' ? window.agentOs.knowledge.restore(current.id) : window.agentOs.knowledge.archive(current.id))}>{current.status === 'archived' ? t('memory.atlas.reader.restore') : t('memory.atlas.reader.archive')}</button>
+          <button type="button" onClick={onEdit}>{t('memory.atlas.reader.edit')}</button>
           <button type="button" onClick={() => void window.agentOs.knowledge.openInObsidian(current.id)}>Obsidian</button>
         </div>
         {error && <p className="atlas-error" role="alert">{error}</p>}
       </header>
       <article className="knowledge-article__body"><Markdown content={current.body} /></article>
       <aside className="knowledge-article__sources">
-        <h2>来源会话</h2>
+        <h2>{t('memory.atlas.reader.sources')}</h2>
         {current.sources.length
           ? current.sources.map((source) => <div key={`${source.sourceType}:${source.sourceId}`}><strong>{source.toolId ?? source.sourceType}</strong><span>{source.sourceId}</span></div>)
-          : <p>尚未关联来源，会在发布前提醒补充。</p>}
+          : <p>{t('memory.atlas.reader.noSources')}</p>}
       </aside>
       <section className="knowledge-article__comments">
-        <h2>本机批注</h2>
+        <h2>{t('memory.atlas.reader.comments')}</h2>
         {comments.map((item) => <p key={item.id}>{item.body}</p>)}
-        <textarea value={comment} onChange={(event) => setComment(event.target.value)} placeholder="记录你的批注" />
+        <textarea value={comment} onChange={(event) => setComment(event.target.value)} placeholder={t('memory.atlas.reader.commentPlaceholder')} />
         <button
           type="button"
           onClick={() => void window.agentOs.knowledge.addComment(current.id, { body: comment }).then((next) => { setComments([...comments, next]); setComment('') })}
           disabled={!comment.trim()}
-        >添加批注</button>
+        >{t('memory.atlas.reader.addComment')}</button>
       </section>
       <div className="knowledge-article__danger">
         <button type="button" onClick={() => {
-          if (!window.confirm('永久删除这篇文章及其本机批注？此操作不可恢复。')) return
+          if (!window.confirm(t('memory.atlas.reader.deleteConfirm'))) return
           void window.agentOs.knowledge.remove(current.id).then(() => { onChanged?.(null); onBack() })
-        }}>永久删除</button>
+        }}>{t('memory.atlas.reader.deleteForever')}</button>
       </div>
     </section>
   )
@@ -915,12 +943,14 @@ export function KnowledgeEditor({
   onCancel?(): void
   embedded?: boolean
 }): React.JSX.Element {
+  const { t, lang } = useT()
+  const defaultTopic = t('memory.atlas.common.inbox')
   const [draft, setDraft] = useState<KnowledgeArticleInput>({
     id: article?.id,
     title: article?.title ?? '',
     summary: article?.summary ?? '',
     body: article?.body ?? '',
-    topic: article?.topic ?? '收集箱',
+    topic: article?.topic ?? defaultTopic,
     tags: article?.tags ?? [],
     sources: article?.sources ?? []
   })
@@ -933,12 +963,12 @@ export function KnowledgeEditor({
       title: article?.title ?? '',
       summary: article?.summary ?? '',
       body: article?.body ?? '',
-      topic: article?.topic ?? '收集箱',
+      topic: article?.topic ?? defaultTopic,
       tags: article?.tags ?? [],
       sources: article?.sources ?? []
     })
     setSourceId(article?.sources[0]?.sourceId ?? '')
-  }, [article])
+  }, [article, lang])
 
   const source = (): KnowledgeArticleInput => ({
     ...draft,
@@ -948,7 +978,7 @@ export function KnowledgeEditor({
   const extract = (): void => {
     setError('')
     void window.agentOs.memory.getTranscript(sourceId.trim()).then((transcript) => {
-      if (!transcript?.cwd) throw new Error('该会话缺少工作目录，无法在受限模式中提炼')
+      if (!transcript?.cwd) throw new Error(t('memory.atlas.editor.noCwd'))
       return window.agentOs.knowledge.extractDraft({
         source: { sourceType: 'session', sourceId: sourceId.trim(), toolId: transcript.toolId },
         cwd: transcript.cwd,
@@ -963,22 +993,22 @@ export function KnowledgeEditor({
   return (
     <section className={`knowledge-editor ${embedded ? 'is-embedded' : ''}`}>
       <div className="knowledge-editor__heading">
-        <div><p>知识草稿</p><h1>{article ? '编辑文章' : '新建文章'}</h1></div>
-        {onCancel && <button type="button" onClick={onCancel}>取消</button>}
+        <div><p>{t('memory.atlas.editor.kicker')}</p><h1>{article ? t('memory.atlas.editor.editTitle') : t('memory.atlas.editor.newTitle')}</h1></div>
+        {onCancel && <button type="button" onClick={onCancel}>{t('memory.atlas.editor.cancel')}</button>}
       </div>
-      <label>标题<input value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} placeholder="文章标题" /></label>
-      <label>摘要<input value={draft.summary ?? ''} onChange={(event) => setDraft({ ...draft, summary: event.target.value })} placeholder="一句话说明这篇文章解决什么问题" /></label>
+      <label>{t('memory.atlas.editor.title')}<input value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} placeholder={t('memory.atlas.editor.titlePlaceholder')} /></label>
+      <label>{t('memory.atlas.editor.summary')}<input value={draft.summary ?? ''} onChange={(event) => setDraft({ ...draft, summary: event.target.value })} placeholder={t('memory.atlas.editor.summaryPlaceholder')} /></label>
       <div className="knowledge-editor__row">
-        <label>主题<input value={draft.topic} onChange={(event) => setDraft({ ...draft, topic: event.target.value })} placeholder="例如 IoT 开发" /></label>
-        <label>标签<input value={(draft.tags ?? []).join(', ')} onChange={(event) => setDraft({ ...draft, tags: event.target.value.split(',').map((tag) => tag.trim()).filter(Boolean) })} placeholder="逗号分隔" /></label>
+        <label>{t('memory.atlas.editor.topic')}<input value={draft.topic} onChange={(event) => setDraft({ ...draft, topic: event.target.value })} placeholder={t('memory.atlas.editor.topicPlaceholder')} /></label>
+        <label>{t('memory.atlas.editor.tags')}<input value={(draft.tags ?? []).join(', ')} onChange={(event) => setDraft({ ...draft, tags: event.target.value.split(',').map((tag) => tag.trim()).filter(Boolean) })} placeholder={t('memory.atlas.editor.tagsPlaceholder')} /></label>
       </div>
-      <label>来源会话<input value={sourceId} onChange={(event) => setSourceId(event.target.value)} placeholder="会话 ID（发布前必填）" /></label>
-      <label>Markdown 正文<textarea value={draft.body} onChange={(event) => setDraft({ ...draft, body: event.target.value })} placeholder="从问题、判断和可复用结论开始写…" /></label>
+      <label>{t('memory.atlas.editor.source')}<input value={sourceId} onChange={(event) => setSourceId(event.target.value)} placeholder={t('memory.atlas.editor.sourcePlaceholder')} /></label>
+      <label>{t('memory.atlas.editor.body')}<textarea value={draft.body} onChange={(event) => setDraft({ ...draft, body: event.target.value })} placeholder={t('memory.atlas.editor.bodyPlaceholder')} /></label>
       <div className="knowledge-editor__actions">
-        <button type="button" className="is-primary" onClick={() => void window.agentOs.knowledge.saveDraft(source()).then(onDone).catch((cause: Error) => setError(cause.message))}>保存草稿</button>
-        <button type="button" onClick={extract} disabled={!sourceId.trim()}>使用共享 CLI 提炼</button>
+        <button type="button" className="is-primary" onClick={() => void window.agentOs.knowledge.saveDraft(source()).then(onDone).catch((cause: Error) => setError(cause.message))}>{t('memory.atlas.editor.save')}</button>
+        <button type="button" onClick={extract} disabled={!sourceId.trim()}>{t('memory.atlas.editor.extract')}</button>
       </div>
-      <p className="knowledge-editor__shared-hint">提炼 CLI 和模型在“设置 → 记忆与知识”统一配置。</p>
+      <p className="knowledge-editor__shared-hint">{t('memory.atlas.editor.sharedHint')}</p>
       {error && <p className="atlas-error" role="alert">{error}</p>}
     </section>
   )

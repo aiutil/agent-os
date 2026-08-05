@@ -27,7 +27,7 @@ import type {
   WebBookmark,
   WorkbenchSession
 } from '@shared/types'
-import type { Lang } from '@shared/i18n'
+import type { Lang, LanguagePreference } from '@shared/i18n'
 
 const DEFAULT_BOOKMARKS: WebBookmark[] = [
   { id: 'bm-github', name: 'GitHub', url: 'https://www.github.com', color: '#24292f', pinned: true },
@@ -56,8 +56,10 @@ interface AppStoreSchema {
   analyticsInstallId: string
   /** 用户行为分析总开关；关闭时主进程不排队事件、renderer 不初始化 SDK。 */
   analyticsEnabled: boolean
-  /** 界面语言（SPEC-036）。默认 'zh'，保留中文现状；主进程经 @shared/i18n 的 setCurrentLang 同步。 */
-  language: Lang
+  /** 旧版只保存解析后的界面语言；保留用于无损迁移。 */
+  language?: Lang
+  /** 0.4.0 起保存用户选择，system 会在每次启动时重新解析系统 locale。 */
+  languagePreference?: LanguagePreference
   /** @deprecated Use conversations instead. Kept for one-time migration. */
   sessions: LegacySession[]
   conversations: Conversation[]
@@ -106,7 +108,6 @@ const store = new Store<AppStoreSchema>({
     onboardingCompleted: false,
     analyticsInstallId: '',
     analyticsEnabled: true,
-    language: 'zh',
     sessions: [],
     conversations: [],
     compareRuns: [],
@@ -262,11 +263,22 @@ export function setGamificationEnabled(value: boolean): void {
 
 /** SPEC-036：界面语言（持久化真相源，跨重启存活；主进程 tr() 读取）。 */
 export function getLanguage(): Lang {
-  return store.get('language')
+  return store.get('language') ?? 'zh'
 }
 
 export function setLanguage(lang: Lang): void {
   store.set('language', lang)
+}
+
+export function getLanguagePreference(): LanguagePreference {
+  const preference = store.get('languagePreference')
+  if (preference === 'system' || preference === 'zh' || preference === 'en') return preference
+  const legacy = store.get('language')
+  return legacy === 'zh' || legacy === 'en' ? legacy : 'system'
+}
+
+export function setLanguagePreference(preference: LanguagePreference): void {
+  store.set('languagePreference', preference)
 }
 
 export function getCardexState(): CardexState {

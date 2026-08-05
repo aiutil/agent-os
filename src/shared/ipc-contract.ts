@@ -90,9 +90,9 @@ import type {
   AnalyticsConfig,
   AnalyticsEventEnvelope
 } from './types'
-import type { Lang } from './i18n'
+import type { Lang, LanguagePreference } from './i18n'
 
-export const IPC_CONTRACT_VERSION = 17
+export const IPC_CONTRACT_VERSION = 18
 
 /** 平台信息（用于 titlebar 安全区等）。 */
 export interface PlatformInfo {
@@ -103,6 +103,8 @@ export interface PlatformInfo {
   titlebarHeight: number
   /** 首次启动引导是否已完成。 */
   onboardingCompleted: boolean
+  /** Electron 读取的电脑系统语言；renderer 的 system 偏好据此解析。 */
+  systemLanguage: Lang
   ipcContractVersion: number
 }
 
@@ -119,7 +121,8 @@ export const CHANNELS = {
     selectDirectory: 'app:selectDirectory',
     selectFile: 'app:selectFile',
     openExternal: 'app:openExternal',
-    setLanguage: 'app:setLanguage'
+    setLanguage: 'app:setLanguage',
+    setLanguagePreference: 'app:setLanguagePreference'
   },
   discovery: {
     scan: 'discovery:scan',
@@ -399,6 +402,8 @@ export interface AgentOsApi {
     openExternal(url: string): Promise<void>
     /** SPEC-036：持久化界面语言到主进程并即时更新主进程 tr()。 */
     setLanguage(lang: Lang): Promise<void>
+    /** SPEC-047：保存 system/zh/en 偏好；system 在主进程按电脑 locale 解析。 */
+    setLanguagePreference(preference: LanguagePreference): Promise<void>
   }
   discovery: {
     scan(): Promise<DiscoveryResult[]>

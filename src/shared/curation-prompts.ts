@@ -1,8 +1,10 @@
+import type { Lang } from './i18n'
+
 /**
  * 用户可编辑的默认提炼策略。机器协议（JSON schema、隔离模式、安全边界）由主进程固定，
  * 这里只描述“什么值得沉淀、文章应该如何组织”。
  */
-export const DEFAULT_MEMORY_CURATION_PROMPT = [
+const MEMORY_ZH = [
   '只沉淀稳定、可复用、跨会话仍成立的信息：',
   '- 用户的长期偏好与协作习惯（preference）',
   '- 项目或仓库的约定与工程规范（convention）',
@@ -12,10 +14,58 @@ export const DEFAULT_MEMORY_CURATION_PROMPT = [
   '不要沉淀一次性任务进度、临时调试细节、未经验证的猜测，或能从代码和 Git 直接得到的信息。'
 ].join('\n')
 
-export const DEFAULT_KNOWLEDGE_CURATION_PROMPT = [
+const MEMORY_EN = [
+  'Keep only stable, reusable information that remains useful across sessions:',
+  '- Long-term user preferences and collaboration habits (preference)',
+  '- Project or repository conventions and engineering standards (convention)',
+  '- Confirmed technical decisions and their rationale (decision)',
+  '- Reusable procedures and troubleshooting lessons (procedure / pitfall)',
+  '- Stable factual knowledge (fact / knowledge)',
+  'Do not keep one-off task progress, temporary debugging details, unverified guesses, or facts that can be read directly from the code or Git history.'
+].join('\n')
+
+const KNOWLEDGE_ZH = [
   '使用来源会话的主要语言写作；中文会话应生成中文标题、摘要、主题、标签和正文。',
   '把零散对话综合成可长期复用的体系化知识，不要逐轮复述聊天，也不要照搬临时任务状态、工具日志或一次性实施计划。',
   '文章应围绕问题与背景、核心原则或决定、可复用的方法或流程，以及有证据支持的边界和注意事项组织。只使用真正改善阅读的章节，不强制套固定模板。',
   '标题应自然、明确且不带数字序号；主题使用“父主题/子主题”形式；提供 3–7 个简洁标签。',
   '删除无长期价值的会话 ID、时间戳、机器路径和版本噪声，除非它们是结论成立所必需的证据。'
 ].join('\n')
+
+const KNOWLEDGE_EN = [
+  'Write in the primary language of the source session. English sessions should produce an English title, summary, topic, tags, and body.',
+  'Synthesize scattered discussion into durable, structured knowledge. Do not replay the conversation turn by turn or copy temporary task status, tool logs, or one-off implementation plans.',
+  'Organize the article around the problem and context, core principles or decisions, reusable methods or workflow, and evidence-backed boundaries and cautions. Use only sections that improve reading; do not force a fixed template.',
+  'Use a natural, specific title without numeric prefixes. Express topics as “Parent topic/Child topic” and provide 3–7 concise tags.',
+  'Remove session IDs, timestamps, machine paths, and version noise unless they are necessary evidence for the conclusion.'
+].join('\n')
+
+export type CurationPromptKind = 'memory' | 'knowledge'
+
+export const DEFAULT_MEMORY_CURATION_PROMPTS: Record<Lang, string> = {
+  zh: MEMORY_ZH,
+  en: MEMORY_EN
+}
+
+export const DEFAULT_KNOWLEDGE_CURATION_PROMPTS: Record<Lang, string> = {
+  zh: KNOWLEDGE_ZH,
+  en: KNOWLEDGE_EN
+}
+
+/** 兼容旧调用与旧备份；旧常量固定指向历史中文默认值。 */
+export const DEFAULT_MEMORY_CURATION_PROMPT = MEMORY_ZH
+export const DEFAULT_KNOWLEDGE_CURATION_PROMPT = KNOWLEDGE_ZH
+
+export function defaultCurationPrompt(kind: CurationPromptKind, lang: Lang): string {
+  return kind === 'memory'
+    ? DEFAULT_MEMORY_CURATION_PROMPTS[lang]
+    : DEFAULT_KNOWLEDGE_CURATION_PROMPTS[lang]
+}
+
+export function isBundledCurationPrompt(kind: CurationPromptKind, value: string): boolean {
+  const normalized = value.trim()
+  const prompts = kind === 'memory'
+    ? DEFAULT_MEMORY_CURATION_PROMPTS
+    : DEFAULT_KNOWLEDGE_CURATION_PROMPTS
+  return normalized === prompts.zh || normalized === prompts.en
+}

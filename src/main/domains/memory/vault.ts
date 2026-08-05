@@ -2,10 +2,13 @@ import { randomUUID } from 'node:crypto'
 import { chmodSync, mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve, sep } from 'node:path'
 import Database from 'better-sqlite3'
-import { tr } from '@shared/i18n'
+import { getCurrentLang, tr } from '@shared/i18n'
 import {
+  defaultCurationPrompt,
   DEFAULT_KNOWLEDGE_CURATION_PROMPT,
-  DEFAULT_MEMORY_CURATION_PROMPT
+  DEFAULT_MEMORY_CURATION_PROMPT,
+  isBundledCurationPrompt,
+  type CurationPromptKind
 } from '@shared/curation-prompts'
 import type {
   CurationWatermark,
@@ -36,8 +39,28 @@ const DEFAULT_SETTINGS: MemorySettings = {
   knowledgeCurationEnabled: true,
   allowExternalContext: false,
   contextTokenBudget: 800,
+  memoryCurationPromptMode: 'default',
   memoryCurationPrompt: DEFAULT_MEMORY_CURATION_PROMPT,
+  knowledgeCurationPromptMode: 'default',
   knowledgeCurationPrompt: DEFAULT_KNOWLEDGE_CURATION_PROMPT
+}
+
+function promptMode(
+  kind: CurationPromptKind,
+  configured: 'default' | 'custom' | undefined,
+  value: string | undefined
+): 'default' | 'custom' {
+  if (configured === 'default' || configured === 'custom') return configured
+  return !value?.trim() || isBundledCurationPrompt(kind, value) ? 'default' : 'custom'
+}
+
+function resolvedPrompt(
+  kind: CurationPromptKind,
+  mode: 'default' | 'custom',
+  value: string | undefined
+): string {
+  if (mode === 'default') return defaultCurationPrompt(kind, getCurrentLang())
+  return value?.trim() || defaultCurationPrompt(kind, getCurrentLang())
 }
 
 const SENSITIVE_PATTERNS = [
@@ -183,36 +206,77 @@ export class MemoryVault {
     const row = this.database
       .prepare('SELECT value FROM memory_policies WHERE key = ?')
       .get('settings') as { value: string } | undefined
-    if (!row) return { ...DEFAULT_SETTINGS }
+    if (!row) {
+      return {
+        ...DEFAULT_SETTINGS,
+        memoryCurationPrompt: defaultCurationPrompt('memory', getCurrentLang()),
+        knowledgeCurationPrompt: defaultCurationPrompt('knowledge', getCurrentLang())
+      }
+    }
     try {
       const value = JSON.parse(row.value) as Partial<MemorySettings>
+      const memoryValue = value.memoryCurationPrompt || value.curationInstructions
+      const memoryCurationPromptMode = promptMode(
+        'memory',
+        value.memoryCurationPromptMode,
+        memoryValue
+      )
+      const knowledgeCurationPromptMode = promptMode(
+        'knowledge',
+        value.knowledgeCurationPromptMode,
+        value.knowledgeCurationPrompt
+      )
       return {
         ...DEFAULT_SETTINGS,
         ...value,
-        memoryCurationPrompt:
-          value.memoryCurationPrompt?.trim() ||
-          value.curationInstructions?.trim() ||
-          DEFAULT_MEMORY_CURATION_PROMPT,
-        knowledgeCurationPrompt:
-          value.knowledgeCurationPrompt?.trim() || DEFAULT_KNOWLEDGE_CURATION_PROMPT,
+        memoryCurationPromptMode,
+        memoryCurationPrompt: resolvedPrompt('memory', memoryCurationPromptMode, memoryValue),
+        knowledgeCurationPromptMode,
+        knowledgeCurationPrompt: resolvedPrompt(
+          'knowledge',
+          knowledgeCurationPromptMode,
+          value.knowledgeCurationPrompt
+        ),
         contextTokenBudget: clampBudget(
           value.contextTokenBudget ?? DEFAULT_SETTINGS.contextTokenBudget
         )
       }
     } catch {
-      return { ...DEFAULT_SETTINGS }
+      return {
+        ...DEFAULT_SETTINGS,
+        memoryCurationPrompt: defaultCurationPrompt('memory', getCurrentLang()),
+        knowledgeCurationPrompt: defaultCurationPrompt('knowledge', getCurrentLang())
+      }
     }
   }
 
   updateSettings(patch: Partial<MemorySettings>): MemorySettings {
     const current = this.getSettings()
+    const memoryCurationPromptMode =
+      patch.memoryCurationPromptMode ??
+      (patch.memoryCurationPrompt !== undefined
+        ? promptMode('memory', undefined, patch.memoryCurationPrompt)
+        : current.memoryCurationPromptMode ?? 'default')
+    const knowledgeCurationPromptMode =
+      patch.knowledgeCurationPromptMode ??
+      (patch.knowledgeCurationPrompt !== undefined
+        ? promptMode('knowledge', undefined, patch.knowledgeCurationPrompt)
+        : current.knowledgeCurationPromptMode ?? 'default')
     const next: MemorySettings = {
       ...current,
       ...patch,
-      memoryCurationPrompt:
-        patch.memoryCurationPrompt?.trim() || current.memoryCurationPrompt,
-      knowledgeCurationPrompt:
-        patch.knowledgeCurationPrompt?.trim() || current.knowledgeCurationPrompt,
+      memoryCurationPromptMode,
+      memoryCurationPrompt: resolvedPrompt(
+        'memory',
+        memoryCurationPromptMode,
+        patch.memoryCurationPrompt ?? current.memoryCurationPrompt
+      ),
+      knowledgeCurationPromptMode,
+      knowledgeCurationPrompt: resolvedPrompt(
+        'knowledge',
+        knowledgeCurationPromptMode,
+        patch.knowledgeCurationPrompt ?? current.knowledgeCurationPrompt
+      ),
       contextTokenBudget: clampBudget(patch.contextTokenBudget ?? current.contextTokenBudget)
     }
     // 自动提炼首次开启时打纪元；之后即便关闭再开也沿用旧纪元，避免回溯churn 历史。

@@ -118,6 +118,7 @@ export function V3App(): React.JSX.Element {
   const setActivePage = useUiStore((s) => s.setActivePage)
   const themePreference = useUiStore((s) => s.themePreference)
   const languagePreference = useUiStore((s) => s.languagePreference)
+  const systemLanguage = useUiStore((s) => s.platform?.systemLanguage)
   const dockCollapsed = useUiStore((s) => s.dockCollapsed)
   const setDockCollapsed = useUiStore((s) => s.setDockCollapsed)
   const webDefaultHomeId = useUiStore((s) => s.webDefaultHomeId)
@@ -202,10 +203,11 @@ export function V3App(): React.JSX.Element {
   // SPEC-036：语言——解析生效语言，同步渲染端运行时变量（终端等非 React 点用），
   // 并把解析结果推送到主进程（tr() 用）。挂载与偏好变更时各触发一次。
   useEffect(() => {
-    const resolved = resolveLang(languagePreference)
+    const resolved = resolveLang(languagePreference, systemLanguage)
     setCurrentLang(resolved)
-    void window.agentOs?.app?.setLanguage?.(resolved)
-  }, [languagePreference])
+    document.documentElement.lang = resolved === 'zh' ? 'zh-CN' : 'en'
+    void window.agentOs?.app?.setLanguagePreference?.(languagePreference)
+  }, [languagePreference, systemLanguage])
 
   // 终端状态/退出变化 → 刷新会话视图，保持列表状态点实时。
   useEffect(() => {

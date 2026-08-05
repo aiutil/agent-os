@@ -245,7 +245,7 @@ function MemoryDetail({
   return (
     <div className={embedded ? 'memory-detail-pane' : 'chat-view storage-page'}>
       <div className={embedded ? 'memory-detail-pane__header' : 'chat-header'}>
-        {embedded && <div className="memory-detail-pane__eyebrow">记忆详情</div>}
+        {embedded && <div className="memory-detail-pane__eyebrow">{t('memory.atlas.common.context')}</div>}
         <div className={embedded ? 'memory-detail-pane__title' : 'chat-header__name'}>{memory.title}</div>
         <div className={embedded ? 'memory-detail-pane__meta' : 'chat-header__status'} style={{ gap: 12, flexWrap: 'wrap' }}>
           <span style={{ color: 'var(--accent)', fontWeight: 600 }}>{memory.kind} · {memory.scope}</span>

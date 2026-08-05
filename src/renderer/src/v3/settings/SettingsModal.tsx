@@ -44,10 +44,7 @@ import { ToolSelector, type ToolOption } from '../shared/ToolSelector'
 import { ModelPicker } from '../shared/ModelPicker'
 import { useT } from '../../lib/i18n'
 import { localeFor } from '@shared/i18n'
-import {
-  DEFAULT_KNOWLEDGE_CURATION_PROMPT,
-  DEFAULT_MEMORY_CURATION_PROMPT
-} from '@shared/curation-prompts'
+import { defaultCurationPrompt } from '@shared/curation-prompts'
 import { buildRemoteAgentTiles } from '@shared/remote-agent-tiles'
 import agentOsLogo from '../../assets/agentos-logo.png'
 import { resetAnalyticsIdentity, updateAnalyticsTracking } from '../../analytics/mixpanel'
@@ -376,9 +373,9 @@ function SettingsGeneral(): React.JSX.Element {
           </div>
           <SegCtrl
             options={[
-              { v: 'system', l: '跟随系统' },
-              { v: 'zh', l: '中文' },
-              { v: 'en', l: 'English' }
+              { v: 'system', l: t('settings.language.options.system') },
+              { v: 'zh', l: t('settings.language.options.zh') },
+              { v: 'en', l: t('settings.language.options.en') }
             ]}
             value={lang}
             onChange={setLang}
@@ -473,13 +470,13 @@ function SettingsGeneral(): React.JSX.Element {
 // ─── 记忆 ─────────────────────────────────────────────────────────────────────
 
 function SettingsMemory(): React.JSX.Element {
-  const { t } = useT()
+  const { t, lang } = useT()
   const [settings, setSettings] = useState<MemorySettings | null>(null)
   const [candidates, setCandidates] = useState<CuratorCandidate[]>([])
   const [budget, setBudget] = useState('')
   const [promptKind, setPromptKind] = useState<'memory' | 'knowledge'>('memory')
-  const [memoryPrompt, setMemoryPrompt] = useState(DEFAULT_MEMORY_CURATION_PROMPT)
-  const [knowledgePrompt, setKnowledgePrompt] = useState(DEFAULT_KNOWLEDGE_CURATION_PROMPT)
+  const [memoryPrompt, setMemoryPrompt] = useState(() => defaultCurationPrompt('memory', lang))
+  const [knowledgePrompt, setKnowledgePrompt] = useState(() => defaultCurationPrompt('knowledge', lang))
   const [promptStatus, setPromptStatus] = useState('')
   const [manualSessionId, setManualSessionId] = useState('')
   const [manualStatus, setManualStatus] = useState<'idle' | 'running' | 'success' | 'error'>('idle')
@@ -490,15 +487,23 @@ function SettingsMemory(): React.JSX.Element {
       .settings()
       .then((next) => {
         setSettings(next)
-        setMemoryPrompt(next.memoryCurationPrompt)
-        setKnowledgePrompt(next.knowledgeCurationPrompt)
+        setMemoryPrompt(
+          next.memoryCurationPromptMode === 'custom'
+            ? next.memoryCurationPrompt
+            : defaultCurationPrompt('memory', lang)
+        )
+        setKnowledgePrompt(
+          next.knowledgeCurationPromptMode === 'custom'
+            ? next.knowledgeCurationPrompt
+            : defaultCurationPrompt('knowledge', lang)
+        )
       })
       .catch(() => {})
     void window.agentOs.memory
       .curatorCandidates()
       .then(setCandidates)
       .catch(() => {})
-  }, [])
+  }, [lang])
 
   const update = (patch: Partial<MemorySettings>): void => {
     void window.agentOs.memory
@@ -521,8 +526,8 @@ function SettingsMemory(): React.JSX.Element {
     }
     setPromptStatus(t('settings.memory.promptSaving'))
     const patch: Partial<MemorySettings> = promptKind === 'memory'
-      ? { memoryCurationPrompt: value }
-      : { knowledgeCurationPrompt: value }
+      ? { memoryCurationPrompt: value, memoryCurationPromptMode: 'custom' }
+      : { knowledgeCurationPrompt: value, knowledgeCurationPromptMode: 'custom' }
     void window.agentOs.memory.updateSettings(patch).then((next) => {
       setSettings(next)
       setMemoryPrompt(next.memoryCurationPrompt)
@@ -532,14 +537,12 @@ function SettingsMemory(): React.JSX.Element {
   }
 
   const resetPrompt = (): void => {
-    const value = promptKind === 'memory'
-      ? DEFAULT_MEMORY_CURATION_PROMPT
-      : DEFAULT_KNOWLEDGE_CURATION_PROMPT
+    const value = defaultCurationPrompt(promptKind, lang)
     if (promptKind === 'memory') setMemoryPrompt(value)
     else setKnowledgePrompt(value)
     const patch: Partial<MemorySettings> = promptKind === 'memory'
-      ? { memoryCurationPrompt: value }
-      : { knowledgeCurationPrompt: value }
+      ? { memoryCurationPrompt: value, memoryCurationPromptMode: 'default' }
+      : { knowledgeCurationPrompt: value, knowledgeCurationPromptMode: 'default' }
     setPromptStatus(t('settings.memory.promptSaving'))
     void window.agentOs.memory.updateSettings(patch).then((next) => {
       setSettings(next)
@@ -738,7 +741,17 @@ function SettingsMemory(): React.JSX.Element {
           }}
         />
         <div className="settings-prompt-footer">
-          <span>{promptStatus || t('settings.memory.promptFutureOnly')}</span>
+          <span>
+            {t(
+              (promptKind === 'memory'
+                ? settings?.memoryCurationPromptMode
+                : settings?.knowledgeCurationPromptMode) === 'custom'
+                ? 'settings.memory.promptCustomMode'
+                : 'settings.memory.promptDefaultMode'
+            )}
+            {' · '}
+            {promptStatus || t('settings.memory.promptFutureOnly')}
+          </span>
           <button type="button" onClick={resetPrompt}>{t('settings.memory.promptReset')}</button>
           <button type="button" className="is-primary" onClick={savePrompt}>{t('settings.memory.promptSave')}</button>
         </div>

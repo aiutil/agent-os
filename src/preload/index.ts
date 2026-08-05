@@ -42,7 +42,9 @@ const api: AgentOsApi = {
     selectDirectory: (options) => ipcRenderer.invoke(CHANNELS.app.selectDirectory, options),
     selectFile: (options) => ipcRenderer.invoke(CHANNELS.app.selectFile, options),
     openExternal: (url) => ipcRenderer.invoke(CHANNELS.app.openExternal, url),
-    setLanguage: (lang) => ipcRenderer.invoke(CHANNELS.app.setLanguage, lang)
+    setLanguage: (lang) => ipcRenderer.invoke(CHANNELS.app.setLanguage, lang),
+    setLanguagePreference: (preference) =>
+      ipcRenderer.invoke(CHANNELS.app.setLanguagePreference, preference)
   },
   discovery: {
     scan: () => ipcRenderer.invoke(CHANNELS.discovery.scan),
