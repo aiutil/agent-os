@@ -131,12 +131,12 @@ async function setup(sharedHistory?: SharedHistory, memoryContext = '') {
 const wait = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 10))
 
 describe('ChatManager · codex (non-resume adapter, SPEC-019)', () => {
-  it('在首回合把有预算的长期记忆放在当前任务之前', async () => {
+  it('在首回合保持真实任务在前，并将长期记忆放入版本化上下文信封', async () => {
     const { manager, launches } = await setup(undefined, '# Agent OS 长期记忆\n\n- 已确认约束')
     await manager.sendTurn('session-1', '第一问')
 
     expect(launches[0]?.child.stdin.data).toBe(
-      '# Agent OS 长期记忆\n\n- 已确认约束\n\n# 当前任务\n第一问'
+      '<agent-os-task version="1">\n第一问\n</agent-os-task>\n\n<agent-os-context version="1">\n# Agent OS 长期记忆\n\n- 已确认约束\n</agent-os-context>'
     )
   })
 

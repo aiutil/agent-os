@@ -235,8 +235,8 @@ async function start(token = 'test-token', protocolVersion = RUNTIME_PROTOCOL_VE
 }
 
 describe('daemon transport security and contract', () => {
-  it('uses protocol v9 for native model catalogs and attachment capabilities', () => {
-    expect(RUNTIME_PROTOCOL_VERSION).toBe(10)
+  it('uses protocol v11 for versioned turn-context packs', () => {
+    expect(RUNTIME_PROTOCOL_VERSION).toBe(11)
   })
 
   it('accepts only loopback bind addresses', () => {

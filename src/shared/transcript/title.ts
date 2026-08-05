@@ -1,6 +1,7 @@
 // 会话标题净化：从原始 transcript 文本剥离非人类标记与 XML 包装，得到适合做列表标题的人类可读文本。
 // 纯函数、零依赖，供主进程（索引期写入）与渲染端（展示期兜底）共用。
 // 非人类标记口径对齐 renderer/pages/workbench/chat-model.ts 的 shouldHideTranscriptMessage / transcriptProcessStep。
+import { extractAgentOsTask, stripAgentOsContext } from '../turn-context'
 
 // 整块剥离的非人类包装（连同其内部内容一起去掉）。
 const WRAPPER_BLOCK_RE: RegExp[] = [
@@ -70,7 +71,8 @@ function truncate(value: string, maxLength: number): string {
  */
 export function sanitizeTranscriptTitle(raw: string | null | undefined, maxLength = 80): string {
   if (!raw) return ''
-  let t = raw
+  const agentOsTask = extractAgentOsTask(raw)
+  let t = agentOsTask ?? stripAgentOsContext(raw)
   for (const re of WRAPPER_BLOCK_RE) t = t.replace(re, ' ')
   t = t.replace(WRAPPER_TAG_RE, ' ')
   t = t.replace(UNSUPPORTED_RE, ' ')

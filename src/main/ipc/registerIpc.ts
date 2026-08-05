@@ -45,6 +45,8 @@ import { setCurrentLang, tr, type Lang } from '@shared/i18n'
 import type { MemoryWorkerClient } from '../domains/memory/worker-client'
 import type { VaultExperienceStore } from '../domains/memory/vault-experience-store'
 import type { MemoryVault } from '../domains/memory/vault'
+import type { KnowledgeVault } from '../domains/knowledge/vault'
+import type { KnowledgeCurationService } from '../domains/knowledge/curation'
 import type { MemoryCurationService } from '../domains/memory/curation'
 import type { AnnotationsStore } from '../domains/annotations/store'
 import type {
@@ -59,12 +61,18 @@ import type {
   MemorySearchInput,
   MemoryContextInput,
   MemoryFeedbackInput,
+  MemoryGraphInput,
   ProposeMemoryInput,
   UpdateDurableMemoryPatch,
   ListDurableMemoriesInput,
   MemorySettings,
+  UpdateWorkingMemoryInput,
   CuratorCandidate,
   CurateMemoryInput,
+  KnowledgeArticleInput,
+  KnowledgeCommentInput,
+  KnowledgeGraphInput,
+  KnowledgeListInput,
   UpdateExperiencePatch,
   StatsExportCsvInput,
   StatsQuery
@@ -110,7 +118,9 @@ export function registerIpc(
   runtime: RuntimeHost,
   memory: MemoryWorkerClient,
   vault: MemoryVault,
+  knowledge: KnowledgeVault,
   curation: MemoryCurationService,
+  knowledgeCuration: KnowledgeCurationService,
   experiences: VaultExperienceStore,
   lifecycle: LifecycleService,
   restartDaemon: () => Promise<unknown>,
@@ -136,7 +146,7 @@ export function registerIpc(
   // SPEC-038：附件暂存根目录（粘贴/拖拽文件物化到此；session 删除时清理）。
   const attachmentsRoot = join(app.getPath('userData'), 'attachments')
   const attachmentPreviews = new AttachmentPreviewRegistry()
-  const portableBackup = new PortableBackupService(runtime, vault, app.getVersion())
+  const portableBackup = new PortableBackupService(runtime, vault, app.getVersion(), knowledge)
   const approvedBackupImports = new Map<
     string,
     { filePath: string; fingerprint: string; expiresAt: number }
@@ -600,6 +610,14 @@ export function registerIpc(
   ipcMain.handle(CHANNELS.memory.context, (_event, input: MemoryContextInput) =>
     vault.context(input)
   )
+  ipcMain.handle(CHANNELS.memory.graph, (_event, input?: MemoryGraphInput) => vault.graph(input))
+  ipcMain.handle(CHANNELS.memory.working, (_event, sessionId: string) => vault.getWorking(sessionId))
+  ipcMain.handle(CHANNELS.memory.updateWorking, (_event, input: UpdateWorkingMemoryInput) =>
+    vault.updateWorking(input)
+  )
+  ipcMain.handle(CHANNELS.memory.clearWorking, (_event, sessionId: string) =>
+    vault.clearWorking(sessionId)
+  )
   ipcMain.handle(CHANNELS.memory.settings, () => vault.getSettings())
   ipcMain.handle(CHANNELS.memory.updateSettings, (_event, patch: Partial<MemorySettings>) =>
     vault.updateSettings(patch)
@@ -625,6 +643,31 @@ export function registerIpc(
   ipcMain.handle(CHANNELS.memory.curate, (_event, input: CurateMemoryInput) =>
     curation.curate(input)
   )
+  ipcMain.handle(CHANNELS.knowledge.list, (_event, input?: KnowledgeListInput) => knowledge.list(input))
+  ipcMain.handle(CHANNELS.knowledge.get, (_event, id: string) => knowledge.get(id))
+  ipcMain.handle(CHANNELS.knowledge.saveDraft, (_event, input: KnowledgeArticleInput) => knowledge.saveDraft(input))
+  ipcMain.handle(CHANNELS.knowledge.publish, (_event, id: string) => knowledge.publish(id))
+  ipcMain.handle(CHANNELS.knowledge.archive, (_event, id: string) => knowledge.archive(id))
+  ipcMain.handle(CHANNELS.knowledge.restore, (_event, id: string) => knowledge.restore(id))
+  ipcMain.handle(CHANNELS.knowledge.remove, (_event, id: string) => knowledge.remove(id))
+  ipcMain.handle(CHANNELS.knowledge.topics, () => knowledge.topics())
+  ipcMain.handle(CHANNELS.knowledge.setFavorite, (_event, id: string, favorite: boolean) => knowledge.setFavorite(id, favorite))
+  ipcMain.handle(CHANNELS.knowledge.comments, (_event, articleId: string) => knowledge.comments(articleId))
+  ipcMain.handle(CHANNELS.knowledge.addComment, (_event, articleId: string, input: KnowledgeCommentInput) => knowledge.addComment(articleId, input))
+  ipcMain.handle(CHANNELS.knowledge.updateComment, (_event, id: string, input: KnowledgeCommentInput) => knowledge.updateComment(id, input))
+  ipcMain.handle(CHANNELS.knowledge.removeComment, (_event, id: string) => knowledge.removeComment(id))
+  ipcMain.handle(CHANNELS.knowledge.graph, (_event, input?: KnowledgeGraphInput) => knowledge.graph(input))
+  ipcMain.handle(CHANNELS.knowledge.extractDraft, (_event, input) => knowledgeCuration.extractDraft(input))
+  ipcMain.handle(CHANNELS.knowledge.openInObsidian, async (_event, id: string) => {
+    const uri = knowledge.obsidianUri(id)
+    if (!uri) throw new Error('知识文章不存在')
+    try {
+      await shell.openExternal(uri)
+    } catch {
+      const article = knowledge.get(id)
+      if (article) shell.showItemInFolder(article.path)
+    }
+  })
 
   // --- stats ---
   ipcMain.handle(CHANNELS.stats.summary, (_event, input: StatsQuery) => memory.statsSummary(input))

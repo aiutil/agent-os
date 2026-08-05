@@ -8,7 +8,7 @@ import { useUiStore } from '../stores/uiStore'
 import { useSessionsStore } from '../stores/sessionsStore'
 import { useToolsStore } from '../stores/toolsStore'
 import { useWorkspaceTabsStore } from '../stores/workspaceTabsStore'
-import { workspaceTabId, type WorkspaceTabKind } from '@shared/workspace-tabs'
+import type { WorkspaceTabKind } from '@shared/workspace-tabs'
 import {
   isSystemGeneratedSessionName,
   sanitizeTranscriptTitle,
@@ -24,6 +24,7 @@ import { OnboardingView } from '../onboarding/OnboardingView'
 import type {
   AgentTask,
   CompareScenario,
+  KnowledgeArticle,
   UpdateState,
   WebBookmark,
   WorkbenchSessionView
@@ -39,6 +40,7 @@ import { StorageSecPanel } from './sections/storage/StorageSecPanel'
 import { RecordView } from './sections/storage/RecordView'
 import { MemoryDetailView } from './sections/storage/MemoryDetailView'
 import { PersonaView } from './sections/storage/PersonaView'
+import { KnowledgeHomeView, MemoryHomeView } from './sections/storage/KnowledgeWorkspace'
 import { StatsView } from './sections/stats/StatsView'
 import { StatsSecPanel } from './sections/stats/StatsSecPanel'
 import { prefetchStatsDashboard } from './sections/stats/useStatsData'
@@ -91,6 +93,23 @@ const KIND_TO_SECTION: Record<WorkspaceTabKind, Section> = {
   web: 'web'
 }
 
+const LEGACY_STORAGE_TAB_KINDS = new Set<WorkspaceTabKind>([
+  'memory',
+  'memory-detail',
+  'memory-new',
+  'persona',
+  'knowledge'
+])
+
+type StorageContent =
+  | { kind: 'home' }
+  | { kind: 'record'; id: string; title: string }
+  | { kind: 'memory-detail'; id: string }
+  | { kind: 'memory-new' }
+  | { kind: 'persona' }
+  | { kind: 'knowledge-article'; article: KnowledgeArticle }
+  | { kind: 'knowledge-edit'; article?: KnowledgeArticle }
+
 export function V3App(): React.JSX.Element {
   const platform = useUiStore((s) => s.platform)
   const onboardingCompleted = useUiStore((s) => s.onboardingCompleted)
@@ -129,6 +148,7 @@ export function V3App(): React.JSX.Element {
   const [storageSubView, setStorageSubView] = useState<'history' | 'memory' | 'knowledge'>(
     'history'
   )
+  const [storageContent, setStorageContent] = useState<StorageContent>({ kind: 'home' })
   const [webBookmarkDialogOpen, setWebBookmarkDialogOpen] = useState(false)
   const [updateState, setUpdateState] = useState<UpdateState | null>(null)
   const [updateDismissed, setUpdateDismissed] = useState(false)
@@ -226,9 +246,9 @@ export function V3App(): React.JSX.Element {
   }, [openSearchModal])
 
   const activeTab = tabs.find((t) => t.id === activeTabId) ?? null
-  const activeRecordId = activeTab?.kind === 'memory' ? activeTab.resourceId : null
-  const activeMemoryId = activeTab?.kind === 'memory-detail' ? activeTab.resourceId : null
-  const activePersona = activeTab?.kind === 'persona'
+  const activeRecordId = storageContent.kind === 'record' ? storageContent.id : null
+  const activeMemoryId = storageContent.kind === 'memory-detail' ? storageContent.id : null
+  const activePersona = storageContent.kind === 'persona'
   const activeSiteId = activeTab?.kind === 'web' ? activeTab.resourceId : null
   const consumeActiveHighlight = useCallback(() => {
     if (activeTabId) clearTabHighlight(activeTabId)
@@ -301,6 +321,22 @@ export function V3App(): React.JSX.Element {
     setActivePage(SECTION_TO_PAGE[sec])
     if (!activeTab || tabSection(activeTab) !== sec) clearActiveTab()
   }
+
+  // 存储是单一导航上下文；旧版本已持久化的存储标签在恢复后一次性移除。
+  useEffect(() => {
+    const legacyIds = tabs
+      .filter((tab) => LEGACY_STORAGE_TAB_KINDS.has(tab.kind))
+      .map((tab) => tab.id)
+    if (legacyIds.length === 0) return
+
+    const removedActiveTab = legacyIds.includes(activeTabId ?? '')
+    closeTabs(legacyIds)
+    if (removedActiveTab) {
+      clearActiveTab()
+      setActivePage('memory')
+      setStorageContent({ kind: 'home' })
+    }
+  }, [activeTabId, clearActiveTab, closeTabs, setActivePage, tabs])
 
   const onTabClick = (id: string): void => {
     const tab = tabs.find((t) => t.id === id)
@@ -392,32 +428,53 @@ export function V3App(): React.JSX.Element {
   }
 
   const onOpenRecord = (rec: { id: string; title: string }): void => {
-    openTab({ kind: 'memory', resourceId: rec.id, title: rec.title })
+    clearActiveTab()
+    setStorageContent({ kind: 'record', ...rec })
     setActivePage('memory')
   }
 
-  // 打开/聚焦长期记忆单条详情标签（右侧内容页渲染 MemoryDetailView）。
+  // 存储详情在当前内容区就地切换，避免浏览记录时堆积顶部工作标签。
   const onOpenMemoryDetail = (rec: { id: string; title: string }): void => {
-    openTab({ kind: 'memory-detail', resourceId: rec.id, title: rec.title })
+    clearActiveTab()
+    setStorageContent({ kind: 'memory-detail', id: rec.id })
     setActivePage('memory')
   }
 
-  // 打开用户画像（人格）编辑器：全局单份，resourceId 固定。
+  // 打开用户画像（人格）编辑器：全局单份、存储区内联展示。
   const onOpenPersona = (): void => {
-    openTab({ kind: 'persona', resourceId: 'persona', title: t('workbench.persona.title') })
+    clearActiveTab()
+    setStorageContent({ kind: 'persona' })
     setActivePage('memory')
   }
 
-  // 手动新建记忆：单一草稿标签（resourceId 固定，重复点击聚焦同一页）。
+  // 手动新建记忆：存储区内联草稿，重复点击复用当前编辑页。
   const onOpenMemoryNew = (): void => {
-    openTab({ kind: 'memory-new', resourceId: 'new', title: t('workbench.memory.newTitle') })
+    clearActiveTab()
+    setStorageContent({ kind: 'memory-new' })
     setActivePage('memory')
   }
-  // 新建成功后：打开该记忆详情，并关掉临时草稿页。
+  // 新建成功后：就地切换到新记忆详情。
   const onMemoryCreated = (rec: { id: string; title: string }): void => {
-    closeTab(workspaceTabId('memory-new', 'new'))
     onOpenMemoryDetail(rec)
   }
+  const onOpenKnowledge = (article: KnowledgeArticle): void => {
+    clearActiveTab(); setStorageSubView('knowledge'); setStorageContent({ kind: 'knowledge-article', article }); setActivePage('memory')
+  }
+  const onSaveKnowledge = (article: KnowledgeArticle): void => {
+    setStorageSubView('knowledge'); setStorageContent({ kind: 'knowledge-article', article })
+  }
+
+  useEffect(() => {
+    const openKnowledge = (event: Event): void => {
+      const id = (event as CustomEvent<string>).detail
+      if (!id) return
+      void window.agentOs.knowledge.get(id).then((article) => {
+        if (article) onOpenKnowledge(article)
+      })
+    }
+    window.addEventListener('agent-os:open-knowledge', openKnowledge)
+    return () => window.removeEventListener('agent-os:open-knowledge', openKnowledge)
+  }, [])
 
   const onOpenSite = (site: WebBookmark): void => {
     openTab({ kind: 'web', resourceId: site.id, title: site.name })
@@ -445,7 +502,10 @@ export function V3App(): React.JSX.Element {
         section={section}
         tabs={tabs}
         activeTabId={activeTabId}
-        onHome={() => clearActiveTab()}
+        onHome={() => {
+          clearActiveTab()
+          if (section === 'memory') setStorageContent({ kind: 'home' })
+        }}
         onTabClick={onTabClick}
         onCloseTab={(id: string) => closeTab(id)}
         onCloseTabs={(ids: string[]) => closeTabs(ids)}
@@ -487,7 +547,7 @@ export function V3App(): React.JSX.Element {
             <div className="sec-inner">
               <StorageSecPanel
                 subView={storageSubView}
-                onSubView={setStorageSubView}
+                onSubView={(view) => { setStorageSubView(view); setStorageContent({ kind: 'home' }) }}
                 onOpenRecord={onOpenRecord}
                 activeRecordId={activeRecordId}
                 onOpenMemoryDetail={onOpenMemoryDetail}
@@ -495,6 +555,7 @@ export function V3App(): React.JSX.Element {
                 onOpenMemoryNew={onOpenMemoryNew}
                 onOpenPersona={onOpenPersona}
                 personaActive={activePersona}
+                onOpenKnowledge={onOpenKnowledge}
               />
             </div>
           </aside>
@@ -548,26 +609,41 @@ export function V3App(): React.JSX.Element {
           ) : section === 'stats' ? (
             <StatsView statsView={statsView} />
           ) : section === 'memory' ? (
-            activeTab?.kind === 'memory-detail' ? (
-              <MemoryDetailView memoryId={activeTab.resourceId} />
-            ) : activeTab?.kind === 'memory-new' ? (
+            storageContent.kind === 'memory-new' ? (
               <MemoryDetailView
                 create
                 onCreated={onMemoryCreated}
-                onCancelCreate={() => closeTab(workspaceTabId('memory-new', 'new'))}
+                onCancelCreate={() => setStorageContent({ kind: 'home' })}
               />
-            ) : activeTab?.kind === 'persona' ? (
+            ) : storageContent.kind === 'persona' ? (
               <PersonaView />
-            ) : activeTab?.kind === 'memory' ? (
+            ) : storageContent.kind === 'record' ? (
               <RecordView
-                sessionId={activeTab.resourceId}
-                title={activeTab.title}
-                highlight={activeTab.highlight}
-                onHighlightConsumed={consumeActiveHighlight}
+                sessionId={storageContent.id}
+                title={storageContent.title}
                 onRelayed={openSessionTab}
               />
+            ) : storageSubView === 'knowledge' ? (
+              <KnowledgeHomeView
+                selectedArticle={storageContent.kind === 'knowledge-article'
+                  ? storageContent.article
+                  : storageContent.kind === 'knowledge-edit'
+                    ? storageContent.article
+                    : undefined}
+                editing={storageContent.kind === 'knowledge-edit'}
+                creating={storageContent.kind === 'knowledge-edit' && !storageContent.article}
+                onSelectArticle={onOpenKnowledge}
+                onCloseSelection={() => setStorageContent({ kind: 'home' })}
+                onCreate={() => setStorageContent({ kind: 'knowledge-edit' })}
+                onEdit={(article) => setStorageContent({ kind: 'knowledge-edit', article })}
+                onSave={onSaveKnowledge}
+              />
             ) : (
-              <SectionHero section="memory" />
+              <MemoryHomeView
+                selectedMemoryId={storageContent.kind === 'memory-detail' ? storageContent.id : undefined}
+                onSelectMemory={onOpenMemoryDetail}
+                onCloseSelection={() => setStorageContent({ kind: 'home' })}
+              />
             )
           ) : section === 'compare' ? (
             activeTab?.kind === 'compare' ? (

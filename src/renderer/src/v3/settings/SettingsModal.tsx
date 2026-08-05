@@ -44,6 +44,10 @@ import { ToolSelector, type ToolOption } from '../shared/ToolSelector'
 import { ModelPicker } from '../shared/ModelPicker'
 import { useT } from '../../lib/i18n'
 import { localeFor } from '@shared/i18n'
+import {
+  DEFAULT_KNOWLEDGE_CURATION_PROMPT,
+  DEFAULT_MEMORY_CURATION_PROMPT
+} from '@shared/curation-prompts'
 import { buildRemoteAgentTiles } from '@shared/remote-agent-tiles'
 import agentOsLogo from '../../assets/agentos-logo.png'
 import { resetAnalyticsIdentity, updateAnalyticsTracking } from '../../analytics/mixpanel'
@@ -473,11 +477,22 @@ function SettingsMemory(): React.JSX.Element {
   const [settings, setSettings] = useState<MemorySettings | null>(null)
   const [candidates, setCandidates] = useState<CuratorCandidate[]>([])
   const [budget, setBudget] = useState('')
+  const [promptKind, setPromptKind] = useState<'memory' | 'knowledge'>('memory')
+  const [memoryPrompt, setMemoryPrompt] = useState(DEFAULT_MEMORY_CURATION_PROMPT)
+  const [knowledgePrompt, setKnowledgePrompt] = useState(DEFAULT_KNOWLEDGE_CURATION_PROMPT)
+  const [promptStatus, setPromptStatus] = useState('')
+  const [manualSessionId, setManualSessionId] = useState('')
+  const [manualStatus, setManualStatus] = useState<'idle' | 'running' | 'success' | 'error'>('idle')
+  const [manualMessage, setManualMessage] = useState('')
 
   useEffect(() => {
     void window.agentOs.memory
       .settings()
-      .then(setSettings)
+      .then((next) => {
+        setSettings(next)
+        setMemoryPrompt(next.memoryCurationPrompt)
+        setKnowledgePrompt(next.knowledgeCurationPrompt)
+      })
       .catch(() => {})
     void window.agentOs.memory
       .curatorCandidates()
@@ -496,6 +511,67 @@ function SettingsMemory(): React.JSX.Element {
     const clamped = Math.max(200, Math.min(8000, Math.round(Number(budget) || 1200)))
     setBudget(String(clamped))
     update({ contextTokenBudget: clamped })
+  }
+
+  const savePrompt = (): void => {
+    const value = (promptKind === 'memory' ? memoryPrompt : knowledgePrompt).trim()
+    if (!value) {
+      setPromptStatus(t('settings.memory.promptRequired'))
+      return
+    }
+    setPromptStatus(t('settings.memory.promptSaving'))
+    const patch: Partial<MemorySettings> = promptKind === 'memory'
+      ? { memoryCurationPrompt: value }
+      : { knowledgeCurationPrompt: value }
+    void window.agentOs.memory.updateSettings(patch).then((next) => {
+      setSettings(next)
+      setMemoryPrompt(next.memoryCurationPrompt)
+      setKnowledgePrompt(next.knowledgeCurationPrompt)
+      setPromptStatus(t('settings.memory.promptSaved'))
+    }).catch((cause: Error) => setPromptStatus(cause.message))
+  }
+
+  const resetPrompt = (): void => {
+    const value = promptKind === 'memory'
+      ? DEFAULT_MEMORY_CURATION_PROMPT
+      : DEFAULT_KNOWLEDGE_CURATION_PROMPT
+    if (promptKind === 'memory') setMemoryPrompt(value)
+    else setKnowledgePrompt(value)
+    const patch: Partial<MemorySettings> = promptKind === 'memory'
+      ? { memoryCurationPrompt: value }
+      : { knowledgeCurationPrompt: value }
+    setPromptStatus(t('settings.memory.promptSaving'))
+    void window.agentOs.memory.updateSettings(patch).then((next) => {
+      setSettings(next)
+      setPromptStatus(t('settings.memory.promptResetDone'))
+    }).catch((cause: Error) => setPromptStatus(cause.message))
+  }
+
+  const extractKnowledgeNow = (): void => {
+    const sourceId = manualSessionId.trim()
+    if (!sourceId || manualStatus === 'running') return
+    setManualStatus('running')
+    setManualMessage(t('settings.memory.manualExtractRunning'))
+    void window.agentOs.memory.getTranscript(sourceId).then((transcript) => {
+      if (!transcript) throw new Error(t('settings.memory.manualSessionNotFound'))
+      if (!transcript.cwd) throw new Error(t('settings.memory.manualSessionNoCwd'))
+      const text = transcript.messages
+        .filter((message) => message.role === 'user' || message.role === 'assistant')
+        .map((message) => `${message.role}: ${message.text}`)
+        .join('\n\n')
+      if (!text.trim()) throw new Error(t('settings.memory.manualSessionEmpty'))
+      return window.agentOs.knowledge.extractDraft({
+        source: { sourceType: 'session', sourceId, toolId: transcript.toolId },
+        cwd: transcript.cwd,
+        text
+      })
+    }).then((article) => {
+      setManualStatus('success')
+      setManualMessage(t('settings.memory.manualExtractSuccess', { title: article.title }))
+    }).catch((cause: Error) => {
+      setManualStatus('error')
+      setManualMessage(cause.message)
+    })
   }
 
   const curatorToolId = settings?.curatorAgentId ?? ''
@@ -555,24 +631,46 @@ function SettingsMemory(): React.JSX.Element {
             onChange={(useMemories) => update({ useMemories })}
           />
         </div>
+      </div>
+      <div className="settings-group">
+        <div className="settings-group-label">{t('settings.memory.sharedCuration')}</div>
+        <div className="settings-curation-flow" aria-label={t('settings.memory.curationFlowAria')}>
+          <span>{t('settings.memory.curationSource')}</span>
+          <i aria-hidden="true">→</i>
+          <strong>{t('settings.memory.curationEngine')}</strong>
+          <i aria-hidden="true">→</i>
+          <span>{t('settings.memory.curationMemoryOutput')} · {t('settings.memory.curationKnowledgeOutput')}</span>
+        </div>
         <div className="settings-row">
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>
-              {t('settings.memory.generateCandidates')}
+              {t('settings.memory.memoryCuration')}
             </div>
             <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-              {t('settings.memory.generateCandidatesDesc')}
+              {t('settings.memory.memoryCurationDesc')}
             </div>
           </div>
           <SToggle
-            label={t('settings.memory.generateCandidates')}
+            label={t('settings.memory.memoryCuration')}
             value={settings?.generateMemories ?? false}
             onChange={(generateMemories) => update({ generateMemories })}
           />
         </div>
-      </div>
-      <div className="settings-group">
-        <div className="settings-group-label">{t('settings.memory.curatorAgent')}</div>
+        <div className="settings-row">
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>
+              {t('settings.memory.knowledgeCuration')}
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+              {t('settings.memory.knowledgeCurationDesc')}
+            </div>
+          </div>
+          <SToggle
+            label={t('settings.memory.knowledgeCuration')}
+            value={settings?.knowledgeCurationEnabled ?? true}
+            onChange={(knowledgeCurationEnabled) => update({ knowledgeCurationEnabled })}
+          />
+        </div>
         <div className="settings-row" style={{ alignItems: 'center', gap: 8 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>
@@ -610,6 +708,64 @@ function SettingsMemory(): React.JSX.Element {
               : ''}
           </div>
         )}
+      </div>
+      <div className="settings-group">
+        <div className="settings-group-label">{t('settings.memory.promptPolicies')}</div>
+        <div className="settings-prompt-tabs" role="tablist" aria-label={t('settings.memory.promptPolicies')}>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={promptKind === 'memory'}
+            className={promptKind === 'memory' ? 'is-active' : ''}
+            onClick={() => { setPromptKind('memory'); setPromptStatus('') }}
+          >{t('settings.memory.memoryPrompt')}</button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={promptKind === 'knowledge'}
+            className={promptKind === 'knowledge' ? 'is-active' : ''}
+            onClick={() => { setPromptKind('knowledge'); setPromptStatus('') }}
+          >{t('settings.memory.knowledgePrompt')}</button>
+        </div>
+        <textarea
+          className="settings-prompt-editor"
+          aria-label={promptKind === 'memory' ? t('settings.memory.memoryPrompt') : t('settings.memory.knowledgePrompt')}
+          value={promptKind === 'memory' ? memoryPrompt : knowledgePrompt}
+          onChange={(event) => {
+            if (promptKind === 'memory') setMemoryPrompt(event.target.value)
+            else setKnowledgePrompt(event.target.value)
+            setPromptStatus('')
+          }}
+        />
+        <div className="settings-prompt-footer">
+          <span>{promptStatus || t('settings.memory.promptFutureOnly')}</span>
+          <button type="button" onClick={resetPrompt}>{t('settings.memory.promptReset')}</button>
+          <button type="button" className="is-primary" onClick={savePrompt}>{t('settings.memory.promptSave')}</button>
+        </div>
+      </div>
+      <div className="settings-group">
+        <div className="settings-group-label">{t('settings.memory.manualExtract')}</div>
+        <div className="settings-manual-extract">
+          <div>
+            <strong>{t('settings.memory.manualExtractTitle')}</strong>
+            <span>{t('settings.memory.manualExtractDesc')}</span>
+          </div>
+          <div className="settings-manual-extract__action">
+            <input
+              value={manualSessionId}
+              onChange={(event) => { setManualSessionId(event.target.value); setManualStatus('idle'); setManualMessage('') }}
+              placeholder={t('settings.memory.manualSessionPlaceholder')}
+              aria-label={t('settings.memory.manualSessionLabel')}
+            />
+            <button
+              type="button"
+              className="is-primary"
+              disabled={!manualSessionId.trim() || manualStatus === 'running' || !settings?.knowledgeCurationEnabled}
+              onClick={extractKnowledgeNow}
+            >{manualStatus === 'running' ? t('settings.memory.manualExtracting') : t('settings.memory.manualExtractButton')}</button>
+          </div>
+          {manualMessage && <p className={`settings-manual-extract__status is-${manualStatus}`} role="status">{manualMessage}</p>}
+        </div>
       </div>
       <div className="settings-group">
         <div className="settings-group-label">{t('settings.memory.privacy')}</div>

@@ -60,6 +60,25 @@
   --tool-pi: #5b5bd6;
   --tool-generic: #77736c;
   --search-highlight: #f4df91;
+  /* 记忆/知识图谱（SPEC-045/046）：Canvas 同样只读取这些语义 token。 */
+  --graph-edge: rgba(108, 115, 132, 0.34);
+  --graph-edge-active: rgba(54, 64, 82, 0.78);
+  --graph-label: #404049;
+  --graph-label-bg: rgba(255, 255, 255, 0.9);
+  --graph-node-border: rgba(255, 255, 255, 0.86);
+  --graph-selection: #1a1a1a;
+  --graph-fallback: #777b88;
+  --graph-memory: #4a72b0;
+  --graph-persona: #8065a3;
+  --graph-scope: #4f7a4f;
+  --graph-article: #5b6f9d;
+  --graph-topic: #6c7e46;
+  --graph-tag: #8a6a3f;
+  --graph-source: #77736c;
+  --graph-identity: #8065a3;
+  --graph-semantic: #4a72b0;
+  --graph-episodic: #8a6a3f;
+  --graph-procedural: #4f7a4f;
 
   /* 边框 / 阴影（近乎隐形的中性灰，避免线条嘈杂） */
   --border-subtle: #ededee;
@@ -215,6 +234,24 @@
   --tool-pi: #8e8eff;
   --tool-generic: #9a958c;
   --search-highlight: #5c4f2a;
+  --graph-edge: rgba(173, 173, 190, 0.34);
+  --graph-edge-active: rgba(219, 222, 235, 0.78);
+  --graph-label: #d9dce5;
+  --graph-label-bg: rgba(28, 28, 31, 0.9);
+  --graph-node-border: rgba(28, 28, 31, 0.9);
+  --graph-selection: #ececee;
+  --graph-fallback: #9a9fac;
+  --graph-memory: #6f9bd6;
+  --graph-persona: #a98bc9;
+  --graph-scope: #6fae6f;
+  --graph-article: #7287ad;
+  --graph-topic: #8c9a72;
+  --graph-tag: #c49a5c;
+  --graph-source: #9a958c;
+  --graph-identity: #a98bc9;
+  --graph-semantic: #6f9bd6;
+  --graph-episodic: #c49a5c;
+  --graph-procedural: #6fae6f;
 
   --border-subtle: #2a2a2e;
   --border-medium: #38383d;

@@ -4269,6 +4269,165 @@ button {
 .settings-row:last-child {
   border-bottom: none;
 }
+.settings-curation-flow {
+  display: grid;
+  grid-template-columns: max-content 18px minmax(120px, max-content) 18px minmax(0, max-content);
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 5px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 10px 12px;
+  color: var(--text-secondary);
+  background: var(--bg-panel);
+  font-size: var(--fs-meta);
+}
+.settings-curation-flow strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.settings-curation-flow i {
+  color: var(--text-muted);
+  font-style: normal;
+  text-align: center;
+}
+.settings-prompt-tabs {
+  display: inline-flex;
+  gap: 2px;
+  margin-bottom: 8px;
+  padding: 2px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-panel);
+}
+.settings-prompt-tabs button {
+  border: 0;
+  border-radius: calc(var(--radius-md) - 2px);
+  padding: 6px 10px;
+  color: var(--text-secondary);
+  background: transparent;
+  font-size: var(--fs-meta);
+}
+.settings-prompt-tabs button.is-active {
+  color: var(--text-primary);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-card);
+}
+.settings-prompt-editor {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 154px;
+  resize: vertical;
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-lg);
+  padding: 11px 12px;
+  color: var(--text-primary);
+  background: var(--bg-card);
+  font-family: var(--font-mono);
+  font-size: var(--fs-meta);
+  line-height: 1.62;
+}
+.settings-prompt-editor:focus {
+  border-color: var(--accent);
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.settings-prompt-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+  margin-top: 8px;
+}
+.settings-prompt-footer span {
+  flex: 1;
+  color: var(--text-muted);
+  font-size: var(--fs-caption);
+  line-height: 1.45;
+}
+.settings-prompt-footer button,
+.settings-manual-extract__action button {
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  padding: 7px 10px;
+  color: var(--text-primary);
+  background: var(--bg-card);
+  font-size: var(--fs-meta);
+  white-space: nowrap;
+}
+.settings-prompt-footer button.is-primary,
+.settings-manual-extract__action button.is-primary {
+  border-color: var(--accent);
+  color: var(--accent-fg);
+  background: var(--accent);
+}
+.settings-prompt-footer button:disabled,
+.settings-manual-extract__action button:disabled {
+  cursor: not-allowed;
+  opacity: .45;
+}
+.settings-manual-extract {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 12px;
+  background: var(--bg-panel);
+}
+.settings-manual-extract > div:first-child {
+  display: grid;
+  gap: 3px;
+  margin-bottom: 10px;
+}
+.settings-manual-extract strong {
+  color: var(--text-primary);
+  font-size: var(--fs-body);
+  font-weight: 600;
+}
+.settings-manual-extract span {
+  color: var(--text-muted);
+  font-size: var(--fs-caption);
+  line-height: 1.5;
+}
+.settings-manual-extract__action {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  gap: 8px;
+}
+.settings-manual-extract__action input {
+  min-width: 0;
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  padding: 8px 10px;
+  color: var(--text-primary);
+  background: var(--bg-card);
+  font-family: var(--font-mono);
+  font-size: var(--fs-meta);
+}
+.settings-manual-extract__status {
+  margin: 8px 0 0;
+  color: var(--text-muted);
+  font-size: var(--fs-caption);
+}
+.settings-manual-extract__status.is-success { color: var(--status-ok); }
+.settings-manual-extract__status.is-error { color: var(--status-danger); }
+@media (max-width: 760px) {
+  .settings-curation-flow {
+    grid-template-columns: 1fr;
+  }
+  .settings-curation-flow i {
+    transform: rotate(90deg);
+  }
+  .settings-prompt-footer {
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+  .settings-prompt-footer span {
+    flex-basis: 100%;
+  }
+  .settings-manual-extract__action {
+    grid-template-columns: 1fr;
+  }
+}
 .settings-archive-list {
   border: 1px solid var(--border-subtle);
   border-radius: 10px;

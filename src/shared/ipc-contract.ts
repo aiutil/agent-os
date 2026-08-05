@@ -92,7 +92,7 @@ import type {
 } from './types'
 import type { Lang } from './i18n'
 
-export const IPC_CONTRACT_VERSION = 15
+export const IPC_CONTRACT_VERSION = 17
 
 /** 平台信息（用于 titlebar 安全区等）。 */
 export interface PlatformInfo {
@@ -271,6 +271,10 @@ export const CHANNELS = {
     forget: 'memory:forget',
     feedback: 'memory:feedback',
     context: 'memory:context',
+    graph: 'memory:graph',
+    working: 'memory:working',
+    updateWorking: 'memory:updateWorking',
+    clearWorking: 'memory:clearWorking',
     settings: 'memory:settings',
     updateSettings: 'memory:updateSettings',
     getPersona: 'memory:getPersona',
@@ -278,6 +282,24 @@ export const CHANNELS = {
     curatorCandidates: 'memory:curatorCandidates',
     gatewayCapabilities: 'memory:gatewayCapabilities',
     curate: 'memory:curate'
+  },
+  knowledge: {
+    list: 'knowledge:list',
+    get: 'knowledge:get',
+    saveDraft: 'knowledge:saveDraft',
+    publish: 'knowledge:publish',
+    archive: 'knowledge:archive',
+    restore: 'knowledge:restore',
+    remove: 'knowledge:remove',
+    topics: 'knowledge:topics',
+    setFavorite: 'knowledge:setFavorite',
+    comments: 'knowledge:comments',
+    addComment: 'knowledge:addComment',
+    updateComment: 'knowledge:updateComment',
+    removeComment: 'knowledge:removeComment',
+    graph: 'knowledge:graph',
+    extractDraft: 'knowledge:extractDraft',
+    openInObsidian: 'knowledge:openInObsidian'
   },
   stats: {
     summary: 'stats:summary',
@@ -597,6 +619,10 @@ export interface AgentOsApi {
     forget(id: string): Promise<void>
     feedback(input: MemoryFeedbackInput): Promise<void>
     context(input: MemoryContextInput): Promise<MemoryContextPack>
+    graph(input?: import('./types').MemoryGraphInput): Promise<import('./types').GraphSnapshot>
+    working(sessionId: string): Promise<import('./types').WorkingMemoryState | null>
+    updateWorking(input: import('./types').UpdateWorkingMemoryInput): Promise<import('./types').WorkingMemoryState>
+    clearWorking(sessionId: string): Promise<void>
     settings(): Promise<MemorySettings>
     updateSettings(patch: Partial<MemorySettings>): Promise<MemorySettings>
     getPersona(): Promise<string>
@@ -604,6 +630,9 @@ export interface AgentOsApi {
     curatorCandidates(): Promise<CuratorCandidate[]>
     gatewayCapabilities(): Promise<MemoryGatewayCapability[]>
     curate(input: CurateMemoryInput): Promise<DurableMemory[]>
+  }
+  knowledge: import('./types').KnowledgeApi & {
+    openInObsidian(id: string): Promise<void>
   }
   stats: {
     summary(input: StatsQuery): Promise<StatsSummary>

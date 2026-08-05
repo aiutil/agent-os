@@ -26,7 +26,8 @@ import type {
   UpdateSessionPatch,
   UpdateTaskPatch,
   WorkbenchSession,
-  WorkbenchSessionView
+  WorkbenchSessionView,
+  TurnContextPack
 } from '@shared/types'
 import { sortSessionViews } from '../sessions/view'
 import type { RuntimeEventListener, RuntimeHost } from './protocol'
@@ -38,6 +39,12 @@ export interface FederatedRuntimeAnalyticsHooks {
   taskCreated?(input: CreateTaskInput, task: AgentTask): void
 }
 
+export interface FederatedRuntimeMemoryContext {
+  create(session: WorkbenchSession, task: string): TurnContextPack | undefined
+  /** 只在真实成功回合结束后更新会话工作态；远程节点不读取 controller Vault。 */
+  recordCompleted?(session: WorkbenchSession, task: string): void
+}
+
 export class FederatedRuntimeHost implements RuntimeHost {
   private readonly hosts = new Map<string, RuntimeHost>()
   private readonly unsubs = new Map<string, () => void>()
@@ -45,11 +52,14 @@ export class FederatedRuntimeHost implements RuntimeHost {
   /** sessionId / terminalId → 归属主机 id。 */
   private readonly routes = new Map<string, string>()
   private readonly taskRoutes = new Map<string, string>()
+  private readonly pendingWorkingTurns = new Map<string, { session: WorkbenchSession; task: string }>()
+  private readonly queuedWorkingTurns = new Map<string, Array<{ session: WorkbenchSession; task: string }>>()
 
   constructor(
     local: RuntimeHost,
     private readonly localId: string = LOCAL_HOST_ID,
-    private readonly analytics: FederatedRuntimeAnalyticsHooks = {}
+    private readonly analytics: FederatedRuntimeAnalyticsHooks = {},
+    private readonly memoryContext?: FederatedRuntimeMemoryContext
   ) {
     this.addHost(localId, local)
   }
@@ -60,6 +70,19 @@ export class FederatedRuntimeHost implements RuntimeHost {
     this.hosts.set(id, host)
     const off = host.subscribe((event) => {
       if ('sessionId' in event) this.routes.set(event.sessionId, id)
+      if (event.kind === 'agent-event' && event.event.kind === 'turn-end') {
+        const pending = this.pendingWorkingTurns.get(event.sessionId) ?? this.queuedWorkingTurns.get(event.sessionId)?.shift()
+        if (pending) {
+          this.pendingWorkingTurns.delete(event.sessionId)
+          if (event.event.status === 'completed') {
+            try {
+              this.memoryContext?.recordCompleted?.(pending.session, pending.task)
+            } catch {
+              // 工作记忆是旁路增强，绝不能影响已经完成的回合。
+            }
+          }
+        }
+      }
       if (event.kind === 'task-changed') {
         this.taskRoutes.set(event.event.task.id, id)
         const stamped: HostEvent = {
@@ -261,14 +284,24 @@ export class FederatedRuntimeHost implements RuntimeHost {
   kill(sessionId: string): Promise<boolean> {
     return this.route(sessionId).kill(sessionId)
   }
-  sendTurn(sessionId: string, text: string, files?: string[]): Promise<ChatTurnState> {
-    return this.route(sessionId).sendTurn(sessionId, text, files)
+  async sendTurn(sessionId: string, text: string, files?: string[]): Promise<ChatTurnState> {
+    const host = this.route(sessionId)
+    const prepared = await this.contextFor(host, sessionId, text)
+    if (prepared.session) this.pendingWorkingTurns.set(sessionId, { session: prepared.session, task: text })
+    return host.sendTurn(sessionId, text, files, prepared.pack)
   }
   steerTurn(sessionId: string, text: string, files?: string[]): Promise<ChatTurnState> {
     return this.route(sessionId).steerTurn(sessionId, text, files)
   }
-  queueTurn(sessionId: string, text: string, files?: string[]): Promise<ManagedQueuedTurn> {
-    return this.route(sessionId).queueTurn(sessionId, text, files)
+  async queueTurn(sessionId: string, text: string, files?: string[]): Promise<ManagedQueuedTurn> {
+    const host = this.route(sessionId)
+    const prepared = await this.contextFor(host, sessionId, text)
+    if (prepared.session) {
+      const queued = this.queuedWorkingTurns.get(sessionId) ?? []
+      queued.push({ session: prepared.session, task: text })
+      this.queuedWorkingTurns.set(sessionId, queued)
+    }
+    return host.queueTurn(sessionId, text, files, prepared.pack)
   }
   listQueuedTurns(sessionId: string): Promise<ManagedQueuedTurn[]> {
     return this.route(sessionId).listQueuedTurns(sessionId)
@@ -302,5 +335,16 @@ export class FederatedRuntimeHost implements RuntimeHost {
   subscribe(listener: RuntimeEventListener): () => void {
     this.listeners.add(listener)
     return () => this.listeners.delete(listener)
+  }
+
+  private async contextFor(
+    host: RuntimeHost,
+    sessionId: string,
+    task: string
+  ): Promise<{ pack?: TurnContextPack; session?: WorkbenchSession }> {
+    if (!this.memoryContext) return {}
+    const session = (await host.listSessions()).find((item) => item.id === sessionId)
+    if (!session || session.surface !== 'chat' || session.memoryUse === false) return {}
+    return { session, pack: this.memoryContext.create(session, task) }
   }
 }

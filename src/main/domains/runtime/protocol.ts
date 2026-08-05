@@ -16,6 +16,7 @@ import type {
   WorkbenchSession,
   PermissionDecision
 } from '@shared/types'
+import type { TurnContextPack } from '@shared/types'
 import type { AgentTask, CreateTaskInput, TaskRun, UpdateTaskPatch } from '@shared/types'
 
 export type { RuntimeHost }
@@ -39,9 +40,9 @@ export interface RuntimeTerminal {
 
 export interface RuntimeChat {
   state(sessionId: string): ChatTurnState
-  sendTurn(sessionId: string, text: string, files?: string[]): Promise<ChatTurnState>
+  sendTurn(sessionId: string, text: string, files?: string[], contextPack?: TurnContextPack): Promise<ChatTurnState>
   steer(sessionId: string, text: string, files?: string[]): Promise<ChatTurnState>
-  queueTurn(sessionId: string, text: string, files?: string[]): ManagedQueuedTurn
+  queueTurn(sessionId: string, text: string, files?: string[], contextPack?: TurnContextPack): ManagedQueuedTurn
   listQueuedTurns(sessionId: string): ManagedQueuedTurn[]
   cancelQueuedTurn(sessionId: string, queuedTurnId: string): boolean
   interrupt(sessionId: string): Promise<boolean>

@@ -1,6 +1,6 @@
 {
   "name": "agent-os",
-  "version": "0.3.9",
+  "version": "0.4.0",
   "description": "Agent OS v2 — 个人 AI 超级工作台：统一接入主流 AI CLI，沉淀记忆、知识与成长",
   "homepage": "https://agentos.aiutil.com/",
   "author": {
@@ -44,12 +44,14 @@
     "@icon-park/react": "^1.4.2",
     "@larksuiteoapi/node-sdk": "^1.67.0",
     "@lobehub/icons": "^5.10.0",
+    "@types/d3-force": "^3.0.10",
     "@types/qrcode": "^1.5.6",
     "@wecom/aibot-node-sdk": "^1.0.7",
     "better-sqlite3": "^12.10.0",
     "bonjour-service": "^1.4.3",
     "chokidar": "^4.0.3",
     "cross-spawn": "^7.0.6",
+    "d3-force": "^3.0.0",
     "electron-store": "^10.0.1",
     "fast-glob": "^3.3.3",
     "mixpanel-browser": "^2.81.0",

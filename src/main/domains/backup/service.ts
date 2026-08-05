@@ -10,18 +10,27 @@ import {
 import type {
   AgentTask,
   DurableMemory,
+  KnowledgeArticle,
+  KnowledgeComment,
   MemorySettings,
   PortableBackupImportResult,
   PortableBackupSummary,
   PortableBackupV1,
+  PortableKnowledgeArticle,
+  PortableKnowledgeState,
   PortableProviderPreference,
   RuntimeHost,
   TaskSchedule,
   UpdateTaskPatch
 } from '@shared/types'
+import {
+  DEFAULT_KNOWLEDGE_CURATION_PROMPT,
+  DEFAULT_MEMORY_CURATION_PROMPT
+} from '@shared/curation-prompts'
 import { listAdapters } from '../adapters/registry'
 import { normalizeSchedule } from '../tasks/cron'
 import type { MemoryVault } from '../memory/vault'
+import type { KnowledgeVault } from '../knowledge/vault'
 import {
   getGamificationEnabled,
   getLanguage,
@@ -186,6 +195,17 @@ function parseMemory(value: unknown): DurableMemory {
   }
   const expiresAt = optionalString(row.expiresAt, 'memory.expiresAt')
   const rejectionReason = optionalString(row.rejectionReason, 'memory.rejectionReason')
+  const memoryClass = optionalString(row.memoryClass, 'memory.memoryClass')
+  if (memoryClass && !['identity', 'semantic', 'episodic', 'procedural'].includes(memoryClass)) {
+    throw new Error('备份记忆类别无效')
+  }
+  const lastAccessedAt = optionalString(row.lastAccessedAt, 'memory.lastAccessedAt')
+  const validFrom = optionalString(row.validFrom, 'memory.validFrom')
+  const validUntil = optionalString(row.validUntil, 'memory.validUntil')
+  if (row.legacy !== undefined && typeof row.legacy !== 'boolean') throw new Error('备份记忆 legacy 无效')
+  if (row.accessCount !== undefined && (typeof row.accessCount !== 'number' || row.accessCount < 0)) {
+    throw new Error('备份记忆访问次数无效')
+  }
   return {
     id: string(row.id, 'memory.id'),
     kind: kind as DurableMemory['kind'],
@@ -201,9 +221,84 @@ function parseMemory(value: unknown): DurableMemory {
     pinned: row.pinned,
     createdAt: validDate(row.createdAt, 'memory.createdAt'),
     updatedAt: validDate(row.updatedAt, 'memory.updatedAt'),
+    ...(memoryClass ? { memoryClass: memoryClass as DurableMemory['memoryClass'] } : {}),
+    ...(typeof row.legacy === 'boolean' ? { legacy: row.legacy } : {}),
+    ...(typeof row.accessCount === 'number' ? { accessCount: row.accessCount } : {}),
+    ...(lastAccessedAt ? { lastAccessedAt: validDate(lastAccessedAt, 'memory.lastAccessedAt') } : {}),
+    ...(validFrom ? { validFrom: validDate(validFrom, 'memory.validFrom') } : {}),
+    ...(validUntil ? { validUntil: validDate(validUntil, 'memory.validUntil') } : {}),
     ...(expiresAt ? { expiresAt: validDate(expiresAt, 'memory.expiresAt') } : {}),
     ...(rejectionReason ? { rejectionReason } : {})
   }
+}
+
+function parseKnowledgeArticle(value: unknown): PortableKnowledgeArticle {
+  if (!value || typeof value !== 'object') throw new Error('备份知识文章无效')
+  const row = value as Record<string, unknown>
+  const status = string(row.status, 'knowledge.status')
+  if (!['draft', 'published', 'archived'].includes(status)) throw new Error('备份知识文章状态无效')
+  if (!Array.isArray(row.tags) || !row.tags.every((item) => typeof item === 'string')) throw new Error('备份知识文章 tags 无效')
+  if (!Array.isArray(row.sources)) throw new Error('备份知识文章 sources 无效')
+  const sources = row.sources.map((source) => {
+    if (!source || typeof source !== 'object') throw new Error('备份知识文章来源无效')
+    const item = source as Record<string, unknown>
+    const sourceType = string(item.sourceType, 'knowledge.source.sourceType')
+    if (!['session', 'manual'].includes(sourceType)) throw new Error('备份知识文章来源类型无效')
+    return {
+      sourceType: sourceType as KnowledgeArticle['sources'][number]['sourceType'],
+      sourceId: string(item.sourceId, 'knowledge.source.sourceId'),
+      ...(optionalString(item.toolId, 'knowledge.source.toolId') ? { toolId: String(item.toolId) } : {}),
+      ...(typeof item.messageStart === 'number' ? { messageStart: item.messageStart } : {}),
+      ...(typeof item.messageEnd === 'number' ? { messageEnd: item.messageEnd } : {}),
+      ...(optionalString(item.excerptDigest, 'knowledge.source.excerptDigest') ? { excerptDigest: String(item.excerptDigest) } : {})
+    }
+  })
+  const favorite = row.favorite
+  if (typeof favorite !== 'boolean') throw new Error('备份知识文章收藏状态无效')
+  const publishedAt = optionalString(row.publishedAt, 'knowledge.publishedAt')
+  const favoriteAt = optionalString(row.favoriteAt, 'knowledge.favoriteAt')
+  if (typeof row.wordCount !== 'number' || row.wordCount < 0) throw new Error('备份知识文章字数无效')
+  return {
+    id: string(row.id, 'knowledge.id'),
+    title: string(row.title, 'knowledge.title'),
+    summary: string(row.summary, 'knowledge.summary', true),
+    body: string(row.body, 'knowledge.body'),
+    status: status as KnowledgeArticle['status'],
+    topic: string(row.topic, 'knowledge.topic'),
+    tags: [...row.tags] as string[],
+    sources,
+    createdAt: validDate(row.createdAt, 'knowledge.createdAt'),
+    updatedAt: validDate(row.updatedAt, 'knowledge.updatedAt'),
+    ...(publishedAt ? { publishedAt: validDate(publishedAt, 'knowledge.publishedAt') } : {}),
+    favorite,
+    ...(favoriteAt ? { favoriteAt: validDate(favoriteAt, 'knowledge.favoriteAt') } : {}),
+    wordCount: row.wordCount
+  }
+}
+
+function parseKnowledgeComment(value: unknown): KnowledgeComment {
+  if (!value || typeof value !== 'object') throw new Error('备份知识评论无效')
+  const row = value as Record<string, unknown>
+  const anchor = row.anchor
+  if (anchor !== undefined && (!anchor || typeof anchor !== 'object')) throw new Error('备份知识评论锚点无效')
+  return {
+    id: string(row.id, 'knowledge.comment.id'),
+    articleId: string(row.articleId, 'knowledge.comment.articleId'),
+    body: string(row.body, 'knowledge.comment.body'),
+    ...(anchor ? { anchor: anchor as KnowledgeComment['anchor'] } : {}),
+    createdAt: validDate(row.createdAt, 'knowledge.comment.createdAt'),
+    updatedAt: validDate(row.updatedAt, 'knowledge.comment.updatedAt')
+  }
+}
+
+function parseKnowledge(value: unknown): PortableKnowledgeState | undefined {
+  if (value === undefined) return undefined
+  if (!value || typeof value !== 'object') throw new Error('备份知识结构无效')
+  const row = value as Record<string, unknown>
+  if (!Array.isArray(row.articles) || !Array.isArray(row.comments)) throw new Error('备份知识结构无效')
+  const articles = requireUnique(row.articles.map(parseKnowledgeArticle), (article) => article.id, 'knowledge.article.id')
+  const comments = requireUnique(row.comments.map(parseKnowledgeComment), (comment) => comment.id, 'knowledge.comment.id')
+  return { articles, comments }
 }
 
 function parseTask(value: unknown): AgentTask {
@@ -251,11 +346,12 @@ function parseMemorySettings(value: unknown): MemorySettings {
     typeof row.enabled !== 'boolean' ||
     typeof row.useMemories !== 'boolean' ||
     typeof row.generateMemories !== 'boolean' ||
+    (row.knowledgeCurationEnabled !== undefined && typeof row.knowledgeCurationEnabled !== 'boolean') ||
     typeof row.allowExternalContext !== 'boolean' ||
     typeof row.contextTokenBudget !== 'number' ||
     !Number.isFinite(row.contextTokenBudget) ||
     row.contextTokenBudget < 200 ||
-    row.contextTokenBudget > 8_000
+    row.contextTokenBudget > 2_000
   ) {
     throw new Error('备份记忆设置字段无效')
   }
@@ -265,16 +361,30 @@ function parseMemorySettings(value: unknown): MemorySettings {
     row.curationInstructions,
     'memory.settings.curationInstructions'
   )
+  const memoryCurationPrompt = optionalString(
+    row.memoryCurationPrompt,
+    'memory.settings.memoryCurationPrompt'
+  )
+  const knowledgeCurationPrompt = optionalString(
+    row.knowledgeCurationPrompt,
+    'memory.settings.knowledgeCurationPrompt'
+  )
   const curationEpoch = optionalString(row.curationEpoch, 'memory.settings.curationEpoch')
   return {
     enabled: row.enabled,
     useMemories: row.useMemories,
     generateMemories: row.generateMemories,
+    knowledgeCurationEnabled: row.knowledgeCurationEnabled ?? true,
     allowExternalContext: row.allowExternalContext,
     contextTokenBudget: row.contextTokenBudget,
+    memoryCurationPrompt:
+      memoryCurationPrompt?.trim() ||
+      curationInstructions?.trim() ||
+      DEFAULT_MEMORY_CURATION_PROMPT,
+    knowledgeCurationPrompt:
+      knowledgeCurationPrompt?.trim() || DEFAULT_KNOWLEDGE_CURATION_PROMPT,
     ...(curatorAgentId ? { curatorAgentId } : {}),
     ...(curatorModel ? { curatorModel } : {}),
-    ...(curationInstructions ? { curationInstructions } : {}),
     ...(curationEpoch ? { curationEpoch: validDate(curationEpoch, 'memory.settings.curationEpoch') } : {})
   }
 }
@@ -286,6 +396,7 @@ function summary(backup: PortableBackupV1): PortableBackupSummary {
     memories: backup.memory.items.length,
     tasks: backup.tasks.length,
     providers: backup.preferences.providers.length,
+    knowledgeArticles: backup.knowledge?.articles.length ?? 0,
     schedulesWillBePaused: backup.tasks.filter((task) => task.schedule).length,
     credentialsExcluded: true
   }
@@ -344,7 +455,8 @@ export class PortableBackupService {
   constructor(
     private readonly runtime: RuntimeHost,
     private readonly vault: MemoryVault,
-    private readonly appVersion: string
+    private readonly appVersion: string,
+    private readonly knowledge?: KnowledgeVault
   ) {}
 
   async build(): Promise<PortableBackupV1> {
@@ -379,6 +491,7 @@ export class PortableBackupService {
         providers
       },
       memory,
+      ...(this.knowledge ? { knowledge: this.knowledge.portableState() } : {}),
       tasks: (await this.runtime.listTasks())
         .filter((task) => !task.runtimeHostId || task.runtimeHostId === 'local')
         .map(portableTask)
@@ -389,7 +502,7 @@ export class PortableBackupService {
     const backup = await this.build()
     const content = `${JSON.stringify(backup, null, 2)}\n`
     if (Buffer.byteLength(content, 'utf8') > MAX_BACKUP_BYTES) {
-      throw new Error('备份内容超过 20 MiB，请先精简长期记忆')
+      throw new Error('备份内容超过 20 MiB，请先精简记忆或知识文章')
     }
     const temporary = `${filePath}.${process.pid}.tmp`
     try {
@@ -466,6 +579,7 @@ export class PortableBackupService {
       }
     }
     const memories = requireUnique(memory.items.map(parseMemory), (item) => item.id, 'memory.id')
+    const knowledge = parseKnowledge(raw.knowledge)
     const tasks = requireUnique(raw.tasks.map(parseTask), (task) => task.id, 'task.id')
     return {
       schemaVersion: 1,
@@ -486,6 +600,7 @@ export class PortableBackupService {
         settings: parseMemorySettings(memory.settings),
         items: memories
       },
+      ...(knowledge ? { knowledge } : {}),
       tasks
     }
   }
@@ -504,6 +619,7 @@ export class PortableBackupService {
     }
     const backup = this.parse(content)
     const previousMemory = this.vault.portableState()
+    const previousKnowledge = this.knowledge?.portableState()
     const previousPreferences = {
       language: getLanguage(),
       gamificationEnabled: getGamificationEnabled(),
@@ -542,6 +658,7 @@ export class PortableBackupService {
         settings: backup.memory.settings,
         items: [...mergedMemories.values()]
       })
+      if (backup.knowledge && this.knowledge) this.knowledge.replacePortableState(backup.knowledge)
 
       for (const imported of backup.tasks) {
         const existing = existingById.get(imported.id)
@@ -568,6 +685,7 @@ export class PortableBackupService {
         importedMemories: backup.memory.items.length,
         importedTasks: backup.tasks.length,
         importedProviders: backup.preferences.providers.length,
+        ...(backup.knowledge ? { importedKnowledgeArticles: backup.knowledge.articles.length } : {}),
         schedulesPaused: backup.tasks.filter((task) => task.schedule).length
       }
     } catch (error) {
@@ -576,6 +694,7 @@ export class PortableBackupService {
       setMirrorSettings(previousPreferences.mirrorSettings)
       for (const previous of previousPreferences.providers.values()) setProviderConfig(previous)
       this.vault.replacePortableState(previousMemory)
+      if (previousKnowledge && this.knowledge) this.knowledge.replacePortableState(previousKnowledge)
       for (const id of createdTaskIds) await this.runtime.removeTask(id).catch(() => undefined)
       for (const task of touchedExisting) {
         await this.runtime.updateTask(task.id, taskPatch(task)).catch(() => undefined)

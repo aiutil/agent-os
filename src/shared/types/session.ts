@@ -7,6 +7,7 @@ import type { TerminalRunStatus } from './terminal'
 import type { PermissionPreset } from './agent-event'
 import type { ChannelBindingRef, ConversationSource } from './channels'
 import type { ReferencedMemory } from './memory'
+import type { TurnContextPack } from './memory'
 
 // ─── Conversation / Segment（SPEC-017）────────────────────────────────────
 
@@ -289,6 +290,8 @@ export interface ManagedQueuedTurn {
   sessionId: string
   text: string
   files: string[]
+  /** 生成于入队时的 controller 上下文快照；正文仍只保存原始用户任务。 */
+  contextPack?: TurnContextPack
   status: 'queued'
   createdAt: string
   updatedAt: string

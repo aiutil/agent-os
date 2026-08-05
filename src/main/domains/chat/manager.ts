@@ -30,8 +30,10 @@ import type {
   ManagedChatTimelineItem,
   PermissionDecision,
   ReferencedMemory,
+  TurnContextPack,
   WorkbenchSession
 } from '@shared/types'
+import { serializeTurnWithContext } from '@shared/turn-context'
 import {
   startApprovalBridge,
   type ApprovalBridge,
@@ -78,7 +80,10 @@ interface ChatManagerOptions {
     item: Omit<ManagedChatTimelineItem, 'id' | 'createdAt'>
   ): ManagedChatTimelineItem
   listQueuedTurns?(sessionId: string): ManagedQueuedTurn[]
-  enqueueTurn?(sessionId: string, input: { text: string; files?: string[] }): ManagedQueuedTurn
+  enqueueTurn?(
+    sessionId: string,
+    input: { text: string; files?: string[]; contextPack?: TurnContextPack }
+  ): ManagedQueuedTurn
   cancelQueuedTurn?(sessionId: string, queuedTurnId: string): boolean
   updatePermissionStatus?(
     sessionId: string,
@@ -142,6 +147,8 @@ interface LogicalTurn {
   assistantMessageId: string
   /** 附件文件路径列表。 */
   files?: string[]
+  /** controller 生成的上下文快照；daemon/远程端不得自行读取 controller Vault。 */
+  contextPack?: TurnContextPack
 }
 
 const SAFE_AUTO_TOOLS = new Set(['Read', 'Glob', 'Grep'])
@@ -204,9 +211,14 @@ export class ChatManager {
     return this.options.listTimeline?.(sessionId) ?? []
   }
 
-  async sendTurn(sessionId: string, prompt: string, files?: string[]): Promise<ChatTurnState> {
+  async sendTurn(
+    sessionId: string,
+    prompt: string,
+    files?: string[],
+    contextPack?: TurnContextPack
+  ): Promise<ChatTurnState> {
     if (this.turns.has(sessionId)) throw new Error(tr('chat.error.turnInProgress'))
-    return this.startTurn(sessionId, prompt, files)
+    return this.startTurn(sessionId, prompt, files, contextPack)
   }
 
   async steer(sessionId: string, prompt: string, files?: string[]): Promise<ChatTurnState> {
@@ -219,11 +231,16 @@ export class ChatManager {
     return this.startTurn(sessionId, text, files)
   }
 
-  queueTurn(sessionId: string, prompt: string, files?: string[]): ManagedQueuedTurn {
+  queueTurn(
+    sessionId: string,
+    prompt: string,
+    files?: string[],
+    contextPack?: TurnContextPack
+  ): ManagedQueuedTurn {
     this.requireChatSession(sessionId)
     const text = prompt.trim()
     if (!text) throw new Error(tr('chat.error.emptyPrompt'))
-    const queued = this.enqueueQueuedTurn(sessionId, { text, files })
+    const queued = this.enqueueQueuedTurn(sessionId, { text, files, contextPack })
     if (!this.turns.has(sessionId)) this.drainQueuedTurn(sessionId)
     this.setState(sessionId, {})
     return queued
@@ -239,7 +256,12 @@ export class ChatManager {
     return removed
   }
 
-  private startTurn(sessionId: string, prompt: string, files?: string[]): ChatTurnState {
+  private startTurn(
+    sessionId: string,
+    prompt: string,
+    files?: string[],
+    contextPack?: TurnContextPack
+  ): ChatTurnState {
     const session = this.requireChatSession(sessionId)
     const channel = this.options.getAdapter(session.toolId)!.headlessJson!
     assertAttachmentsSupported(session.toolId, channel.attachments, files)
@@ -272,7 +294,8 @@ export class ChatManager {
       assistantText: '',
       userMessageId: userMessage.id,
       assistantMessageId: assistantMessage.id,
-      ...(files?.length ? { files } : {})
+      ...(files?.length ? { files } : {}),
+      ...(contextPack ? { contextPack } : {})
     }
     this.turns.set(sessionId, turn)
     this.setState(sessionId, {
@@ -392,12 +415,26 @@ export class ChatManager {
   private spawnTurn(turn: LogicalTurn, prompt?: string): void {
     const session = this.requireChatSession(turn.sessionId)
     const channel = this.options.getAdapter(session.toolId)!.headlessJson!
-    const memory =
-      prompt && session.memoryUse !== false
+    const memory = turn.contextPack
+      ? turn.contextPack
+      : prompt && session.memoryUse !== false
         ? this.options.memoryContext?.(session, prompt)
         : undefined
     const context = memory?.text ?? ''
-    const promptWithMemory = context && prompt ? `${context}\n\n# 当前任务\n${prompt}` : prompt
+    const promptWithMemory = prompt
+      ? serializeTurnWithContext(
+          prompt,
+          context
+            ? {
+                version: 1,
+                text: context,
+                referencedMemories: memory?.referencedMemories ?? [],
+                generatedAt: turn.contextPack?.generatedAt ?? new Date().toISOString(),
+                estimatedTokens: turn.contextPack?.estimatedTokens ?? Math.ceil(context.length / 3)
+              }
+            : undefined
+        )
+      : undefined
     // 把本回合实际注入的记忆引用回写到 assistant 消息，供 UI 只读展示"参考了哪些记忆"。
     if (memory?.referencedMemories.length) {
       this.updateMessage(turn.sessionId, turn.assistantMessageId, {
@@ -690,7 +727,7 @@ export class ChatManager {
 
   private enqueueQueuedTurn(
     sessionId: string,
-    input: { text: string; files?: string[] }
+    input: { text: string; files?: string[]; contextPack?: TurnContextPack }
   ): ManagedQueuedTurn {
     if (this.options.enqueueTurn) return this.options.enqueueTurn(sessionId, input)
     const now = new Date().toISOString()
@@ -699,6 +736,7 @@ export class ChatManager {
       sessionId,
       text: input.text,
       files: input.files ?? [],
+      ...(input.contextPack ? { contextPack: input.contextPack } : {}),
       status: 'queued',
       createdAt: now,
       updatedAt: now
@@ -724,7 +762,12 @@ export class ChatManager {
     const next = this.listQueued(sessionId)[0]
     if (!next) return
     if (!this.cancelQueued(sessionId, next.id)) return
-    this.startTurn(sessionId, next.text, next.files.length ? next.files : undefined)
+    this.startTurn(
+      sessionId,
+      next.text,
+      next.files.length ? next.files : undefined,
+      next.contextPack
+    )
   }
 
   private persistTimelineEvent(

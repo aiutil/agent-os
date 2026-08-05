@@ -363,10 +363,10 @@ export class AuthorizedRuntimeHost implements RuntimeHost {
   private checkFiles(files?: string[]): void {
     for (const file of files ?? []) this.require('session:write', file)
   }
-  async sendTurn(sessionId: string, text: string, files?: string[]): Promise<ChatTurnState> {
+  async sendTurn(sessionId: string, text: string, files?: string[], contextPack?: import('@shared/types').TurnContextPack): Promise<ChatTurnState> {
     this.requireOwnedSession('session:write', sessionId)
     this.checkFiles(files)
-    return this.runtime.sendTurn(sessionId, text, files)
+    return this.runtime.sendTurn(sessionId, text, files, contextPack)
   }
   async steerTurn(sessionId: string, text: string, files?: string[]): Promise<ChatTurnState> {
     this.requireOwnedSession('session:terminate', sessionId)
@@ -374,10 +374,10 @@ export class AuthorizedRuntimeHost implements RuntimeHost {
     this.checkFiles(files)
     return this.runtime.steerTurn(sessionId, text, files)
   }
-  async queueTurn(sessionId: string, text: string, files?: string[]): Promise<ManagedQueuedTurn> {
+  async queueTurn(sessionId: string, text: string, files?: string[], contextPack?: import('@shared/types').TurnContextPack): Promise<ManagedQueuedTurn> {
     this.requireOwnedSession('session:write', sessionId)
     this.checkFiles(files)
-    return this.runtime.queueTurn(sessionId, text, files)
+    return this.runtime.queueTurn(sessionId, text, files, contextPack)
   }
   async listQueuedTurns(sessionId: string): Promise<ManagedQueuedTurn[]> {
     this.requireOwnedSession('session:read', sessionId)

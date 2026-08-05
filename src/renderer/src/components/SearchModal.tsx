@@ -10,7 +10,7 @@ import { sessionStatusColor, sessionStatusLabel } from '../lib/status'
 import { relativeTime } from '../lib/time'
 import { useT } from '../lib/i18n'
 import { ToolIcon } from '../lib/toolIcons'
-import type { MemorySearchHit, WorkbenchSessionView } from '@shared/types'
+import type { KnowledgeArticle, MemorySearchHit, WorkbenchSessionView } from '@shared/types'
 import type { MemoryIndexStatus } from '@shared/types'
 import { sanitizeTranscriptTitle } from '@shared/transcript/title'
 import { sessionDisplayTitle } from '../lib/sessionTitle'
@@ -26,8 +26,9 @@ export function SearchModal(): React.JSX.Element {
   const { t } = useT()
 
   const [query, setQuery] = useState('')
-  const [tab, setTab] = useState<'all' | 'chat' | 'cli'>('all')
+  const [tab, setTab] = useState<'all' | 'chat' | 'cli' | 'knowledge'>('all')
   const [hits, setHits] = useState<MemorySearchHit[]>([])
+  const [knowledgeHits, setKnowledgeHits] = useState<KnowledgeArticle[]>([])
   const [searching, setSearching] = useState(false)
   const [indexStatus, setIndexStatus] = useState<MemoryIndexStatus | null>(null)
   const boxRef = useRef<HTMLDivElement>(null)
@@ -57,6 +58,7 @@ export function SearchModal(): React.JSX.Element {
     if (searchTimer.current) clearTimeout(searchTimer.current)
     if (!q || q.length < 2) {
       setHits([])
+      setKnowledgeHits([])
       return
     }
     searchTimer.current = setTimeout(() => {
@@ -66,6 +68,10 @@ export function SearchModal(): React.JSX.Element {
         .then((results) => setHits(results))
         .catch(() => setHits([]))
         .finally(() => setSearching(false))
+      void window.agentOs.knowledge
+        .list({ query: q, statuses: ['published'], limit: 16 })
+        .then((results) => setKnowledgeHits(results))
+        .catch(() => setKnowledgeHits([]))
     }, 400)
     return () => {
       if (searchTimer.current) clearTimeout(searchTimer.current)
@@ -114,8 +120,14 @@ export function SearchModal(): React.JSX.Element {
     close()
   }
 
+  const handleSelectKnowledge = (article: KnowledgeArticle): void => {
+    window.dispatchEvent(new CustomEvent('agent-os:open-knowledge', { detail: article.id }))
+    close()
+  }
+
   const showChat = tab === 'all' || tab === 'chat'
   const showCli = tab === 'all' || tab === 'cli'
+  const showKnowledge = tab === 'all' || tab === 'knowledge'
   // 内容命中：剔除已作为实时会话条目展示的，再按来源归入当前 tab。
   const shownViewIds = new Set(filtered.map((v) => v.id))
   const matchesView = (hit: MemorySearchHit): boolean =>
@@ -123,8 +135,8 @@ export function SearchModal(): React.JSX.Element {
     filtered.some((v) => v.toolId === hit.toolId && v.nativeSessionId === hit.nativeSessionId)
   const agentHits = hits.filter((h) => h.source === 'agent' && !matchesView(h))
   const cliHits = hits.filter((h) => h.source !== 'agent' && !matchesView(h))
-  const visibleHits = tab === 'chat' ? agentHits : tab === 'cli' ? cliHits : [...agentHits, ...cliHits]
-  const allEmpty = filtered.length === 0 && hits.length === 0
+  const visibleHits = tab === 'chat' ? agentHits : tab === 'cli' ? cliHits : tab === 'all' ? [...agentHits, ...cliHits] : []
+  const allEmpty = filtered.length === 0 && hits.length === 0 && knowledgeHits.length === 0
 
   return (
     <div className="search-modal-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) close() }}>
@@ -155,14 +167,14 @@ export function SearchModal(): React.JSX.Element {
         </div>
 
         <div className="search-tabs">
-          {(['all', 'chat', 'cli'] as const).map((tk) => (
+          {(['all', 'chat', 'cli', 'knowledge'] as const).map((tk) => (
             <button
               key={tk}
               type="button"
               className={`search-tab ${tab === tk ? 'is-active' : ''}`}
               onClick={() => setTab(tk)}
             >
-              {tk === 'all' ? t('common.label.all') : tk === 'chat' ? `${t('channels.search.tabChat')}${chatViews.length > 0 ? ` ${chatViews.length}` : ''}` : `${t('channels.search.tabCli')}${cliViews.length > 0 ? ` ${cliViews.length}` : ''}`}
+              {tk === 'all' ? t('common.label.all') : tk === 'chat' ? `${t('channels.search.tabChat')}${chatViews.length > 0 ? ` ${chatViews.length}` : ''}` : tk === 'cli' ? `${t('channels.search.tabCli')}${cliViews.length > 0 ? ` ${cliViews.length}` : ''}` : `知识${knowledgeHits.length > 0 ? ` ${knowledgeHits.length}` : ''}`}
             </button>
           ))}
         </div>
@@ -247,6 +259,21 @@ export function SearchModal(): React.JSX.Element {
                       &nbsp;·&nbsp;{t('channels.search.messageCount', { count: hit.messageCount })}
                       {hit.lastActivityAt && <span className="search-item__time">{relativeTime(hit.lastActivityAt)}</span>}
                     </span>
+                  </span>
+                </button>
+              ))}
+            </>
+          )}
+          {showKnowledge && knowledgeHits.length > 0 && (
+            <>
+              <div className="search-group-label">知识文章</div>
+              {knowledgeHits.map((article) => (
+                <button key={article.id} type="button" className="search-item" onClick={() => handleSelectKnowledge(article)}>
+                  <span className="search-item__dot" style={{ background: 'var(--tool-codex)' }} />
+                  <span className="search-item__body">
+                    <span className="search-item__title">{article.title}</span>
+                    <span className="search-item__preview">{article.summary}</span>
+                    <span className="search-item__meta">{article.topic}&nbsp;·&nbsp;{article.tags.map((tag) => `#${tag}`).join(' ')}</span>
                   </span>
                 </button>
               ))}

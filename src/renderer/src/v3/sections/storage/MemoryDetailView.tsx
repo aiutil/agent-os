@@ -128,7 +128,15 @@ function MemoryCreateView({
 }
 
 // ─── 单条详情：查看 / 编辑 / 置顶 / 删除 ──────────────────────────────────────
-function MemoryDetail({ memoryId }: { memoryId: string }): React.JSX.Element {
+function MemoryDetail({
+  memoryId,
+  embedded = false,
+  onChanged
+}: {
+  memoryId: string
+  embedded?: boolean
+  onChanged?(memory: DurableMemory | null): void
+}): React.JSX.Element {
   const { t, lang } = useT()
   const [memory, setMemory] = useState<DurableMemory | null>(null)
   const [loading, setLoading] = useState(true)
@@ -178,6 +186,7 @@ function MemoryDetail({ memoryId }: { memoryId: string }): React.JSX.Element {
         if (!updated) throw new Error(t('memory.detail.error.notExists'))
         setEditing(false)
         setMemory(updated)
+        onChanged?.(updated)
       })
       .catch((error: unknown) => {
         setEditError(error instanceof Error ? error.message : t('memory.detail.error.saveFailed'))
@@ -190,7 +199,12 @@ function MemoryDetail({ memoryId }: { memoryId: string }): React.JSX.Element {
     setBusy(true)
     void window.agentOs.memory
       .updateDurable(memory.id, { pinned: !memory.pinned })
-      .then((updated) => { if (updated) setMemory(updated) })
+      .then((updated) => {
+        if (updated) {
+          setMemory(updated)
+          onChanged?.(updated)
+        }
+      })
       .finally(() => setBusy(false))
   }
 
@@ -202,14 +216,15 @@ function MemoryDetail({ memoryId }: { memoryId: string }): React.JSX.Element {
       .then(() => {
         setMemory(null)
         setConfirmingDelete(false)
+        onChanged?.(null)
       })
       .finally(() => setBusy(false))
   }
 
   if (loading) {
     return (
-      <div className="chat-view storage-page">
-        <div className="chat-messages storage-page__body">
+      <div className={embedded ? 'memory-detail-pane' : 'chat-view storage-page'}>
+        <div className={embedded ? 'memory-detail-pane__state' : 'chat-messages storage-page__body'}>
           <div className="cli-history-empty">{t('common.state.loading')}</div>
         </div>
       </div>
@@ -217,8 +232,8 @@ function MemoryDetail({ memoryId }: { memoryId: string }): React.JSX.Element {
   }
   if (!memory) {
     return (
-      <div className="chat-view storage-page">
-        <div className="chat-messages storage-page__body">
+      <div className={embedded ? 'memory-detail-pane' : 'chat-view storage-page'}>
+        <div className={embedded ? 'memory-detail-pane__state' : 'chat-messages storage-page__body'}>
           <div className="cli-history-empty">{t('memory.detail.notFound')}</div>
         </div>
       </div>
@@ -228,10 +243,11 @@ function MemoryDetail({ memoryId }: { memoryId: string }): React.JSX.Element {
   const evidenceText = memory.evidence.map((item) => `${item.sourceType}:${item.sourceId}`).join(' · ') || t('memory.detail.evidenceManual')
 
   return (
-    <div className="chat-view storage-page">
-      <div className="chat-header">
-        <div className="chat-header__name">{memory.title}</div>
-        <div className="chat-header__status" style={{ gap: 12, flexWrap: 'wrap' }}>
+    <div className={embedded ? 'memory-detail-pane' : 'chat-view storage-page'}>
+      <div className={embedded ? 'memory-detail-pane__header' : 'chat-header'}>
+        {embedded && <div className="memory-detail-pane__eyebrow">记忆详情</div>}
+        <div className={embedded ? 'memory-detail-pane__title' : 'chat-header__name'}>{memory.title}</div>
+        <div className={embedded ? 'memory-detail-pane__meta' : 'chat-header__status'} style={{ gap: 12, flexWrap: 'wrap' }}>
           <span style={{ color: 'var(--accent)', fontWeight: 600 }}>{memory.kind} · {memory.scope}</span>
           <span>{t('memory.detail.storedAt', { time: relativeTime(memory.createdAt) })}</span>
           <span style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -272,8 +288,8 @@ function MemoryDetail({ memoryId }: { memoryId: string }): React.JSX.Element {
           </span>
         </div>
       </div>
-      <div className="chat-messages storage-page__body">
-        <div className="storage-page__inner memory-page__inner">
+      <div className={embedded ? 'memory-detail-pane__body' : 'chat-messages storage-page__body'}>
+        <div className={embedded ? 'memory-detail-pane__inner' : 'storage-page__inner memory-page__inner'}>
           {editing ? (
             <div className="storage-card memory-editor-card">
               <div className="storage-card__body storage-card__body--compact">
@@ -309,15 +325,19 @@ export function MemoryDetailView({
   memoryId,
   create,
   onCreated,
-  onCancelCreate
+  onCancelCreate,
+  embedded,
+  onChanged
 }: {
   memoryId?: string
   create?: boolean
   onCreated?(rec: { id: string; title: string }): void
   onCancelCreate?(): void
+  embedded?: boolean
+  onChanged?(memory: DurableMemory | null): void
 }): React.JSX.Element {
   if (create) {
     return <MemoryCreateView onCreated={(rec) => onCreated?.(rec)} onCancel={() => onCancelCreate?.()} />
   }
-  return <MemoryDetail memoryId={memoryId ?? ''} />
+  return <MemoryDetail memoryId={memoryId ?? ''} embedded={embedded} onChanged={onChanged} />
 }
