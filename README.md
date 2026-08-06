@@ -13,7 +13,7 @@
 <p align="center">
   <a href="README.zh-CN.md">简体中文</a> ·
   <a href="https://github.com/aiutil/agent-os/releases/latest">Download</a> ·
-  <a href="https://agentos.aiutil.com/agent-os-v0.4.0-overview.mp4">30-second overview</a> ·
+  <a href="https://agentos.aiutil.com/agent-os-v0.4.0-overview.mp4">100-second product tour</a> ·
   <a href="https://agentos.aiutil.com">Product site</a> ·
   <a href="https://agentos.aiutil.com/guide.html?lang=en">User guide</a>
 </p>
@@ -26,7 +26,7 @@
 
 ![Agent OS knowledge atlas](site/knowledge-atlas-en-v0.4.0.png)
 
-▶ [Watch the 30-second bilingual product overview](https://agentos.aiutil.com/agent-os-v0.4.0-overview.mp4)
+▶ [Watch the 100-second bilingual product tour](https://agentos.aiutil.com/agent-os-v0.4.0-overview.mp4) — workbench, CLI sessions, compare, tasks, schedules, remote Runtime, message channels, memory, knowledge, and curation settings.
 
 ## Why Agent OS
 
