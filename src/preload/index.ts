@@ -40,6 +40,7 @@ const api: AgentOsApi = {
     completeOnboarding: () => ipcRenderer.invoke(CHANNELS.app.completeOnboarding),
     resetOnboarding: () => ipcRenderer.invoke(CHANNELS.app.resetOnboarding),
     selectDirectory: (options) => ipcRenderer.invoke(CHANNELS.app.selectDirectory, options),
+    openDirectory: (path) => ipcRenderer.invoke(CHANNELS.app.openDirectory, path),
     selectFile: (options) => ipcRenderer.invoke(CHANNELS.app.selectFile, options),
     openExternal: (url) => ipcRenderer.invoke(CHANNELS.app.openExternal, url),
     setLanguage: (lang) => ipcRenderer.invoke(CHANNELS.app.setLanguage, lang),

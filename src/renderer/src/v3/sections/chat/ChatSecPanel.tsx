@@ -17,6 +17,7 @@ import { ActivityHeat } from './ActivityHeat'
 import { CliLaunchDialog } from './CliLaunchDialog'
 import { useT } from '../../../lib/i18n'
 import { relativeTime } from '../../../lib/time'
+import { useNotificationStore } from '../../../stores/notificationStore'
 
 const IcChat = (): React.JSX.Element => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -124,6 +125,16 @@ export function ChatSecPanel({
     await rename(id, next)
   }
   const cancelRename = (): void => setEditingId(null)
+  const openWorkspace = async (view: WorkbenchSessionView): Promise<void> => {
+    try {
+      await window.agentOs.app.openDirectory(view.workspacePath)
+    } catch {
+      useNotificationStore.getState().show({
+        message: t('chat.session.openFolderFailed'),
+        tone: 'error'
+      })
+    }
+  }
 
   const q = query.trim().toLowerCase()
   const list = views
@@ -295,6 +306,20 @@ export function ChatSecPanel({
                         </div>
                       </div>
                       <div className="chat-session-item__actions">
+                        {!remoteRuntimeHostId(v.runtimeHostId) && v.workspacePath && (
+                          <button
+                            type="button"
+                            className="chat-session-item__action"
+                            aria-label={t('chat.session.openFolder')}
+                            title={t('chat.session.openFolder')}
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              void openWorkspace(v)
+                            }}
+                          >
+                            <IcFolder />
+                          </button>
+                        )}
                         <button
                           type="button"
                           className="chat-session-item__action"
