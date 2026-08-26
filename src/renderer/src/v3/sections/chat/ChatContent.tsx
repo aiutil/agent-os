@@ -58,6 +58,7 @@ import { Markdown } from '../../../lib/markdown/Markdown'
 import { useT } from '../../../lib/i18n'
 import { sessionDisplayTitle } from '../../../lib/sessionTitle'
 import { AttachmentPreviewItem } from './AttachmentPreviewItem'
+import { messageTime } from '@shared/message-time'
 
 function itemId(): string {
   return crypto.randomUUID()
@@ -1038,6 +1039,7 @@ function ChatItemView({
     }
 
     const isUser = item.role === 'user'
+    const timestamp = messageTime(item.createdAt)
     return (
       <div className={`msg ${isUser ? 'is-user' : 'is-agent'}`}>
         {isUser ? (
@@ -1045,9 +1047,12 @@ function ChatItemView({
             <div className="msg-bubble">
               <Markdown content={item.text} preserveSoftBreaks />
             </div>
-            <div className="msg-actions">
-              <CopyButton text={item.text} />
-              <MessageAnno item={item} view={view} />
+            <div className="msg-footer">
+              {timestamp && <time dateTime={item.createdAt} title={timestamp.full} aria-label={timestamp.full}>{timestamp.short}</time>}
+              <div className="msg-actions">
+                <CopyButton text={item.text} />
+                <MessageAnno item={item} view={view} />
+              </div>
             </div>
           </>
         ) : (
@@ -1066,9 +1071,12 @@ function ChatItemView({
             <div className="msg-body">
               <Markdown content={item.text} />
             </div>
-            <div className="msg-actions">
-              <CopyButton text={item.text} />
-              <MessageAnno item={item} view={view} />
+            <div className="msg-footer">
+              {timestamp && <time dateTime={item.createdAt} title={timestamp.full} aria-label={timestamp.full}>{timestamp.short}</time>}
+              <div className="msg-actions">
+                <CopyButton text={item.text} />
+                <MessageAnno item={item} view={view} />
+              </div>
             </div>
           </>
         )}
@@ -1314,7 +1322,9 @@ function ChatSurface({
     () =>
       window.agentOs.events.onAgentEvent(({ sessionId, event, timelineItem }) => {
         if (sessionId !== view.id) return
-        setLegacyItems((cur) => applyAgentEvent(cur, event, itemId()))
+        setLegacyItems((cur) =>
+          applyAgentEvent(cur, event, itemId(), timelineItem?.createdAt ?? new Date().toISOString())
+        )
         if (timelineItem) setTimeline((cur) => upsertTimelineItem(cur, timelineItem))
         if (event.kind === 'permission-request') {
           void window.agentOs.chat.state(view.id).then(setState)
@@ -1524,7 +1534,7 @@ function ChatSurface({
         updatedAt: now
       }
     ])
-    setLegacyItems((cur) => appendUserMessage(cur, text, legacyId))
+    setLegacyItems((cur) => appendUserMessage(cur, text, legacyId, now))
     setSending(true)
     try {
       const nextState = await window.agentOs.chat.sendTurn(view.id, text, files)
@@ -1599,7 +1609,7 @@ function ChatSurface({
         updatedAt: now
       }
     ])
-    setLegacyItems((cur) => appendUserMessage(cur, text, legacyId))
+    setLegacyItems((cur) => appendUserMessage(cur, text, legacyId, now))
     setSending(true)
     try {
       setState(await window.agentOs.chat.steerTurn(view.id, text, files))

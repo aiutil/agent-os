@@ -2042,11 +2042,25 @@ button {
   line-height: var(--lh-body);
   color: var(--text-muted);
 }
+.msg-footer {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 22px;
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: var(--fs-glyph);
+}
+.msg.is-user .msg-footer {
+  flex-direction: row-reverse;
+}
+.msg-footer time {
+  white-space: nowrap;
+}
 .msg-actions {
   display: flex;
   align-items: center;
   gap: 4px;
-  margin-top: 4px;
   opacity: 0;
   transition: opacity var(--dur);
 }
