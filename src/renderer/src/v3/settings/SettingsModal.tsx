@@ -3801,6 +3801,12 @@ function SettingsChannels(): React.JSX.Element {
         : headerExperience.error
           ? `${experienceLabel(headerExperience.state)} · ${headerExperience.error}`
           : experienceLabel(headerExperience.state)
+  const wechatNeedsReauthorization =
+    selected === 'wechat' &&
+    connected?.status === 'error' &&
+    /session timeout|授权.*失效|authorization.*expired|token.*(?:expired|invalid|stale)/i.test(
+      connected.error ?? ''
+    )
   const displayTime = (value?: string): string => (value ? new Date(value).toLocaleString() : '—')
   const connectedMethods =
     selected === 'telegram'
@@ -4048,9 +4054,9 @@ function SettingsChannels(): React.JSX.Element {
         ) : (
           <>
             {/* 头部 */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
               <ChannelLogo platform={selectedCatalog.platform} size={42} />
-              <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ flex: '1 1 220px', minWidth: 0 }}>
                 <div
                   style={{
                     display: 'flex',
@@ -4103,7 +4109,7 @@ function SettingsChannels(): React.JSX.Element {
                   {descFor(selectedCatalog.platform)}
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+              <div style={{ display: 'flex', gap: 8, flexShrink: 0, flexWrap: 'wrap', marginLeft: 'auto' }}>
                 {addingAccount ? (
                   <button
                     onClick={cancelAddingAccount}
@@ -4142,11 +4148,19 @@ function SettingsChannels(): React.JSX.Element {
                       connected.status === 'error' ||
                       connected.status === 'disconnected') && (
                       <button
-                        onClick={() => reconnectAccount(connected.id)}
+                        onClick={() =>
+                          wechatNeedsReauthorization
+                            ? startScan()
+                            : reconnectAccount(connected.id)
+                        }
                         disabled={busy}
                         style={{ ...channelsPrimaryBtn }}
                       >
-                        {t('settings.channels.reconnect')}
+                        {t(
+                          wechatNeedsReauthorization
+                            ? 'settings.channels.scanAgain'
+                            : 'settings.channels.reconnect'
+                        )}
                       </button>
                     )}
                     <button

@@ -6,6 +6,7 @@ import { randomBytes, randomUUID } from 'node:crypto'
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { ChannelAccount, ChannelAccountStatus, OneBotSegment } from '@shared/types'
+import { tr } from '@shared/i18n'
 import {
   splitTextByLength,
   type ChannelTransport,
@@ -53,6 +54,14 @@ interface WeChatApiResponse {
   ret?: number
   errcode?: number
   errmsg?: string
+}
+
+export function isWeChatAuthorizationExpired(response: WeChatApiResponse): boolean {
+  return (
+    response.errcode === -14 ||
+    response.ret === -14 ||
+    /session timeout|(?:token|authorization).*(?:expired|invalid|stale)/i.test(response.errmsg ?? '')
+  )
 }
 
 interface WeChatSession {
@@ -404,6 +413,16 @@ export class WeChatTransport implements ChannelTransport {
         const response = await this.apiPost<GetUpdatesResponse>(session, 'ilink/bot/getupdates', {
           get_updates_buf: session.cursor
         }, timeoutMs)
+        if (isWeChatAuthorizationExpired(response)) {
+          session.online = false
+          session.contextTokens.clear()
+          this.statusCb?.(
+            session.accountId,
+            'error',
+            tr('channels.transport.wechatAuthorizationExpired')
+          )
+          return
+        }
         if ((response.ret ?? 0) !== 0 || (response.errcode ?? 0) !== 0) {
           throw new Error(`微信长轮询失败：${response.errmsg || response.errcode || response.ret}`)
         }
