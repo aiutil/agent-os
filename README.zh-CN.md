@@ -75,9 +75,9 @@ flowchart LR
 
 Agent OS 不会代替第三方 CLI 登录，也不会绕过它们的账号、订阅、OAuth、API Key 或使用政策。
 
-## 安装 v0.4.0
+## 安装 v0.4.1
 
-请从 [v0.4.0 Release](https://github.com/aiutil/agent-os/releases/tag/v0.4.0) 下载适用于 macOS、Windows 或 Linux 的制品。
+请从 [v0.4.1 Release](https://github.com/aiutil/agent-os/releases/tag/v0.4.1) 下载适用于 macOS、Windows 或 Linux 的制品。本次维护迭代新增定时任务筛选、会话消息时间、项目目录快捷入口，并修复微信授权过期和计划任务重启恢复。
 
 macOS 制品未经过 Apple 公证。请仅从官方 Release 下载，并先核对公开的 SHA-256 摘要与源码 provenance；确认无误后，再前往 **系统设置 → 隐私与安全 → 仍要打开**。
 

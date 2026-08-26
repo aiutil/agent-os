@@ -75,9 +75,9 @@ Production builds enable anonymous product analytics by default when a Mixpanel 
 
 Agent OS does not sign you into third-party CLIs or bypass their account, subscription, OAuth, API-key, or usage policies.
 
-## Install v0.4.0
+## Install v0.4.1
 
-Download the build for macOS, Windows, or Linux from the [v0.4.0 release](https://github.com/aiutil/agent-os/releases/tag/v0.4.0).
+Download the build for macOS, Windows, or Linux from the [v0.4.1 release](https://github.com/aiutil/agent-os/releases/tag/v0.4.1). This maintenance release adds schedule filtering, persistent message timestamps, project-folder shortcuts, safer WeChat reauthorization, and one-time recovery for interrupted scheduled runs.
 
 The macOS build is not notarized by Apple. Download it only from the official Release and verify the published SHA-256 digest and source provenance before using **System Settings → Privacy & Security → Open Anyway**.
 
