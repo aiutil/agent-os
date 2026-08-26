@@ -414,6 +414,7 @@ export const zh = {
     addFailed: '添加失败',
     configure: '配置接入',
     reconnect: '重新连接',
+    scanAgain: '重新扫码',
     reconnectFailed: '重新连接失败',
     policyRestricted: '政策受限',
     whatsappRequirements:
@@ -976,6 +977,7 @@ export const en: typeof zh = {
     addFailed: 'Failed to add',
     configure: 'Configure',
     reconnect: 'Reconnect',
+    scanAgain: 'Scan again',
     reconnectFailed: 'Reconnect failed',
     policyRestricted: 'Policy restricted',
     whatsappRequirements:

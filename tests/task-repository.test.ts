@@ -66,28 +66,62 @@ describe('TaskRepository', () => {
     expect(store.listRuns(task.id).some((run) => run.id === 'run-0')).toBe(false)
   })
 
-  it('marks unfinished work as interrupted after daemon restart', () => {
+  it('recovers an enabled scheduled run once and leaves later interruption for manual retry', () => {
     const { repository: store } = repository()
-    const task = store.createTask(input())
+    const task = store.createTask(input({
+      schedule: {
+        kind: 'cron', expression: '0 9 * * *', timeZone: 'UTC', enabled: true, misfirePolicy: 'run_once'
+      }
+    }))
     const run: TaskRun = {
       id: 'run-active',
       taskId: task.id,
-      trigger: 'manual',
+      trigger: 'schedule',
       status: 'running',
       startedAt: '2026-07-18T00:00:00.000Z'
     }
     store.appendRun(run)
     store.replaceTask({ ...task, latestRunId: run.id, executionStatus: 'running' })
-    store.markInterrupted(new Date('2026-07-18T01:00:00.000Z'))
+    const recoveries = store.prepareStartupRecovery(new Date('2026-07-18T01:00:00.000Z'))
 
+    expect(recoveries).toHaveLength(1)
     expect(store.listRuns(task.id)[0]).toMatchObject({
-      status: 'interrupted',
-      finishedAt: '2026-07-18T01:00:00.000Z'
+      status: 'queued',
+      interruptedAt: '2026-07-18T01:00:00.000Z',
+      recoveryStartedAt: '2026-07-18T01:00:00.000Z',
+      autoRecovered: true
     })
     expect(store.getTask(task.id)).toMatchObject({
-      boardStatus: 'review',
-      executionStatus: 'interrupted'
+      boardStatus: 'in_progress',
+      executionStatus: 'queued'
     })
+
+    expect(store.prepareStartupRecovery(new Date('2026-07-18T02:00:00.000Z'))).toEqual([])
+    expect(store.listRuns(task.id)[0]).toMatchObject({
+      status: 'interrupted',
+      finishedAt: '2026-07-18T02:00:00.000Z',
+      error: '自动恢复再次被 daemon 重启中断，请手动重跑'
+    })
+  })
+
+  it('does not auto-recover manual runs or disabled schedules', () => {
+    const { repository: store } = repository()
+    const manualTask = store.createTask(input({ title: '手动任务' }))
+    const disabledTask = store.createTask(input({
+      title: '停用计划',
+      schedule: {
+        kind: 'cron', expression: '0 9 * * *', timeZone: 'UTC', enabled: false, misfirePolicy: 'run_once'
+      }
+    }))
+    for (const [task, trigger] of [[manualTask, 'manual'], [disabledTask, 'schedule']] as const) {
+      const run: TaskRun = { id: `run-${trigger}`, taskId: task.id, trigger, status: 'running' }
+      store.appendRun(run)
+      store.replaceTask({ ...task, latestRunId: run.id, executionStatus: 'running' })
+    }
+
+    expect(store.prepareStartupRecovery(new Date('2026-07-18T01:00:00.000Z'))).toEqual([])
+    expect(store.listRuns(manualTask.id)[0].status).toBe('interrupted')
+    expect(store.listRuns(disabledTask.id)[0].status).toBe('interrupted')
   })
 
   it('preserves and reports a corrupted store', () => {

@@ -6,6 +6,9 @@
 // 用 tr() 取。zh 值须与原文逐字一致（tests/channels.test.ts 断言 ackSegments 输出）。
 
 export const zh = {
+  transport: {
+    wechatAuthorizationExpired: '微信授权已失效，请重新扫码连接。'
+  },
   onboarding: {
     title: '欢迎使用 Agent OS',
     subtitle: '个人 AI 超级工作台 — 正在扫描本机已安装的 AI CLI…',
@@ -202,6 +205,9 @@ export const zh = {
 }
 
 export const en: typeof zh = {
+  transport: {
+    wechatAuthorizationExpired: 'WeChat authorization expired. Scan the QR code again to reconnect.'
+  },
   onboarding: {
     title: 'Welcome to Agent OS',
     subtitle: 'Personal AI super workbench — scanning for installed AI CLIs…',

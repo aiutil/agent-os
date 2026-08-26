@@ -33,6 +33,8 @@ export type ChatItem =
       seq?: number
       /** 自建对话消息 UUID（用于标注层 msg:managed ref）。 */
       messageId?: string
+      /** 消息首次创建时间；流式增量不得覆盖。 */
+      createdAt?: string
     }
   | {
       id: string
@@ -110,7 +112,8 @@ export function transcriptHistoryItems(messages: NormalizedMessage[]): ChatItem[
       kind: 'message',
       role: message.role === 'user' ? 'user' : message.role === 'assistant' ? 'assistant' : 'system',
       text,
-      seq: message.seq
+      seq: message.seq,
+      ...(message.ts ? { createdAt: message.ts } : {})
     })
   }
 
@@ -118,8 +121,8 @@ export function transcriptHistoryItems(messages: NormalizedMessage[]): ChatItem[
   return items
 }
 
-export function appendUserMessage(items: ChatItem[], text: string, id: string): ChatItem[] {
-  return [...items, { id, kind: 'message', role: 'user', text }]
+export function appendUserMessage(items: ChatItem[], text: string, id: string, createdAt?: string): ChatItem[] {
+  return [...items, { id, kind: 'message', role: 'user', text, ...(createdAt ? { createdAt } : {}) }]
 }
 
 export function managedItems(messages: ManagedChatMessage[]): ChatItem[] {
@@ -130,7 +133,8 @@ export function managedItems(messages: ManagedChatMessage[]): ChatItem[] {
       kind: 'message',
       role: m.role,
       text: m.text,
-      messageId: m.id
+      messageId: m.id,
+      createdAt: m.createdAt
     }))
 }
 
@@ -200,7 +204,8 @@ export function timelineItems(
         kind: 'message',
         role: 'user',
         text: unit.message.text,
-        messageId: unit.message.id
+        messageId: unit.message.id,
+        createdAt: unit.message.createdAt
       })
       continue
     }
@@ -217,6 +222,7 @@ export function timelineItems(
         kind: 'message',
         role: 'assistant',
         text,
+        createdAt: unit.items.find((item) => item.type === 'text')?.createdAt ?? unit.at,
         // 关联持久化的 assistant 消息 id，使聚合回复也可收藏/打标签。
         ...(unit.assistantId ? { messageId: unit.assistantId } : {})
       })
@@ -229,7 +235,8 @@ export function timelineItems(
           kind: 'message',
           role: 'assistant',
           text: assistant.text,
-          messageId: assistant.id
+          messageId: assistant.id,
+          createdAt: assistant.createdAt
         })
       }
     }
@@ -244,7 +251,8 @@ export function timelineItems(
       kind: 'message',
       role: 'assistant',
       text: assistant.text,
-      messageId: assistant.id
+      messageId: assistant.id,
+      createdAt: assistant.createdAt
     })
   }
 
@@ -286,7 +294,7 @@ export function compactOutput(value: string | undefined, max = 1_800): string {
   return `${value.slice(0, max)}\n${tr('chat.compact.truncatedSuffix', { count: value.length - max })}`
 }
 
-export function applyAgentEvent(items: ChatItem[], event: AgentEvent, id: string): ChatItem[] {
+export function applyAgentEvent(items: ChatItem[], event: AgentEvent, id: string, createdAt?: string): ChatItem[] {
   if (event.kind === 'thinking-delta') {
     const last = items.at(-1)
     if (last?.kind === 'thinking') {
@@ -299,7 +307,7 @@ export function applyAgentEvent(items: ChatItem[], event: AgentEvent, id: string
     if (last?.kind === 'message' && last.role === 'assistant') {
       return [...items.slice(0, -1), { ...last, text: `${last.text}${event.text}` }]
     }
-    return [...items, { id, kind: 'message', role: 'assistant', text: event.text }]
+    return [...items, { id, kind: 'message', role: 'assistant', text: event.text, ...(createdAt ? { createdAt } : {}) }]
   }
   if (event.kind === 'tool-start') {
     return [
@@ -333,7 +341,7 @@ export function applyAgentEvent(items: ChatItem[], event: AgentEvent, id: string
     ]
   }
   if (event.kind === 'error' && !event.retryable) {
-    return [...items, { id, kind: 'message', role: 'system', text: event.message }]
+    return [...items, { id, kind: 'message', role: 'system', text: event.message, ...(createdAt ? { createdAt } : {}) }]
   }
   if (event.kind === 'unknown') {
     return [

@@ -52,10 +52,14 @@ export class TaskService {
 
   start(): void {
     if (this.timer) return
-    this.options.repository.markInterrupted(this.now())
+    const recoveries = this.options.repository.prepareStartupRecovery(this.now())
     this.unsubscribe = this.options.runtime().subscribe((event) => this.onHostEvent(event))
     this.timer = setInterval(() => void this.tick(), this.options.tickMs ?? DEFAULT_TICK_MS)
     this.timer.unref?.()
+    for (const run of recoveries) {
+      const task = this.options.repository.getTask(run.taskId)
+      if (task) void this.execute(task, run)
+    }
     void this.tick()
   }
 
@@ -133,6 +137,14 @@ export class TaskService {
         })
         this.options.emit({ task: advanced, reason: 'schedule-advanced' })
 
+        const recovering = this.options.repository
+          .listRuns(advanced.id)
+          .some((run) => run.autoRecovered && isTaskRunActive(run))
+        if (recovering) {
+          this.queueRun(advanced, 'schedule', scheduledFor.toISOString())
+          continue
+        }
+
         if (
           schedule.misfirePolicy === 'skip' &&
           now.getTime() - scheduledFor.getTime() > MISFIRE_GRACE_MS
@@ -161,7 +173,17 @@ export class TaskService {
   }
 
   private queueRun(task: AgentTask, trigger: TaskRun['trigger'], scheduledFor?: string): TaskRun {
-    const taskActive = this.options.repository.listRuns(task.id).some(isTaskRunActive)
+    const taskRuns = this.options.repository.listRuns(task.id)
+    const activeRun = taskRuns.find(isTaskRunActive)
+    const taskActive = Boolean(activeRun)
+    if (trigger === 'schedule' && activeRun?.autoRecovered) {
+      const pending = activeRun.pendingScheduledFor
+        ? activeRun
+        : { ...activeRun, pendingScheduledFor: scheduledFor ?? this.now().toISOString() }
+      if (pending !== activeRun) this.options.repository.replaceRun(pending)
+      this.options.emit({ task, run: pending, reason: 'run-pending' })
+      return pending
+    }
     const workspaceActive = this.options.repository
       .listTasks()
       .some(
@@ -229,7 +251,7 @@ export class TaskService {
       }
 
       let sessionId: string | undefined
-      if (task.sessionPolicy === 'continue_last' && task.latestSessionId) {
+      if (!queued.autoRecovered && task.sessionPolicy === 'continue_last' && task.latestSessionId) {
         const existing = (await runtime.listSessions()).find(
           (session) =>
             session.id === task.latestSessionId &&
@@ -259,7 +281,12 @@ export class TaskService {
       }
 
       const now = this.now().toISOString()
-      const running: TaskRun = { ...queued, status: 'running', sessionId, startedAt: now }
+      const running: TaskRun = {
+        ...queued,
+        status: 'running',
+        sessionId,
+        startedAt: queued.startedAt ?? now
+      }
       this.options.repository.replaceRun(running)
       this.runBySession.set(sessionId, running.id)
       const current = this.options.repository.getTask(task.id)
@@ -319,6 +346,7 @@ export class TaskService {
       ...located.run,
       status,
       finishedAt: now,
+      pendingScheduledFor: undefined,
       ...(error ? { error } : {})
     }
     this.options.repository.replaceRun(run)
@@ -327,5 +355,11 @@ export class TaskService {
       taskForRunFinished(located.task, status, now, error)
     )
     this.options.emit({ task, run, reason: 'run-finished' })
+    if (status === 'succeeded' && located.run.pendingScheduledFor) {
+      const current = this.options.repository.getTask(task.id)
+      if (current?.schedule?.enabled) {
+        this.queueRun(current, 'schedule', located.run.pendingScheduledFor)
+      }
+    }
   }
 }

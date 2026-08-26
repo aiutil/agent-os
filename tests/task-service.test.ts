@@ -9,6 +9,7 @@ import type {
   HostEvent,
   RuntimeHost,
   RuntimeSessionHandle,
+  TaskRun,
   WorkbenchSession
 } from '../src/shared/types'
 
@@ -270,6 +271,71 @@ describe('TaskService', () => {
     expect(runtime.created).toBe(0)
     expect(repository.listRuns(task.id)[0]).toMatchObject({ status: 'skipped' })
     expect(repository.getTask(task.id)?.schedule?.enabled).toBe(false)
+    service.close()
+  })
+
+  it('recovers one interrupted schedule and coalesces a new trigger behind it', async () => {
+    const { repository, runtime, service } = setup()
+    const task = service.createTask({
+      title: '恢复巡检',
+      prompt: '继续巡检',
+      workspacePath: '/project',
+      assignee: { toolId: 'codex' },
+      schedule: {
+        kind: 'cron',
+        expression: '0 9 * * *',
+        timeZone: 'UTC',
+        enabled: true,
+        misfirePolicy: 'run_once'
+      }
+    })
+    const interrupted: TaskRun = {
+      id: 'scheduled-active',
+      taskId: task.id,
+      trigger: 'schedule',
+      status: 'running',
+      scheduledFor: '2026-07-18T00:30:00.000Z',
+      startedAt: '2026-07-18T00:31:00.000Z',
+      sessionId: 'lost-session'
+    }
+    repository.appendRun(interrupted)
+    repository.replaceTask({
+      ...task,
+      boardStatus: 'in_progress',
+      executionStatus: 'running',
+      latestRunId: interrupted.id,
+      latestSessionId: interrupted.sessionId
+    })
+
+    service.start()
+    await vi.waitFor(() => expect(repository.listRuns(task.id)[0].status).toBe('running'))
+    expect(repository.listRuns(task.id)[0]).toMatchObject({
+      id: interrupted.id,
+      startedAt: interrupted.startedAt,
+      interruptedAt: '2026-07-18T01:00:00.000Z',
+      recoveryStartedAt: '2026-07-18T01:00:00.000Z',
+      autoRecovered: true
+    })
+
+    const current = repository.getTask(task.id)!
+    repository.replaceTask({
+      ...current,
+      schedule: { ...current.schedule!, nextRunAt: '2026-07-18T01:00:00.000Z' }
+    })
+    await service.tick()
+    expect(repository.listRuns(task.id)[0].pendingScheduledFor).toBe(
+      '2026-07-18T01:00:00.000Z'
+    )
+
+    const recoverySessionId = repository.listRuns(task.id)[0].sessionId!
+    runtime.emit({
+      kind: 'agent-event',
+      sessionId: recoverySessionId,
+      event: { kind: 'turn-end', status: 'completed' }
+    })
+    await vi.waitFor(() => expect(runtime.created).toBe(2))
+    expect(repository.listRuns(task.id)).toHaveLength(2)
+    expect(repository.listRuns(task.id).filter((run) => run.status === 'skipped')).toHaveLength(0)
     service.close()
   })
 })

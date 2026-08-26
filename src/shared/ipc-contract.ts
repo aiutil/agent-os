@@ -92,7 +92,7 @@ import type {
 } from './types'
 import type { Lang, LanguagePreference } from './i18n'
 
-export const IPC_CONTRACT_VERSION = 18
+export const IPC_CONTRACT_VERSION = 19
 
 /** 平台信息（用于 titlebar 安全区等）。 */
 export interface PlatformInfo {
@@ -119,6 +119,7 @@ export const CHANNELS = {
     completeOnboarding: 'app:completeOnboarding',
     resetOnboarding: 'app:resetOnboarding',
     selectDirectory: 'app:selectDirectory',
+    openDirectory: 'app:openDirectory',
     selectFile: 'app:selectFile',
     openExternal: 'app:openExternal',
     setLanguage: 'app:setLanguage',
@@ -396,6 +397,8 @@ export interface AgentOsApi {
     resetOnboarding(): Promise<void>
     /** 打开系统文件夹选择对话框；取消返回 null。 */
     selectDirectory(options?: { defaultPath?: string }): Promise<string | null>
+    /** 用系统文件管理器打开已存在的本机绝对目录。 */
+    openDirectory(path: string): Promise<void>
     /** 打开系统文件选择对话框（图片、文档等）；取消返回 null。 */
     selectFile(options?: { allowedExtensions?: string[] }): Promise<string | null>
     /** 用系统默认浏览器打开外部链接（仅 http/https）。 */

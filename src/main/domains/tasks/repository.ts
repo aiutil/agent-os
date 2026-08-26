@@ -143,33 +143,64 @@ export class TaskRepository {
     return run
   }
 
-  markInterrupted(now = new Date()): void {
+  prepareStartupRecovery(now = new Date()): TaskRun[] {
     const data = this.read()
     const active = new Set(['queued', 'running', 'needs_attention'])
     const iso = now.toISOString()
+    const tasks = new Map(data.tasks.map((task) => [task.id, task]))
+    const recoveries: TaskRun[] = []
     let changed = false
     data.runs = data.runs.map((run) => {
       if (!active.has(run.status)) return run
       changed = true
+      const task = tasks.get(run.taskId)
+      if (run.trigger === 'schedule' && task?.schedule?.enabled && !run.autoRecovered) {
+        const recovery: TaskRun = {
+          ...run,
+          status: 'queued',
+          interruptedAt: iso,
+          recoveryStartedAt: iso,
+          autoRecovered: true,
+          finishedAt: undefined,
+          error: undefined
+        }
+        recoveries.push(recovery)
+        return recovery
+      }
       return {
         ...run,
         status: 'interrupted' as const,
+        interruptedAt: run.interruptedAt ?? iso,
         finishedAt: iso,
-        error: 'daemon 重启导致执行中断'
+        error: run.autoRecovered
+          ? '自动恢复再次被 daemon 重启中断，请手动重跑'
+          : 'daemon 重启导致执行中断'
       }
     })
     data.tasks = data.tasks.map((task) => {
       if (!['queued', 'running', 'needs_attention'].includes(task.executionStatus)) return task
       changed = true
+      const recovery = recoveries.find((run) => run.taskId === task.id)
+      if (recovery) {
+        return {
+          ...task,
+          boardStatus: 'in_progress' as const,
+          executionStatus: 'queued' as const,
+          latestRunId: recovery.id,
+          lastError: undefined,
+          updatedAt: iso
+        }
+      }
       return {
         ...task,
         boardStatus: 'review' as const,
         executionStatus: 'interrupted' as const,
-        lastError: 'daemon 重启导致执行中断',
+        lastError: 'daemon 重启导致执行中断，请手动重跑',
         updatedAt: iso
       }
     })
     if (changed) this.write(data)
+    return recoveries
   }
 
   private read(): TaskFileV1 {

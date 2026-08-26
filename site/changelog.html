@@ -19,12 +19,22 @@
 </style>
 </head>
 <body>
-<header class="site-header"><div class="wrap nav"><a class="brand" href="index.html"><img src="./agentos-icon.png" alt="" />Agent OS</a><span class="version">v0.4.0</span><div class="actions"><button class="lang" id="langToggle" type="button">EN</button><a class="download" href="index.html#download" data-i18n="nav.download">下载</a></div></div></header>
+<header class="site-header"><div class="wrap nav"><a class="brand" href="index.html"><img src="./agentos-icon.png" alt="" />Agent OS</a><span class="version">v0.4.1</span><div class="actions"><button class="lang" id="langToggle" type="button">EN</button><a class="download" href="index.html#download" data-i18n="nav.download">下载</a></div></div></header>
 <main>
   <header class="hero"><div class="wrap"><span class="kicker">CHANGELOG</span><h1 data-i18n="hero.title">版本更新记录</h1><p data-i18n="hero.body">这里只记录公开版本中用户可以感知的变化。每个版本的源码、制品摘要和完整来源证明仍以 GitHub Release 为准。</p></div></header>
   <div class="wrap timeline">
     <section class="release">
-      <div class="release-head"><span class="tag">v0.4.0</span><span class="current" data-i18n="release.current">当前版本</span><span class="date">2026-08-05</span></div>
+      <div class="release-head"><span class="tag">v0.4.1</span><span class="current" data-i18n="release.current">当前版本</span><span class="date">2026-08-26</span></div>
+      <ul>
+        <li data-i18n-html="v041.i1"><b>计划任务更易管理</b> — 按启用状态筛选与排序，并清楚显示状态和筛选空结果。</li>
+        <li data-i18n-html="v041.i2"><b>会话定位更直接</b> — 消息保留本地时间标记，本机会话可从侧栏直接打开对应项目目录。</li>
+        <li data-i18n-html="v041.i3"><b>计划任务可恢复</b> — daemon 重启后自动恢复一次被中断的定时运行；恢复期间的新触发合并等待，避免重复执行。</li>
+        <li data-i18n-html="v041.i4"><b>微信重连更可靠</b> — 识别过期授权并引导重新扫码，避免使用失效凭据反复重连，同时修复窄窗口布局。</li>
+      </ul>
+      <p class="archive"><a href="https://github.com/aiutil/agent-os/releases/tag/v0.4.1" target="_blank" rel="noreferrer" data-i18n="release.proof">查看 v0.4.1 制品、SHA256 与来源证明</a></p>
+    </section>
+    <section class="release">
+      <div class="release-head"><span class="tag">v0.4.0</span><span class="date">2026-08-05</span></div>
       <ul>
         <li data-i18n-html="v040.i1"><b>双语产品体验</b> — 桌面 UI、交互反馈与内置记忆/知识提炼提示词支持简体中文和英文；默认跟随系统，也可在设置中持久化切换。</li>
         <li data-i18n-html="v040.i2"><b>记忆系统 v2</b> — 区分人格、工作与项目语境，以作用域、反馈和衰减控制召回；原始用户任务与注入上下文分离，避免标题被记忆前缀污染。</li>
@@ -33,7 +43,7 @@
         <li data-i18n-html="v040.i5"><b>提炼策略可控</b> — 在设置中使用同一 Agent CLI 管理记忆和知识提炼，可修改双语默认提示词，也可一键从已有会话提炼知识。</li>
         <li data-i18n-html="v040.i6"><b>同源发布</b> — 桌面端、远程节点、更新元数据、产品站与源码统一发布到 <code>aiutil/agent-os</code>。</li>
       </ul>
-      <p class="archive"><a href="https://github.com/aiutil/agent-os/releases/tag/v0.4.0" target="_blank" rel="noreferrer" data-i18n="release.proof">查看 v0.4.0 制品、SHA256 与来源证明</a></p>
+      <p class="archive"><a href="https://github.com/aiutil/agent-os/releases/tag/v0.4.0" target="_blank" rel="noreferrer" data-i18n="release.proof040">查看 v0.4.0 制品、SHA256 与来源证明</a></p>
     </section>
     <section class="release">
       <div class="release-head"><span class="tag">v0.3.9</span><span class="date">2026-08-03</span></div>
@@ -51,11 +61,13 @@
 (function(){
   var T={zh:{
     "nav.download":"下载","hero.title":"版本更新记录","hero.body":"这里只记录公开版本中用户可以感知的变化。每个版本的源码、制品摘要和完整来源证明仍以 GitHub Release 为准。","release.current":"当前版本",
-    "v040.i1":"<b>双语产品体验</b> — 桌面 UI、交互反馈与内置记忆/知识提炼提示词支持简体中文和英文；默认跟随系统，也可在设置中持久化切换。","v040.i2":"<b>记忆系统 v2</b> — 区分人格、工作与项目语境，以作用域、反馈和衰减控制召回；原始用户任务与注入上下文分离，避免标题被记忆前缀污染。","v040.i3":"<b>知识系统 v1</b> — 将体系化成果保存为真实 Markdown 文章，支持主题、标签、来源、草稿、发布、收藏、本机评论与全文搜索。","v040.i4":"<b>双图谱与列表</b> — 记忆和知识首页默认使用圆形图谱，也可切换高密度列表；搜索与筛选在两种视图间保持一致。","v040.i5":"<b>提炼策略可控</b> — 在设置中选择一个 Agent CLI 同时提炼记忆和知识，可修改双语默认提示词，也可一键从已有会话提炼知识。","v040.i6":"<b>同源发布</b> — 桌面端、远程节点、更新元数据、产品站与源码统一发布到 <code>aiutil/agent-os</code>。","release.proof":"查看 v0.4.0 制品、SHA256 与来源证明",
+    "v041.i1":"<b>计划任务更易管理</b> — 按启用状态筛选与排序，并清楚显示状态和筛选空结果。","v041.i2":"<b>会话定位更直接</b> — 消息保留本地时间标记，本机会话可从侧栏直接打开对应项目目录。","v041.i3":"<b>计划任务可恢复</b> — daemon 重启后自动恢复一次被中断的定时运行；恢复期间的新触发合并等待，避免重复执行。","v041.i4":"<b>微信重连更可靠</b> — 识别过期授权并引导重新扫码，避免使用失效凭据反复重连，同时修复窄窗口布局。",
+    "v040.i1":"<b>双语产品体验</b> — 桌面 UI、交互反馈与内置记忆/知识提炼提示词支持简体中文和英文；默认跟随系统，也可在设置中持久化切换。","v040.i2":"<b>记忆系统 v2</b> — 区分人格、工作与项目语境，以作用域、反馈和衰减控制召回；原始用户任务与注入上下文分离，避免标题被记忆前缀污染。","v040.i3":"<b>知识系统 v1</b> — 将体系化成果保存为真实 Markdown 文章，支持主题、标签、来源、草稿、发布、收藏、本机评论与全文搜索。","v040.i4":"<b>双图谱与列表</b> — 记忆和知识首页默认使用圆形图谱，也可切换高密度列表；搜索与筛选在两种视图间保持一致。","v040.i5":"<b>提炼策略可控</b> — 在设置中选择一个 Agent CLI 同时提炼记忆和知识，可修改双语默认提示词，也可一键从已有会话提炼知识。","v040.i6":"<b>同源发布</b> — 桌面端、远程节点、更新元数据、产品站与源码统一发布到 <code>aiutil/agent-os</code>。","release.proof":"查看 v0.4.1 制品、SHA256 与来源证明","release.proof040":"查看 v0.4.0 制品、SHA256 与来源证明",
     "v039.i1":"<b>更新地址迁移</b> — 新旧制品仓用户安装 0.3.9 后，统一从 <code>aiutil/agent-os</code> 检查后续更新。","v039.i2":"<b>macOS 自签名</b> — 发布包验证代码完整性，但未使用 Apple Developer ID、未经过 Apple 公证。","v039.i3":"<b>远程来源标识</b> — CLI 与会话项目名称旁显示远程节点名称；本地项目保持原有显示。","archive.before":"更早版本的完整记录见","foot.product":"产品页","foot.guide":"使用指南"
   },en:{
     "nav.download":"Download","hero.title":"Release notes","hero.body":"This page covers user-visible changes in public releases. Source revisions, artifact digests, and full provenance remain authoritative in each GitHub Release.","release.current":"CURRENT",
-    "v040.i1":"<b>Bilingual product experience</b> — Desktop UI, interaction feedback, and built-in memory/knowledge extraction prompts support English and Simplified Chinese. Follow system is the default, with a persistent setting override.","v040.i2":"<b>Memory system v2</b> — Identity, working, and project contexts use scope, feedback, and decay for recall. Raw user tasks stay separate from injected context so memory prefixes cannot pollute titles.","v040.i3":"<b>Knowledge system v1</b> — Reusable long-form outcomes become real Markdown articles with topics, tags, sources, drafts, publishing, favorites, local comments, and full-text search.","v040.i4":"<b>Graph and list views</b> — Memory and Knowledge open in a circular graph by default and offer a dense list alternative. Search and filters remain consistent across both views.","v040.i5":"<b>Controlled extraction</b> — In Settings, choose one Agent CLI to curate both memory and knowledge, edit the bilingual default prompts, or extract knowledge from existing sessions on demand.","v040.i6":"<b>One-source release</b> — Desktop builds, remote nodes, update metadata, the product site, and source are published together from <code>aiutil/agent-os</code>.","release.proof":"View v0.4.0 artifacts, SHA256 digests, and provenance",
+    "v041.i1":"<b>Manage schedules faster</b> — Filter and sort schedules by enabled state, with explicit status and filtered empty states.","v041.i2":"<b>Find session context faster</b> — Messages retain local timestamps, and local sessions can open their project folder directly from the sidebar.","v041.i3":"<b>Recover scheduled work</b> — After a daemon restart, Agent OS retries an interrupted scheduled run once and coalesces new triggers to prevent duplicate execution.","v041.i4":"<b>Reliable WeChat reconnect</b> — Expired authorization now requests a fresh QR scan instead of retrying stale credentials, with a corrected narrow-window layout.",
+    "v040.i1":"<b>Bilingual product experience</b> — Desktop UI, interaction feedback, and built-in memory/knowledge extraction prompts support English and Simplified Chinese. Follow system is the default, with a persistent setting override.","v040.i2":"<b>Memory system v2</b> — Identity, working, and project contexts use scope, feedback, and decay for recall. Raw user tasks stay separate from injected context so memory prefixes cannot pollute titles.","v040.i3":"<b>Knowledge system v1</b> — Reusable long-form outcomes become real Markdown articles with topics, tags, sources, drafts, publishing, favorites, local comments, and full-text search.","v040.i4":"<b>Graph and list views</b> — Memory and Knowledge open in a circular graph by default and offer a dense list alternative. Search and filters remain consistent across both views.","v040.i5":"<b>Controlled extraction</b> — In Settings, choose one Agent CLI to curate both memory and knowledge, edit the bilingual default prompts, or extract knowledge from existing sessions on demand.","v040.i6":"<b>One-source release</b> — Desktop builds, remote nodes, update metadata, the product site, and source are published together from <code>aiutil/agent-os</code>.","release.proof":"View v0.4.1 artifacts, SHA256 digests, and provenance","release.proof040":"View v0.4.0 artifacts, SHA256 digests, and provenance",
     "v039.i1":"<b>Update source migration</b> — After installing 0.3.9, users from both former artifact repositories check <code>aiutil/agent-os</code> for future updates.","v039.i2":"<b>Self-signed macOS builds</b> — Packages validate code integrity but do not use an Apple Developer ID and are not notarized.","v039.i3":"<b>Remote origin labels</b> — CLI and session project names show the remote node name; local projects retain their existing labels.","archive.before":"For complete notes from earlier versions, see","foot.product":"Product","foot.guide":"User guide"
   }};
   var detected=(navigator.language||'').toLowerCase().indexOf('zh')===0?'zh':'en',requested=new URLSearchParams(location.search).get('lang'),lang=requested==='zh'||requested==='en'?requested:detected;try{if(requested!=='zh'&&requested!=='en')lang=localStorage.getItem('agentos-lang')||detected}catch(e){}

@@ -355,4 +355,38 @@ describe('SPEC-034 微信 iLink transport', () => {
     })).rejects.toThrow('微信消息发送失败：context token expired')
     await transport.stop(account.id)
   })
+
+  it('授权过期时停止无效轮询并提示重新扫码，不进入错误退避循环', async () => {
+    let pollCount = 0
+    vi.stubGlobal('fetch', vi.fn(() => {
+      pollCount += 1
+      return Promise.resolve(
+        new Response(JSON.stringify({ ret: -14, errcode: -14, errmsg: 'session timeout' }))
+      )
+    }))
+    const statuses: Array<{ status: string; error?: string }> = []
+    const transport = new WeChatTransport(await makeStateDir())
+    transport.onStatus((_accountId, status, error) => statuses.push({ status, error }))
+    await transport.start({
+      id: 'wechat-expired',
+      platform: 'wechat',
+      alias: '微信',
+      enabled: true,
+      credentials: {
+        bot_id: 'bot@im.wechat',
+        token: 'stale-token',
+        base_url: 'https://ilinkai.weixin.qq.com'
+      }
+    })
+
+    await vi.waitFor(() =>
+      expect(statuses.at(-1)).toEqual({
+        status: 'error',
+        error: '微信授权已失效，请重新扫码连接。'
+      })
+    )
+    await new Promise((resolve) => setTimeout(resolve, 10))
+    expect(pollCount).toBe(1)
+    await transport.stop('wechat-expired')
+  })
 })

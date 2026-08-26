@@ -111,6 +111,7 @@ import type { AddChannelAccountInput, ChannelBinding, ChannelAcl } from '@shared
 import { RelayService } from '../domains/relay/service'
 import { PortableBackupService } from '../domains/backup/service'
 import { buildStatsCsvArtifact } from '../domains/stats/export'
+import { openLocalDirectory } from '../domains/sessions/open-directory'
 
 // macOS traffic-light 在 Dock 列上方所需的安全垂直间距。
 const MAC_TITLEBAR_HEIGHT = 28
@@ -219,6 +220,10 @@ export function registerIpc(
       if (path) attachmentPreviews.approve(path)
       return path
     }
+  )
+
+  ipcMain.handle(CHANNELS.app.openDirectory, (_event, path: string) =>
+    openLocalDirectory(path, (target) => shell.openPath(target))
   )
 
   // SPEC-038：附件暂存（粘贴图片/拖拽文件的字节 → 本地绝对路径）。

@@ -168,7 +168,9 @@ export const zh = {
     sourceDesktop: '桌面',
     pin: '置顶对话',
     unpin: '取消置顶',
-    archive: '归档对话'
+    archive: '归档对话',
+    openFolder: '打开项目文件夹',
+    openFolderFailed: '无法打开项目文件夹，请确认目录仍然存在。'
   },
   // ─── CLI 启动弹窗（CliLaunchDialog.tsx） ────────────────────────────────
   cliDialog: {
@@ -358,7 +360,9 @@ export const en: typeof zh = {
     sourceDesktop: 'Desktop',
     pin: 'Pin chat',
     unpin: 'Unpin',
-    archive: 'Archive chat'
+    archive: 'Archive chat',
+    openFolder: 'Open project folder',
+    openFolderFailed: 'Could not open the project folder. Check that it still exists.'
   },
   cliDialog: {
     subtitle: 'Pick a CLI tool and working directory to launch a native terminal session.',

@@ -11,7 +11,12 @@ import type {
   UpdateTaskPatch
 } from '@shared/types'
 import { taskDeliveriesForRun, taskMessagesForRun, taskTimelineForRun } from '@shared/task-detail'
-import { presentTaskStatus } from '@shared/task-presentation'
+import {
+  presentTaskStatus,
+  projectScheduledTasks,
+  type TaskScheduleFilter,
+  type TaskScheduleSort
+} from '@shared/task-presentation'
 import { useNotificationStore } from '../../../stores/notificationStore'
 import { useTasksStore } from '../../../stores/tasksStore'
 import { useToolsStore } from '../../../stores/toolsStore'
@@ -320,6 +325,16 @@ function TaskDetailModal({
                           ? ` · ${t('tasks.detail.finishedAt', { time: formatTime(selectedRun.finishedAt) })}`
                           : ''}
                       </p>
+                      <dl className="task-run-milestones">
+                        {selectedRun.scheduledFor && <div><dt>{t('tasks.detail.scheduledAt')}</dt><dd>{formatTime(selectedRun.scheduledFor)}</dd></div>}
+                        {selectedRun.startedAt && <div><dt>{t('tasks.detail.startedAt')}</dt><dd>{formatTime(selectedRun.startedAt)}</dd></div>}
+                        {selectedRun.interruptedAt && <div><dt>{t('tasks.detail.interruptedAt')}</dt><dd>{formatTime(selectedRun.interruptedAt)}</dd></div>}
+                        {selectedRun.recoveryStartedAt && <div><dt>{t('tasks.detail.recoveryStartedAt')}</dt><dd>{formatTime(selectedRun.recoveryStartedAt)}</dd></div>}
+                        {selectedRun.finishedAt && <div><dt>{t('tasks.detail.finishedLabel')}</dt><dd>{formatTime(selectedRun.finishedAt)}</dd></div>}
+                        <div><dt>{t('tasks.detail.currentStatus')}</dt><dd>{runStatusLabel(selectedRun.status, t)}</dd></div>
+                        {selectedRun.autoRecovered && <div><dt>{t('tasks.detail.autoRecovered')}</dt><dd>✓</dd></div>}
+                        {selectedRun.pendingScheduledFor && <div><dt>{t('tasks.detail.pendingAt')}</dt><dd>{formatTime(selectedRun.pendingScheduledFor)}</dd></div>}
+                      </dl>
                       {selectedRun.error && <pre>{selectedRun.error}</pre>}
                     </div>
                   </div>
@@ -717,14 +732,18 @@ export function TaskScheduleView({
   onOpenSession(id: string): void
 }): React.JSX.Element {
   const { t } = useT()
-  const tasks = useTasksStore((state) => state.tasks).filter((task) => task.schedule)
+  const allTasks = useTasksStore((state) => state.tasks)
   const update = useTasksStore((state) => state.update)
   const runNow = useTasksStore((state) => state.runNow)
   const loadRuns = useTasksStore((state) => state.loadRuns)
   const runsByTask = useTasksStore((state) => state.runsByTask)
   const [expanded, setExpanded] = useState<string | null>(null)
   const [detailTaskId, setDetailTaskId] = useState<string | null>(null)
-  const detailTask = tasks.find((task) => task.id === detailTaskId)
+  const [filter, setFilter] = useState<TaskScheduleFilter>('all')
+  const [sort, setSort] = useState<TaskScheduleSort>('default')
+  const tasks = useMemo(() => projectScheduledTasks(allTasks, filter, sort), [allTasks, filter, sort])
+  const scheduleCount = allTasks.reduce((count, task) => count + Number(Boolean(task.schedule)), 0)
+  const detailTask = allTasks.find((task) => task.id === detailTaskId && task.schedule)
 
   return (
     <>
@@ -739,6 +758,27 @@ export function TaskScheduleView({
             ＋ {t('tasks.panel.newSchedule')}
           </button>
         </header>
+        {scheduleCount > 0 && (
+          <div className="schedule-toolbar" aria-label={t('tasks.schedule.viewOptions')}>
+            <label>
+              <span>{t('tasks.schedule.filter')}</span>
+              <select value={filter} onChange={(event) => setFilter(event.target.value as TaskScheduleFilter)}>
+                <option value="all">{t('tasks.schedule.filterAll')}</option>
+                <option value="enabled">{t('tasks.schedule.filterEnabled')}</option>
+                <option value="disabled">{t('tasks.schedule.filterDisabled')}</option>
+              </select>
+            </label>
+            <label>
+              <span>{t('tasks.schedule.sort')}</span>
+              <select value={sort} onChange={(event) => setSort(event.target.value as TaskScheduleSort)}>
+                <option value="default">{t('tasks.schedule.sortDefault')}</option>
+                <option value="enabled-first">{t('tasks.schedule.sortEnabled')}</option>
+                <option value="disabled-first">{t('tasks.schedule.sortDisabled')}</option>
+              </select>
+            </label>
+            <span className="schedule-toolbar__count">{t('tasks.schedule.resultCount', { count: tasks.length })}</span>
+          </div>
+        )}
         <div className="schedule-list">
           {tasks.map((task) => {
             const schedule = task.schedule!
@@ -757,7 +797,12 @@ export function TaskScheduleView({
                 >
                   <span className={`schedule-toggle ${schedule.enabled ? 'is-on' : ''}`} />
                   <div>
-                    <h2>{task.title}</h2>
+                    <div className="schedule-card__title">
+                      <h2>{task.title}</h2>
+                      <span className={schedule.enabled ? 'is-enabled' : 'is-disabled'}>
+                        {schedule.enabled ? t('tasks.schedule.enabled') : t('tasks.schedule.disabled')}
+                      </span>
+                    </div>
                     <p>{scheduleLabel(schedule, t)}</p>
                     <span>
                       {task.assignee.toolId} · {hostLabel(task.runtimeHostId, t)} ·{' '}
@@ -806,11 +851,18 @@ export function TaskScheduleView({
               </article>
             )
           })}
-          {tasks.length === 0 && (
+          {scheduleCount === 0 && (
             <div className="schedule-empty">
               <h2>{t('tasks.schedule.emptyTitle')}</h2>
               <p>{t('tasks.schedule.emptyHint')}</p>
               <button onClick={onNew}>{t('tasks.panel.newSchedule')}</button>
+            </div>
+          )}
+          {scheduleCount > 0 && tasks.length === 0 && (
+            <div className="schedule-empty">
+              <h2>{t('tasks.schedule.noMatchesTitle')}</h2>
+              <p>{t('tasks.schedule.noMatchesHint')}</p>
+              <button onClick={() => setFilter('all')}>{t('tasks.schedule.clearFilter')}</button>
             </div>
           )}
         </div>

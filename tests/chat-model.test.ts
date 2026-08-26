@@ -172,7 +172,7 @@ describe('chat view model', () => {
     )
 
     expect(items).toMatchObject([
-      { kind: 'message', role: 'user', text: '检查测试' },
+      { kind: 'message', role: 'user', text: '检查测试', createdAt: '2026-06-17T00:00:00.000Z' },
       {
         kind: 'process',
         turnId: 'turn-1',
@@ -183,7 +183,7 @@ describe('chat view model', () => {
           { kind: 'tool', title: '正在运行命令', detail: 'npm test', output: 'ok' }
         ]
       },
-      { kind: 'message', role: 'assistant', text: '测试通过' }
+      { kind: 'message', role: 'assistant', text: '测试通过', createdAt: '2026-06-17T00:00:04.000Z' }
     ])
   })
 

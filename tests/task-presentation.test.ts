@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { presentTaskStatus } from '../src/shared/task-presentation'
+import { presentTaskStatus, projectScheduledTasks } from '../src/shared/task-presentation'
 import type { AgentTask } from '../src/shared/types'
 
 function status(
@@ -41,5 +41,24 @@ describe('task status presentation', () => {
       .toEqual({ label: 'Succeeded · Awaiting confirmation', state: 'succeeded' })
     expect(presentTaskStatus({ boardStatus: 'done', executionStatus: 'succeeded' }, 'en'))
       .toEqual({ label: 'Confirmed complete', state: 'confirmed' })
+  })
+})
+
+describe('scheduled task presentation', () => {
+  const tasks = [
+    { id: 'disabled-a', schedule: { enabled: false } },
+    { id: 'unscheduled' },
+    { id: 'enabled', schedule: { enabled: true } },
+    { id: 'disabled-b', schedule: { enabled: false } }
+  ] as unknown as AgentTask[]
+
+  it('combines enabled filtering with stable status sorting', () => {
+    expect(projectScheduledTasks(tasks, 'enabled', 'disabled-first').map((task) => task.id)).toEqual(['enabled'])
+    expect(projectScheduledTasks(tasks, 'all', 'enabled-first').map((task) => task.id)).toEqual([
+      'enabled', 'disabled-a', 'disabled-b'
+    ])
+    expect(projectScheduledTasks(tasks, 'all', 'disabled-first').map((task) => task.id)).toEqual([
+      'disabled-a', 'disabled-b', 'enabled'
+    ])
   })
 })
