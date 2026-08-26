@@ -8,6 +8,26 @@ export interface TaskStatusPresentation {
   state: TaskPresentationState
 }
 
+export type TaskScheduleFilter = 'all' | 'enabled' | 'disabled'
+export type TaskScheduleSort = 'default' | 'enabled-first' | 'disabled-first'
+
+export function projectScheduledTasks<T extends Pick<AgentTask, 'schedule'>>(
+  tasks: readonly T[],
+  filter: TaskScheduleFilter,
+  sort: TaskScheduleSort
+): T[] {
+  const visible = tasks.filter((task) => {
+    if (!task.schedule) return false
+    if (filter === 'all') return true
+    return task.schedule.enabled === (filter === 'enabled')
+  })
+  if (sort === 'default') return visible
+  return visible.sort((left, right) => {
+    const delta = Number(left.schedule!.enabled) - Number(right.schedule!.enabled)
+    return sort === 'enabled-first' ? -delta : delta
+  })
+}
+
 const ACTIVE_EXECUTION_LABELS_ZH: Record<TaskExecutionStatus, string> = {
   idle: '准备执行',
   queued: '排队中',

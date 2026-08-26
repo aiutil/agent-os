@@ -40,7 +40,11 @@ export const zh = {
     title: '定时任务', description: '每个计划绑定一个目标 Runtime 和一个 Agent CLI，并保留独立运行记录。',
     next: '下一次', paused: '已暂停', detail: '任务详情', running: '执行中', runNow: '立即运行', pause: '暂停',
     enable: '启用', edit: '编辑', openSession: '打开会话', recentRuns: '最近运行', noRuns: '暂无运行记录',
-    emptyTitle: '让重复工作按时发生', emptyHint: '新建一个单次、固定间隔或 Cron 计划，目标 daemon 会负责触发。'
+    emptyTitle: '让重复工作按时发生', emptyHint: '新建一个单次、固定间隔或 Cron 计划，目标 daemon 会负责触发。',
+    viewOptions: '定时任务筛选与排序', filter: '筛选', filterAll: '全部', filterEnabled: '已启用',
+    filterDisabled: '未启用', sort: '排序', sortDefault: '默认顺序', sortEnabled: '已启用优先',
+    sortDisabled: '未启用优先', enabled: '已启用', disabled: '未启用', resultCount: '{{count}} 个计划',
+    noMatchesTitle: '没有符合条件的计划', noMatchesHint: '调整筛选条件以查看其他定时任务。', clearFilter: '查看全部'
   },
   composer: {
     selectAgentError: '请选择可用的 Agent CLI', editAria: '编辑任务', newAria: '新建任务', edit: '编辑任务',
@@ -99,7 +103,11 @@ export const en: typeof zh = {
     title: 'Schedules', description: 'Each schedule targets one Runtime and one Agent CLI, with an independent run history.',
     next: 'Next', paused: 'Paused', detail: 'Task details', running: 'Running', runNow: 'Run now', pause: 'Pause',
     enable: 'Enable', edit: 'Edit', openSession: 'Open session', recentRuns: 'Recent runs', noRuns: 'No run history',
-    emptyTitle: 'Put recurring work on schedule', emptyHint: 'Create a one-time, interval, or Cron schedule. The target daemon handles execution.'
+    emptyTitle: 'Put recurring work on schedule', emptyHint: 'Create a one-time, interval, or Cron schedule. The target daemon handles execution.',
+    viewOptions: 'Schedule filters and sorting', filter: 'Filter', filterAll: 'All', filterEnabled: 'Enabled',
+    filterDisabled: 'Disabled', sort: 'Sort', sortDefault: 'Default order', sortEnabled: 'Enabled first',
+    sortDisabled: 'Disabled first', enabled: 'Enabled', disabled: 'Disabled', resultCount: '{{count}} schedules',
+    noMatchesTitle: 'No matching schedules', noMatchesHint: 'Change the filter to see other scheduled tasks.', clearFilter: 'View all'
   },
   composer: {
     selectAgentError: 'Choose an available Agent CLI', editAria: 'Edit task', newAria: 'New task', edit: 'Edit task',
