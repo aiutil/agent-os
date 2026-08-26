@@ -78,7 +78,13 @@ export interface TaskRun {
   sessionId?: string
   scheduledFor?: string
   startedAt?: string
+  interruptedAt?: string
+  recoveryStartedAt?: string
   finishedAt?: string
+  /** daemon 重启后复用原 run 自动恢复；同一 run 最多一次。 */
+  autoRecovered?: boolean
+  /** 恢复执行期间到期的后续计划，多个触发合并为一个。 */
+  pendingScheduledFor?: string
   error?: string
 }
 
@@ -125,6 +131,7 @@ export type TaskChangeReason =
   | 'needs-attention'
   | 'run-finished'
   | 'run-skipped'
+  | 'run-pending'
   | 'schedule-advanced'
 
 export interface TaskChangedEvent {

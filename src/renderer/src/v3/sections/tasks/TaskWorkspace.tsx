@@ -325,6 +325,16 @@ function TaskDetailModal({
                           ? ` · ${t('tasks.detail.finishedAt', { time: formatTime(selectedRun.finishedAt) })}`
                           : ''}
                       </p>
+                      <dl className="task-run-milestones">
+                        {selectedRun.scheduledFor && <div><dt>{t('tasks.detail.scheduledAt')}</dt><dd>{formatTime(selectedRun.scheduledFor)}</dd></div>}
+                        {selectedRun.startedAt && <div><dt>{t('tasks.detail.startedAt')}</dt><dd>{formatTime(selectedRun.startedAt)}</dd></div>}
+                        {selectedRun.interruptedAt && <div><dt>{t('tasks.detail.interruptedAt')}</dt><dd>{formatTime(selectedRun.interruptedAt)}</dd></div>}
+                        {selectedRun.recoveryStartedAt && <div><dt>{t('tasks.detail.recoveryStartedAt')}</dt><dd>{formatTime(selectedRun.recoveryStartedAt)}</dd></div>}
+                        {selectedRun.finishedAt && <div><dt>{t('tasks.detail.finishedLabel')}</dt><dd>{formatTime(selectedRun.finishedAt)}</dd></div>}
+                        <div><dt>{t('tasks.detail.currentStatus')}</dt><dd>{runStatusLabel(selectedRun.status, t)}</dd></div>
+                        {selectedRun.autoRecovered && <div><dt>{t('tasks.detail.autoRecovered')}</dt><dd>✓</dd></div>}
+                        {selectedRun.pendingScheduledFor && <div><dt>{t('tasks.detail.pendingAt')}</dt><dd>{formatTime(selectedRun.pendingScheduledFor)}</dd></div>}
+                      </dl>
                       {selectedRun.error && <pre>{selectedRun.error}</pre>}
                     </div>
                   </div>
