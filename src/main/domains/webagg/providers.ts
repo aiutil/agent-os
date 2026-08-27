@@ -2,6 +2,7 @@
 // inputAdapter 选择器会随站点更新漂移 → 失败显式可见，不静默。
 
 import type { WebProvider } from '@shared/types'
+import { AGENT_OS_WEB_ENTRY } from '@shared/web-bookmark'
 
 export const BUILTIN_PROVIDERS: WebProvider[] = [
   {
@@ -62,8 +63,7 @@ export const BUILTIN_PROVIDERS: WebProvider[] = [
   },
   {
     id: 'agent-life',
-    name: 'Agent Life',
-    url: 'https://agentos.aiutil.com/',
+    ...AGENT_OS_WEB_ENTRY,
     builtin: true
   }
 ]
