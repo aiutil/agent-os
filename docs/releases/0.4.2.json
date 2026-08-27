@@ -1,0 +1,11 @@
+{
+  "version": "0.4.2",
+  "date": "2026-08-27",
+  "summaryZh": "本次补丁版本统一 Web 菜单中的官方产品入口，并安全迁移已有安装的系统默认书签。",
+  "changelog": [
+    {
+      "title": "Web 默认入口统一",
+      "body": "内置 Web 菜单与系统默认书签统一显示 Agent OS，并指向 https://agentos.aiutil.com；已有用户自定义的名称或地址不会被覆盖。"
+    }
+  ]
+}

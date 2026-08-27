@@ -28,11 +28,12 @@ import type {
   WorkbenchSession
 } from '@shared/types'
 import type { Lang, LanguagePreference } from '@shared/i18n'
+import { AGENT_OS_WEB_ENTRY, migrateDefaultAgentOsBookmark } from '@shared/web-bookmark'
 
 const DEFAULT_BOOKMARKS: WebBookmark[] = [
   { id: 'bm-github', name: 'GitHub', url: 'https://www.github.com', color: '#24292f', pinned: true },
   { id: 'bm-skills', name: 'Skills', url: 'https://www.skills.sh', color: '#3b82f6', pinned: true },
-  { id: 'bm-agent-life', name: 'Agent Life', url: 'https://agentos.aiutil.com/', color: '#8b5cf6', pinned: true }
+  { id: 'bm-agent-life', ...AGENT_OS_WEB_ENTRY, color: '#8b5cf6', pinned: true }
 ]
 const LEGACY_DEFAULT_BOOKMARK_IDS = new Set(['bm-vercel', 'bm-linear', 'bm-npm'])
 
@@ -350,14 +351,18 @@ export function getWebBookmarks(): WebBookmark[] {
     : saved.filter((bookmark) => !LEGACY_DEFAULT_BOOKMARK_IDS.has(bookmark.id))
 
   // 合并默认书签（用ID去重）
-  const ids = new Set(filtered.map(b => b.id))
+  const migrated = filtered.map(migrateDefaultAgentOsBookmark)
+  const ids = new Set(migrated.map(b => b.id))
   const merged = [
-    ...filtered,
+    ...migrated,
     ...DEFAULT_BOOKMARKS.filter(b => !ids.has(b.id))
   ]
 
   // 如果有过滤或合并，保存更新
-  if (merged.length !== saved?.length) {
+  if (
+    merged.length !== saved?.length ||
+    merged.some((bookmark, index) => bookmark !== saved?.[index])
+  ) {
     store.set('webBookmarks', merged)
   }
 
