@@ -13,7 +13,7 @@
 <p align="center">
   <a href="README.md">English</a> ·
   <a href="https://github.com/aiutil/agent-os/releases/latest">下载</a> ·
-  <a href="https://agentos.aiutil.com/agent-os-v0.4.0-overview.mp4">约 100 秒完整演示</a> ·
+  <a href="https://agentos.aiutil.com/agent-os-real-demo-20261005.mp4">约 2 分钟配音实录</a> ·
   <a href="https://agentos.aiutil.com">产品站</a> ·
   <a href="https://agentos.aiutil.com/guide.html?lang=zh">使用指南</a>
 </p>
@@ -26,7 +26,9 @@
 
 ![Agent OS 知识图谱](site/knowledge-atlas-v0.4.0.png)
 
-▶ [观看约 100 秒中英文完整产品演示](https://agentos.aiutil.com/agent-os-v0.4.0-overview.mp4)——覆盖工作台、CLI 会话、对比、任务、定时、远程 Runtime、消息渠道、记忆、知识与提炼设置。
+▶ [观看约 2 分钟真实流程演示](https://agentos.aiutil.com/agent-os-real-demo-20261005.mp4)——Pi 读取公开 README，核对交付物后人工确认完成；通过外部 CC Switch 核验 MiniMax 配置，再由 Claude Code 执行任务。老付中文配音、中文字幕、1080p。
+
+演示使用 v0.4.2 加 [Pi 适配修复 632c403](https://github.com/aiutil/agent-os/tree/632c403452db83a2f235632db8a4a074fcdfea18)，v0.4.2 正式安装包尚不包含此修复。CC Switch 是外部工具；Claude Code 是客户端，此处模型服务为 MiniMax。
 
 ## 为什么需要 Agent OS
 
