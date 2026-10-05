@@ -155,6 +155,46 @@ function adapterWithTimeout(ms: number | null): CliAdapter {
 }
 
 describe('ChatManager', () => {
+  it('Pi stays running across internal tool turns until the final agent_end', async () => {
+    const { manager, children, events, timeline } = await setup('safe', getAdapter('pi')!)
+    await manager.sendTurn('session-1', 'read public README')
+    const emit = (event: unknown) => children[0]!.stdout.write(`${JSON.stringify(event)}\n`)
+    emit({ type: 'session', id: 'native-pi' })
+    for (const id of ['list', 'read']) {
+      emit({
+        type: 'tool_execution_start',
+        toolCallId: id,
+        toolName: 'read',
+        args: { path: 'README.md' }
+      })
+      emit({
+        type: 'tool_execution_end',
+        toolCallId: id,
+        result: { content: [{ type: 'text', text: 'public' }] },
+        isError: false
+      })
+      emit({ type: 'turn_end', message: { stopReason: 'toolUse' } })
+      expect(manager.state('session-1').status).toBe('running')
+      expect(events.some((event) => event.kind === 'turn-end')).toBe(false)
+    }
+    emit({
+      type: 'message_update',
+      assistantMessageEvent: { type: 'text_delta', delta: '完整功能表' }
+    })
+    expect(manager.state('session-1').status).toBe('running')
+    emit({ type: 'agent_end', messages: [] })
+    children[0]!.finish()
+    expect(manager.state('session-1').status).toBe('idle')
+    expect(events.filter((event) => event.kind === 'turn-end')).toEqual([
+      { kind: 'turn-end', status: 'completed' }
+    ])
+    expect(events).toContainEqual({ kind: 'text-delta', text: '完整功能表' })
+    expect(timeline.length).toBeGreaterThan(0)
+    expect(manager.history('session-1').some((message) => message.text === '完整功能表')).toBe(
+      true
+    )
+  })
+
   it('steer 中断当前回合后优先续跑，保留原生会话与既有排队项', async () => {
     const { manager, children, launches, queuedTurns, session: current } = await setup()
     await manager.sendTurn('session-1', '先做完整实现')

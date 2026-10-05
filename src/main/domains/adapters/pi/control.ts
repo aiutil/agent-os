@@ -11,7 +11,14 @@ export function buildPiHeadlessTurn(input: HeadlessTurnInput): HeadlessTurnLaunc
   if (input.isolated) {
     // Memory curator 只需要模型对已脱敏文本做 JSON 提炼；禁止工具、扩展、项目规则和
     // session 落盘，避免它读取/改写工作区或把原文留在 Pi 私有历史里。
-    args.push('--no-tools', '--no-session', '--no-context-files', '--no-extensions', '--no-skills', '--no-prompt-templates')
+    args.push(
+      '--no-tools',
+      '--no-session',
+      '--no-context-files',
+      '--no-extensions',
+      '--no-skills',
+      '--no-prompt-templates'
+    )
   }
   if (input.model) args.push('--model', input.model)
   if (input.reasoningEffort) args.push('--thinking', input.reasoningEffort)
@@ -25,6 +32,8 @@ export function buildPiHeadlessTurn(input: HeadlessTurnInput): HeadlessTurnLaunc
 export function createPiParser(): HeadlessTurnParser {
   let boundSession = false
   const seenTools = new Set<string>()
+  const seenResults = new Set<string>()
+  let ended = false
 
   return {
     parse(line: string): AgentEvent[] {
@@ -45,9 +54,43 @@ export function createPiParser(): HeadlessTurnParser {
         return events
       }
 
-      // turn_end → signal completion
-      if (obj.type === 'turn_end') {
+      // Pi turn_end 只是一次模型/工具轮次；整个 agent 循环结束才能交付。
+      if (obj.type === 'agent_end' && !ended) {
+        ended = true
         events.push({ kind: 'turn-end', status: 'completed' })
+        return events
+      }
+
+      if (obj.type === 'tool_execution_start' && typeof obj.toolCallId === 'string') {
+        if (!seenTools.has(obj.toolCallId)) {
+          seenTools.add(obj.toolCallId)
+          events.push({
+            kind: 'tool-start',
+            toolUseId: obj.toolCallId,
+            toolName: typeof obj.toolName === 'string' ? obj.toolName : 'unknown',
+            input: obj.args ?? null
+          })
+        }
+        return events
+      }
+      if (obj.type === 'tool_execution_end' && typeof obj.toolCallId === 'string') {
+        if (!seenResults.has(obj.toolCallId)) {
+          seenResults.add(obj.toolCallId)
+          const content =
+            isRecord(obj.result) && Array.isArray(obj.result.content)
+              ? obj.result.content
+                  .filter(isRecord)
+                  .filter((part) => part.type === 'text' && typeof part.text === 'string')
+                  .map((part) => part.text)
+                  .join('\n')
+              : ''
+          events.push({
+            kind: 'tool-result',
+            toolUseId: obj.toolCallId,
+            content,
+            isError: obj.isError === true
+          })
+        }
         return events
       }
 
@@ -68,9 +111,7 @@ export function createPiParser(): HeadlessTurnParser {
 
         if (evType === 'tool_use_start' && isRecord(ev.partial)) {
           const content = Array.isArray(ev.partial.content) ? ev.partial.content : []
-          const toolEntry = content.find(
-            (c) => isRecord(c) && c.type === 'tool_use'
-          )
+          const toolEntry = content.find((c) => isRecord(c) && c.type === 'tool_use')
           if (isRecord(toolEntry) && typeof toolEntry.id === 'string') {
             const toolId = toolEntry.id
             if (!seenTools.has(toolId)) {
