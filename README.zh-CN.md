@@ -13,7 +13,7 @@
 <p align="center">
   <a href="README.md">English</a> ·
   <a href="https://github.com/aiutil/agent-os/releases/latest">下载</a> ·
-  <a href="https://agentos.aiutil.com/agent-os-real-demo-20261005.mp4">约 2 分钟配音实录</a> ·
+  <a href="https://agentos.aiutil.com/agent-os-core-demo-20261005.mp4">核心功能配音实录 · 4分49秒</a> ·
   <a href="https://agentos.aiutil.com">产品站</a> ·
   <a href="https://agentos.aiutil.com/guide.html?lang=zh">使用指南</a>
 </p>
@@ -26,7 +26,7 @@
 
 ![Agent OS 知识图谱](site/knowledge-atlas-v0.4.0.png)
 
-▶ [观看约 2 分钟真实流程演示](https://agentos.aiutil.com/agent-os-real-demo-20261005.mp4)——Pi 读取公开 README，核对交付物后人工确认完成；通过外部 CC Switch 核验 MiniMax 配置，再由 Claude Code 执行任务。老付中文配音、中文字幕、1080p。
+▶ [观看 4 分 49 秒核心功能实录](https://agentos.aiutil.com/agent-os-core-demo-20261005.mp4)——从 Pi 任务与人工验收、外部 CC Switch 配置 MiniMax 并由 Claude Code 执行，到 CLI 会话历史、跨 CLI 检索、共享记忆、知识文章和 Claude Code/Pi 同题对比。消息通道展示配置入口，不代表已完成真实收发测试。老付中文配音、中文字幕、1080p。
 
 演示使用 v0.4.2 加 [Pi 适配修复 632c403](https://github.com/aiutil/agent-os/tree/632c403452db83a2f235632db8a4a074fcdfea18)，v0.4.2 正式安装包尚不包含此修复。CC Switch 是外部工具；Claude Code 是客户端，此处模型服务为 MiniMax。
 
