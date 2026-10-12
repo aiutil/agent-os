@@ -13,7 +13,7 @@
 <p align="center">
   <a href="README.zh-CN.md">简体中文</a> ·
   <a href="https://github.com/aiutil/agent-os/releases/latest">Download</a> ·
-  <a href="https://agentos.aiutil.com/agent-os-core-demo-20261005.mp4">Core-feature narrated demo · 4:49</a> ·
+  <a href="https://agentos.aiutil.com/agent-os-contest-demo-20261012.mp4">Product walkthrough · 4:43</a> ·
   <a href="https://agentos.aiutil.com">Product site</a> ·
   <a href="https://agentos.aiutil.com/guide.html?lang=en">User guide</a>
 </p>
@@ -26,7 +26,7 @@
 
 ![Agent OS knowledge atlas](site/knowledge-atlas-en-v0.4.0.png)
 
-▶ [Watch the 4:49 core-feature demo](https://agentos.aiutil.com/agent-os-core-demo-20261005.mp4) — Follow a Pi task through human review, switch to Claude Code with MiniMax via external CC Switch, then explore CLI history, cross-CLI search, shared memory, knowledge articles, and a side-by-side Claude Code/Pi comparison. Message channels are shown as configuration screens, not a live send/receive test. Chinese narration and captions; 1080p.
+▶ [Watch the 4:43 product walkthrough](https://agentos.aiutil.com/agent-os-contest-demo-20261012.mp4) — Start with the problem of scattered AI work, then follow a Pi task through human review and explore Claude Code with MiniMax, CLI history, cross-CLI search, shared memory, knowledge articles, side-by-side comparison and message-channel configuration. Chinese narration and captions; 1080p. Channel screens show configuration, not a live send/receive test.
 
 The demo uses v0.4.2 plus the [Pi adapter fix at 632c403](https://github.com/aiutil/agent-os/tree/632c403452db83a2f235632db8a4a074fcdfea18). The v0.4.2 release binaries do not include this fix. CC Switch is external to Agent OS; Claude Code is the client, not a claim that the Claude model is used.
 
